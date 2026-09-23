@@ -8,10 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define FALSE 0
-#define TRUE 1
-
-typedef int bool;
+#include <stdbool.h>
 
 /**
  * Allocated a new string, and copies the content of source to it.

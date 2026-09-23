@@ -22,4 +22,4 @@ char lexer_stream_peek(const LexerStream* handle) {
 char lexer_stream_pop(LexerStream* handle) {
     return handle->data[handle->SPI++];
 }
-Token* lexer_stream_extract_token(LexerStream* handle) {}
+Token* lexer_stream_extract_token(LexerStream* handle);

@@ -5,13 +5,15 @@
 #ifndef GIT_CODE_DATASTRUCTURES_H
 #define GIT_CODE_DATASTRUCTURES_H
 
-#include <stdlib.h>
+#include "Utils.h"
 
-typedef struct StringArray StringArray;
-
-StringArray* string_array_create();
-void string_array_destroy(StringArray* this);
-void string_array_add(StringArray* this, const char* string);
-int string_array_get_size(const StringArray* this);
+typedef struct List List;
+List* list_create();
+void list_destroy(List* this);
+bool list_is_empty(const List* this);
+void list_add(List* this, void* value);
+void* list_remove_at(List* this, int index);
+void list_destroy_at(List* this, int index);
+int list_get_size(const List* this);
 
 #endif //GIT_CODE_DATASTRUCTURES_H

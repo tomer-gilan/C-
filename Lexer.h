@@ -45,7 +45,7 @@ typedef struct {
 
 
 // -------- Identifiers -------- //
-StringArray* identifiers_table = NULL; // populated at runtime.
+List* identifiers_table = NULL; // populated at runtime.
 typedef struct {
     int id; // the index in the identifiers_table
 } TokenIdentifier;
@@ -65,7 +65,7 @@ typedef struct {
 
 
 // -------- String Literals -------- //
-StringArray* string_literals_table = NULL; // populated at runtime.
+List* string_literals_table = NULL; // populated at runtime.
 typedef struct {
     int id; // the index in the string_literals_table
 } TokenStringLiteral;

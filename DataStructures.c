@@ -4,29 +4,53 @@
 
 #include "DataStructures.h"
 
-#include "Utils.h"
-
-struct StringArray{
+struct List {
     int size;
-    char** entries;
-};
+    int capacity;
+    void** elements;
+} ;
 
-StringArray* string_array_create() {
-    StringArray* string_array = malloc(sizeof(StringArray));
-    string_array->size = 0;
-    string_array->entries = malloc(sizeof(char*) * 0);  // intentionally allocating 0 bytes
-                                                            // (which by the way, is NOT undefined behaviour)
-    return string_array;
+// -------- List: private functions --------- //
+bool list_should_expand(const List* this) {
+    return this->size == this->capacity;
 }
-void string_array_destroy(StringArray* this) {
-    for (int i = 0; i < this->size; ++i)
-        free(this->entries[i]);
-    free(this);
+void list_expand(List* this) {
+    this->capacity *= 2;
+    this->elements = realloc(this->elements, this->capacity);
 }
-void string_array_add(StringArray* this, const char* string) {
-    this->entries = realloc(this->entries, sizeof(char*) * (++this->size));
-    this->entries[this->size - 1] = utils_allocate_and_copy_string(string);
+// maybe in the future add collapse..
+// -------- END: List: private functions --------- //
+
+List* list_create() {
+    List* list = malloc(sizeof(List));
+    list->size = 0;
+    list->capacity = 0;
+    list->elements = malloc(sizeof(void*) * 0); // intentionally allocating 0 bytes
+                                                    // (which by the way, is NOT undefined behaviour)
+    return list;
 }
-int string_array_get_size(const StringArray* this) {
+void list_destroy(List* this) {
+    while (!list_is_empty(this))
+        list_destroy_at(this, list_get_size(this) - 1);
+}
+bool list_is_empty(const List* this) {
+    return this->size == 0;
+}
+void list_add(List* this, void* value) {
+    if (list_should_expand(this))
+        list_expand(this);
+    this->elements[this->size++] = value;
+}
+void* list_remove_at(List* this, int const index) {
+    void* to_remove = this->elements[index];
+    for (int i = index; i < this->size - 1; ++i)
+        this->elements[i] = this->elements[i + 1];
+    this->size--;
+    return to_remove;
+}
+void list_destroy_at(List* this, int const index) {
+    free(list_remove_at(this, index));
+}
+int list_get_size(const List* this) {
     return this->size;
 }
