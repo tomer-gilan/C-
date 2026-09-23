@@ -2,10 +2,6 @@
 // Created by tomer on 23-Sep-26.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "Error.h"
 
 struct Error {
@@ -20,19 +16,16 @@ char* error_messages[] = {
     "LEXER: Invalid numerical sequence",
 };
 
-Error* error_create(const ErrorCode code, const char* info) {
-    char* info_dynamic_copy = malloc(sizeof(char) * (strlen(info) + 1));
-    strcpy(info_dynamic_copy, info);
-
+Error* error_create(const ErrorCode code, const char* const info) {
     Error* error = malloc(sizeof (Error));
     error->code = code;
-    error->info = info_dynamic_copy;
+    error->info = utils_allocate_and_copy_string(info);
     return error;
 }
-void error_destroy(Error* error) {
-    free(error->info);
-    free(error);
+void error_destroy(Error* const this) {
+    free(this->info);
+    free(this);
 }
-void error_print(const Error* error) {
-    printf("Error: %s.\nAdditional Info: %s.", error_messages[error->code], error->info);
+void error_print(const Error* const this) {
+    printf("Error: %s.\nAdditional Info: %s.", error_messages[this->code], this->info);
 }

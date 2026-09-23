@@ -5,15 +5,8 @@
 #ifndef GIT_CODE_LEXER_H
 #define GIT_CODE_LEXER_H
 
-#include <stdio.h>
-
-//     ----- General Definitions -----     //
-typedef struct {
-    char** entries;
-    int size;
-} StringArray;
-//     ----- END: General Definitions -----     //
-
+#include <stdlib.h>
+#include "DataStructures.h"
 
 //     ----- Token Categories -----     //
 typedef enum {
@@ -27,6 +20,15 @@ typedef enum {
 
 
 //     ----- Keywords -----     //
+typedef enum {
+    CHAR,
+    ELSE,
+    IF,
+    INT,
+    RETURN,
+    VOID,
+    WHILE
+} TokenKeywordID;
 const char* const keywords_table[] = {
     "char",
     "else",
@@ -37,16 +39,16 @@ const char* const keywords_table[] = {
     "while"
 };
 typedef struct {
-    int id;
-} Keyword;
+    TokenKeywordID id;
+} TokenKeyword;
 //     ----- END: Keywords -----     //
 
 
 //     ----- Identifiers -----     //
-StringArray identifiers_table = {.entries = NULL, .size = 0};
+StringArray* identifiers_table = NULL; // populated at runtime.
 typedef struct {
     int id; // the index in the identifiers_table
-} Identifier;
+} TokenIdentifier;
 //     ----- END: Identifiers -----     //
 
 
@@ -58,28 +60,67 @@ typedef enum {
 typedef struct {
     token_constant_type type;
     int raw_value; // inferred based on type.
-} Constant;
+} TokenConstant;
 //     ----- END: Constants -----     //
 
 
 //     ----- String Literals -----     //
-StringArray string_literals_table = {.entries = NULL, .size = 0};
+StringArray* string_literals_table = NULL; // populated at runtime.
 typedef struct {
     int id; // the index in the string_literals_table
-} StringLiteral;
+} TokenStringLiteral;
 //     ----- END: String Literals -----     //
 
 
 //     ----- Punctuators -----     //
-const char* punctuators[] = {
+typedef enum {
+    TOKEN_PUNCTUATOR_BRACKET_LEFT,       // [
+    TOKEN_PUNCTUATOR_BRACKET_RIGHT,      // ]
+    TOKEN_PUNCTUATOR_PARENTHESES_LEFT,   // (
+    TOKEN_PUNCTUATOR_PARENTHESES_RIGHT,  // )
+
+    TOKEN_PUNCTUATOR_BRACE_LEFT,         // {
+    TOKEN_PUNCTUATOR_BRACE_RIGHT,        // }
+    TOKEN_PUNCTUATOR_AMPERSAND,
+    TOKEN_PUNCTUATOR_STAR,
+
+    TOKEN_PUNCTUATOR_PLUS,
+    TOKEN_PUNCTUATOR_MINUS,
+    TOKEN_PUNCTUATOR_TILDA,
+    TOKEN_PUNCTUATOR_EXCLAMATION_MARK,
+
+    TOKEN_PUNCTUATOR_FORWARD_SLASH,
+    TOKEN_PUNCTUATOR_PERCENTAGE,
+    TOKEN_PUNCTUATOR_HAT,
+    TOKEN_PUNCTUATOR_ASSIGNMENT,
+
+    TOKEN_PUNCTUATOR_LEFT_SHIFT,
+    TOKEN_PUNCTUATOR_RIGHT_SHIFT,
+    TOKEN_PUNCTUATOR_GREATER,
+    TOKEN_PUNCTUATOR_SMALLER,
+
+    TOKEN_PUNCTUATOR_GREATER_EQUALS,
+    TOKEN_PUNCTUATOR_SMALLER_EQUALS,
+    TOKEN_PUNCTUATOR_EQUALS,
+    TOKEN_PUNCTUATOR_NOT_EQUALS,
+
+    TOKEN_PUNCTUATOR_BAR,
+    TOKEN_PUNCTUATOR_LOGICAL_AND,
+    TOKEN_PUNCTUATOR_LOGICAL_OR,
+    TOKEN_PUNCTUATOR_SEMICOLON
+} TokenPunctuatorID;
+const char* punctuators_table[] = {
     "[", "]", "(", ")",
     "{", "}", "&", "*",
     "+", "-", "~", "!",
     "/", "%", "^", "=",
     "<<", ">>", ">", "<",
-    "<=", ">=", "==", "!=",
+    ">=", "<=", "==", "!=",
     "|", "&&", "||", ";"
 };
+typedef struct {
+    TokenPunctuatorID id;
+} TokenPunctuator;
 //     ----- END: Punctuators -----     //
 
 typedef struct {
@@ -88,7 +129,9 @@ typedef struct {
 } Token;
 
 //     ----- Lexing Logic -----     //
-int
+
+// TODO
+
 //     ----- END: Lexing Logic -----     //
 
 #endif //GIT_CODE_LEXER_H

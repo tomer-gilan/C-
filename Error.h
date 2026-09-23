@@ -5,6 +5,12 @@
 #ifndef GIT_CODE_ERROR_H
 #define GIT_CODE_ERROR_H
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "Utils.h"
+
 typedef enum {
     ERROR_CODE_LEXER_UNKNOWN_CHARACTER,
     ERROR_CODE_LEXER_UNMATCHED_QUOTATION_MARKS,
@@ -24,14 +30,14 @@ Error* error_create(ErrorCode code, const char* info);
 
 /**
  * Frees memory, and handles all destroying related operations. Must be called for every Error* created via error_create.
- * @param error a handle to the error
+ * @param this a handle to the error
  */
-void error_destroy(Error* error);
+void error_destroy(Error* this);
 
 /**
  * prints the error message
- * @param error error handle
+ * @param this error handle
  */
-void error_print(const Error* error);
+void error_print(const Error* this);
 
 #endif //GIT_CODE_ERROR_H
