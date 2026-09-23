@@ -11,7 +11,7 @@
 typedef struct {
     char** entries;
     int size;
-} string_array;
+} StringArray;
 //     ----- END: General Definitions -----     //
 
 
@@ -22,7 +22,7 @@ typedef enum {
     CONSTANT,
     STRING_LITERAL,
     PUNCTUATORS
-} token_category;
+} TokenCategory;
 //     ----- END: Token Categories -----     //
 
 
@@ -38,15 +38,15 @@ const char* const keywords_table[] = {
 };
 typedef struct {
     int id;
-} keyword;
+} Keyword;
 //     ----- END: Keywords -----     //
 
 
 //     ----- Identifiers -----     //
-string_array identifiers_table = {.entries = NULL, .size = 0};
+StringArray identifiers_table = {.entries = NULL, .size = 0};
 typedef struct {
     int id; // the index in the identifiers_table
-} identifier;
+} Identifier;
 //     ----- END: Identifiers -----     //
 
 
@@ -58,15 +58,15 @@ typedef enum {
 typedef struct {
     token_constant_type type;
     int raw_value; // inferred based on type.
-} constant;
+} Constant;
 //     ----- END: Constants -----     //
 
 
 //     ----- String Literals -----     //
-string_array string_literals_table = {.entries = NULL, .size = 0};
+StringArray string_literals_table = {.entries = NULL, .size = 0};
 typedef struct {
     int id; // the index in the string_literals_table
-} string_literal;
+} StringLiteral;
 //     ----- END: String Literals -----     //
 
 
@@ -83,8 +83,12 @@ const char* punctuators[] = {
 //     ----- END: Punctuators -----     //
 
 typedef struct {
-    token_category category;
+    TokenCategory category;
     void* data;
-} token;
+} Token;
+
+//     ----- Lexing Logic -----     //
+int
+//     ----- END: Lexing Logic -----     //
 
 #endif //GIT_CODE_LEXER_H
