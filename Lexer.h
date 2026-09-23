@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include "DataStructures.h"
 
-//     ----- Token Categories -----     //
+// -------- Token Categories -------- //
 typedef enum {
     KEYWORD = 0,
     IDENTIFIER,
@@ -16,10 +16,10 @@ typedef enum {
     STRING_LITERAL,
     PUNCTUATORS
 } TokenCategory;
-//     ----- END: Token Categories -----     //
+// -------- END: Token Categories -------- //
 
 
-//     ----- Keywords -----     //
+// -------- Keywords -------- //
 typedef enum {
     CHAR,
     ELSE,
@@ -41,18 +41,18 @@ const char* const keywords_table[] = {
 typedef struct {
     TokenKeywordID id;
 } TokenKeyword;
-//     ----- END: Keywords -----     //
+// -------- END: Keywords -------- //
 
 
-//     ----- Identifiers -----     //
+// -------- Identifiers -------- //
 StringArray* identifiers_table = NULL; // populated at runtime.
 typedef struct {
     int id; // the index in the identifiers_table
 } TokenIdentifier;
-//     ----- END: Identifiers -----     //
+// -------- END: Identifiers -------- //
 
 
-//     ----- Constants -----     //
+// -------- Constants -------- //
 typedef enum {
     INTEGER = 0,
     CHARACTER
@@ -61,18 +61,18 @@ typedef struct {
     token_constant_type type;
     int raw_value; // inferred based on type.
 } TokenConstant;
-//     ----- END: Constants -----     //
+// -------- END: Constants -------- //
 
 
-//     ----- String Literals -----     //
+// -------- String Literals -------- //
 StringArray* string_literals_table = NULL; // populated at runtime.
 typedef struct {
     int id; // the index in the string_literals_table
 } TokenStringLiteral;
-//     ----- END: String Literals -----     //
+// -------- END: String Literals -------- //
 
 
-//     ----- Punctuators -----     //
+// -------- Punctuators -------- //
 typedef enum {
     TOKEN_PUNCTUATOR_BRACKET_LEFT,       // [
     TOKEN_PUNCTUATOR_BRACKET_RIGHT,      // ]
@@ -121,17 +121,30 @@ const char* punctuators_table[] = {
 typedef struct {
     TokenPunctuatorID id;
 } TokenPunctuator;
-//     ----- END: Punctuators -----     //
+// -------- END: Punctuators -------- //
 
 typedef struct {
     TokenCategory category;
     void* data;
 } Token;
 
-//     ----- Lexing Logic -----     //
+// -------- Lexing Logic -------- //
 
-// TODO
+typedef struct {
+    int index;
+    char* data;
+} LexerStream;
 
-//     ----- END: Lexing Logic -----     //
+LexerStream* lexer_stream_create(const char* data);
+void lexer_stream_destroy(LexerStream* handle);
+void lexer_stream_peek(const LexerStream* handle);
+void lexer_stream_pop(LexerStream* handle);
+Token* lexer_stream_extract_token(LexerStream* handle);
+
+
+// TODO: add logic
+Token* extract_token(const char* stream, int index);
+
+// -------- END: Lexing Logic -------- //
 
 #endif //GIT_CODE_LEXER_H

@@ -25,7 +25,7 @@ void string_array_destroy(StringArray* this) {
 }
 void string_array_add(StringArray* this, const char* string) {
     this->entries = realloc(this->entries, sizeof(char*) * (++this->size));
-    this->entries[this->size - 1] = utils_allocate_and_copy_string(string);
+    this->entries[this->size - 1] = utils_allocate_and_copy(string);
 }
 int string_array_get_size(const StringArray* this) {
     return this->size;

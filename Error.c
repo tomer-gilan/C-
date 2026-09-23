@@ -19,7 +19,7 @@ char* error_messages[] = {
 Error* error_create(const ErrorCode code, const char* const info) {
     Error* error = malloc(sizeof (Error));
     error->code = code;
-    error->info = utils_allocate_and_copy_string(info);
+    error->info = utils_allocate_and_copy(info);
     return error;
 }
 void error_destroy(Error* const this) {
