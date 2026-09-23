@@ -18,7 +18,7 @@ typedef int bool;
  * @param source the string which is copied
  * @return the copy of the source
  */
-char* utils_allocate_and_copy(const char* source);
+char* utils_allocate_and_copy_string(const char* source);
 
 /**
  *

@@ -4,7 +4,7 @@
 
 #include "Utils.h"
 
-char* utils_allocate_and_copy(const char* const source) {
+char* utils_allocate_and_copy_string(const char* const source) {
     char* copy = malloc(sizeof(char) * (strlen(source) + 1));
     strcpy(copy, source);
     return copy;
