@@ -131,19 +131,42 @@ typedef struct {
 // -------- Lexing Logic -------- //
 
 typedef struct {
-    int index;
+    int SPI; // SPI: Stream Position Indicator. i.e., the index of the next char to parse.
     char* data;
 } LexerStream;
 
+/**
+ * Create a new LexerStream struct.
+ * @param data the lexeme that the lexer should parse
+ * @return a LexerStream handle
+ */
 LexerStream* lexer_stream_create(const char* data);
+
+/**
+ * Destroys the LexerStream handle
+ * @param handle
+ */
 void lexer_stream_destroy(LexerStream* handle);
-void lexer_stream_peek(const LexerStream* handle);
-void lexer_stream_pop(LexerStream* handle);
+
+/**
+ * Peeks the current char of the lexeme.
+ * @param handle
+ */
+char lexer_stream_peek(const LexerStream* handle);
+
+/**
+ * Retrieves the current byte of the lexeme, then advances SPI.
+ * @param handle
+ * @return the current byte of the lexeme.
+ */
+char lexer_stream_pop(LexerStream* handle);
+
+/**
+ * extract the next token based on the lexeme.
+ * @param handle
+ * @return the next token based on the lexeme.
+ */
 Token* lexer_stream_extract_token(LexerStream* handle);
-
-
-// TODO: add logic
-Token* extract_token(const char* stream, int index);
 
 // -------- END: Lexing Logic -------- //
 
