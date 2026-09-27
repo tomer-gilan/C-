@@ -5,7 +5,7 @@
 #ifndef GIT_CODE_TOKEN_H
 #define GIT_CODE_TOKEN_H
 
-#include "Globals.h"
+#include "Context.h"
 
 // Token Categories
 typedef enum {

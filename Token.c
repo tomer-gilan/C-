@@ -11,7 +11,7 @@ static Token token_keyword_create(const TokenKeywordID id) {
 static Token token_identifier_create(const char* const string) {
     int id = list_index_of(globals_identifiers_table, string, list_string_strcmp);
     if (id == -1) {
-        id = list_add(globals_identifiers_table, utils_allocate_and_copy_string(string));
+        id = list_push(globals_identifiers_table, utils_allocate_and_copy_string(string));
     }
     return (Token){.category = TOKEN_CATEGORY_IDENTIFIER, .as.identifier.id = id};
 }
@@ -21,7 +21,7 @@ static Token token_constant_create(const TokenConstantType type, const int value
 static Token token_string_literal_create(const char* const string) {
     int id = list_index_of(globals_string_literals_table, string, list_string_strcmp);
     if (id == -1) {
-        id = list_add(globals_identifiers_table, utils_allocate_and_copy_string(string));
+        id = list_push(globals_identifiers_table, utils_allocate_and_copy_string(string));
     }
     return (Token){.category = TOKEN_CATEGORY_STRING_LITERAL, .as.string_literal.id = id};
 }

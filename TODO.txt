@@ -1,0 +1,13 @@
+1. make a pop_escaped and peek_escaped
+2. make a munch_literal
+
+3. enforce 7-bit ASCII source file, i.e. no 128+ ASCII values in source file
+
+4. create and destroy globals in main..
+
+5. create a error_throw_char and error_throw_int to make my life abit eaiser...
+
+6. there's potential buffer overflow in string literal and identifier munching...
+
+research:
+1. about the stages of compilation (e.g. string concatination, pre-processor, 1-7...)

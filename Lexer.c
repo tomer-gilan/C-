@@ -233,9 +233,9 @@ byte lexer_stream_pop(LexerStream* this) {
         return LEXER_EOS;
     // Update position:
     if (lexer_stream_peek(this) == '\n')
-        position_set_new_line(&this->position);
+        location_set_new_line(&this->position);
     else
-        position_increment(&this->position);
+        location_increment(&this->position);
 
     return this->data[this->SPI++];
 }
@@ -552,7 +552,7 @@ List* lexer_stream_extract_all_tokens(LexerStream* this) {
     while (!token_is_EOF(current = lexer_stream_extract_token(this))) {
         Token* new = malloc(sizeof(Token));
         *new = current;
-        list_add(token_list, new);
+        list_push(token_list, new);
     }
     // Now, either we reached EOS (successfully lexed the entire stream) or corrupted lexeme,
     // in which case lexer_stream_extract_token should have printed error message already.
