@@ -19,7 +19,7 @@ static bool list_is_at_full_capacity(const List* this) {
 }
 static void list_expand(List* this) {
     this->capacity *= 2;
-    this->elements = realloc(this->elements, this->capacity);
+    this->elements = realloc(this->elements, this->capacity); // TODO: realloc mem check
 }
 // maybe in the future add collapse..
 // -------- END: List: private functions --------- //

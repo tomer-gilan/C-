@@ -2,8 +2,8 @@
 // Created by tomer on 23-Sep-26.
 //
 
-#ifndef GIT_CODE_LIST_H
-#define GIT_CODE_LIST_H
+#ifndef C_COMPILER_LIST_H
+#define C_COMPILER_LIST_H
 
 #include "Utils.h"
 
@@ -19,7 +19,7 @@ List* list_create(void (*destroy_element)(void* element));
 
 /**
  * Destroys the @c List .
- * @param this handle to the list
+ * @param this handle to the @c List
  */
 void list_destroy(List* this);
 
@@ -92,4 +92,4 @@ int list_index_of(const List* this, const void* element, int (*compare)(const vo
  */
 bool list_contains(const List* this, const void* element, int (*compare)(const void* first, const void* second));
 
-#endif //GIT_CODE_LIST_H
+#endif //C_COMPILER_LIST_H
