@@ -80,6 +80,7 @@ typedef struct {
 } Token; ///< tagged union
 
 extern const Token TOKEN_EOF;
+extern const char* const token_spelling_table[TOKEN_KIND__COUNT];
 
 bool token_is_EOF(Token token);
 

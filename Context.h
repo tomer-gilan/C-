@@ -6,7 +6,7 @@
 #define C_COMPILER_CONTEXT_H
 
 #include "List.h"
-#include "Location.h"
+#include "Position.h"
 
 typedef struct {
     List* identifiers_table;        ///< @c List of @c Slice

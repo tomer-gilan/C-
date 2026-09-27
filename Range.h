@@ -5,14 +5,14 @@
 #ifndef C_COMPILER_RANGE_H
 #define C_COMPILER_RANGE_H
 
-#include "Location.h"
+#include "Position.h"
 
 /**
  * a @c Range is similar in nature to physics vector. It has a start (@c Location) and a @c length .
  * As of today is it mostly used by @c Token to represent its exact spelling.
  */
 typedef struct {
-    Location location;
+    Position position;
     int length;
 } Range;
 

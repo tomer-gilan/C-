@@ -2,15 +2,18 @@
 // Created by tomer on 23-Sep-26.
 //
 
-#ifndef GIT_CODE_ERROR_H
-#define GIT_CODE_ERROR_H
+#ifndef C_COMPILER_ERROR_H
+#define C_COMPILER_ERROR_H
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "List.h"
 #include "Utils.h"
+#include "Range.h"
+#include "Context.h"
 
 typedef enum {
     DIAGNOSTIC_SEVERITY_NOTE,
@@ -20,31 +23,27 @@ typedef enum {
     DIAGNOSTIC_SEVERITY__COUNT
 } DiagnosticSeverity;
 typedef enum {
-    DIAGNOSTIC_CODE_DIAGNOSTIC_UNKNOWN_DIAGNOSTIC_CODE,
     DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER,
-    DIAGNOSTIC_CODE_LEXER_UNMATCHED_QUOTATION_MARKS,
-    DIAGNOSTIC_CODE_LEXER_UNMATCHED_APOSTROPHE,
-    DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE,
     DIAGNOSTIC_CODE_LEXER_QUOTATION_MARKS_EXPECTED,
-    DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_CHARACTER,
-    DIAGNOSTIC_CODE_LEXER_MISSING_DELIMITER,
-    DIAGNOSTIC_CODE_INDEX_OUT_OF_BOUNDS,
-    DIAGNOSTIC_CODE_LEXER_STRUCTURAL_CHARACTER_ENCOUNTERED,
-    DIAGNOSTIC_CODE_LEXER_NUMERIC_SEQUENCE_OUT_OF_BOUNDS,
-    DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SUFFIX,
-    DIAGNOSTIC_CODE_UNINITIALIZED_TABLE,
-    DIAGNOSTIC_CODE_LEXER_INVALID_PUNCTUATOR_SEQUENCE,
-    DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOS,
-    DIAGNOSTIC_CODE_LEXER_INVALID_CHARACTER_LITERAL_SEQUENCE,
-    DIAGNOSTIC_CODE_INVALID_INTERNAL_STATE,
-    DIAGNOSTIC_CODE__COUNT // sentinel - not actual error code.
+    DIAGNOSTIC_CODE_LEXER_APOSTROPHE_EXPECTED,
+    DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE,
+    DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE,
+    DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS,
+    DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_PREFIX,
+    // sentinel:
+    DIAGNOSTIC_CODE__COUNT
 } DiagnosticCode;
 
-typedef struct Diagnostic Diagnostic;
+typedef struct DiagnosticDescriptor DiagnosticDescriptor;
+typedef struct {
+    DiagnosticCode code;
+    Range range;            ///< the place the @c error / @c warning took place.
+    Context* context;
+} Diagnostic;
 
-void diagnostic_issue(DiagnosticCode code, Position position);
-void diagnostic_issue_string(DiagnosticCode code, Position position, const char* additional_info);
-void diagnostic_issue_char(DiagnosticCode code, Position position, char additional_info);
-void diagnostic_issue_int(DiagnosticCode code, Position position, int additional_info);
+void diagnostic_issue(Diagnostic handle);
+void diagnostic_issue_string(Diagnostic handle, const char* message);
+void diagnostic_issue_char(Diagnostic handle, char message);
+void diagnostic_issue_int(Diagnostic handle, int message);
 
-#endif //GIT_CODE_ERROR_H
+#endif //C_COMPILER_ERROR_H
