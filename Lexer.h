@@ -6,30 +6,18 @@
 #define GIT_CODE_LEXER_H
 
 #include <stdlib.h>
-#include "DataStructures.h"
+#include <errno.h>
 
-// -------- Token Categories -------- //
-typedef enum {
-    KEYWORD = 0,
-    IDENTIFIER,
-    CONSTANT,
-    STRING_LITERAL,
-    PUNCTUATORS
-} TokenCategory;
-// -------- END: Token Categories -------- //
+#include "Diagnostic.h"
+#include "Token.h"
+#include "Globals.h"
 
+typedef struct MunchResult MunchResult;
 
-// -------- Keywords -------- //
-typedef enum {
-    CHAR,
-    ELSE,
-    IF,
-    INT,
-    RETURN,
-    VOID,
-    WHILE
-} TokenKeywordID;
-const char* const keywords_table[] = {
+typedef struct LexerStream LexerStream; // opaque pointer, deliberately chosen so.
+
+// ----------------- static variables ----------------- //
+static const char* const keywords_table[TOKEN_KEYWORD_ID__COUNT] = {
     "char",
     "else",
     "if",
@@ -38,78 +26,7 @@ const char* const keywords_table[] = {
     "void",
     "while"
 };
-typedef struct {
-    TokenKeywordID id;
-} TokenKeyword;
-// -------- END: Keywords -------- //
-
-
-// -------- Identifiers -------- //
-List* identifiers_table = NULL; // populated at runtime.
-typedef struct {
-    int id; // the index in the identifiers_table
-} TokenIdentifier;
-// -------- END: Identifiers -------- //
-
-
-// -------- Constants -------- //
-typedef enum {
-    INTEGER = 0,
-    CHARACTER
-} token_constant_type;
-typedef struct {
-    token_constant_type type;
-    int raw_value; // inferred based on type.
-} TokenConstant;
-// -------- END: Constants -------- //
-
-
-// -------- String Literals -------- //
-List* string_literals_table = NULL; // populated at runtime.
-typedef struct {
-    int id; // the index in the string_literals_table
-} TokenStringLiteral;
-// -------- END: String Literals -------- //
-
-
-// -------- Punctuators -------- //
-typedef enum {
-    TOKEN_PUNCTUATOR_BRACKET_LEFT,       // [
-    TOKEN_PUNCTUATOR_BRACKET_RIGHT,      // ]
-    TOKEN_PUNCTUATOR_PARENTHESES_LEFT,   // (
-    TOKEN_PUNCTUATOR_PARENTHESES_RIGHT,  // )
-
-    TOKEN_PUNCTUATOR_BRACE_LEFT,         // {
-    TOKEN_PUNCTUATOR_BRACE_RIGHT,        // }
-    TOKEN_PUNCTUATOR_AMPERSAND,
-    TOKEN_PUNCTUATOR_STAR,
-
-    TOKEN_PUNCTUATOR_PLUS,
-    TOKEN_PUNCTUATOR_MINUS,
-    TOKEN_PUNCTUATOR_TILDA,
-    TOKEN_PUNCTUATOR_EXCLAMATION_MARK,
-
-    TOKEN_PUNCTUATOR_FORWARD_SLASH,
-    TOKEN_PUNCTUATOR_PERCENTAGE,
-    TOKEN_PUNCTUATOR_HAT,
-    TOKEN_PUNCTUATOR_ASSIGNMENT,
-
-    TOKEN_PUNCTUATOR_LEFT_SHIFT,
-    TOKEN_PUNCTUATOR_RIGHT_SHIFT,
-    TOKEN_PUNCTUATOR_GREATER,
-    TOKEN_PUNCTUATOR_SMALLER,
-
-    TOKEN_PUNCTUATOR_GREATER_EQUALS,
-    TOKEN_PUNCTUATOR_SMALLER_EQUALS,
-    TOKEN_PUNCTUATOR_EQUALS,
-    TOKEN_PUNCTUATOR_NOT_EQUALS,
-
-    TOKEN_PUNCTUATOR_BAR,
-    TOKEN_PUNCTUATOR_LOGICAL_AND,
-    TOKEN_PUNCTUATOR_LOGICAL_OR,
-    TOKEN_PUNCTUATOR_SEMICOLON
-} TokenPunctuatorID;
-const char* punctuators_table[] = {
+static const char* const punctuators_table[TOKEN_PUNCTUATOR_ID__COUNT] = {
     "[", "]", "(", ")",
     "{", "}", "&", "*",
     "+", "-", "~", "!",
@@ -118,56 +35,108 @@ const char* punctuators_table[] = {
     ">=", "<=", "==", "!=",
     "|", "&&", "||", ";"
 };
-typedef struct {
-    TokenPunctuatorID id;
-} TokenPunctuator;
-// -------- END: Punctuators -------- //
 
-typedef struct {
-    TokenCategory category;
-    void* data;
-} Token;
+// ----------------- helpers ----------------- //
+/**
+ *
+ * @param string string
+ * @return the keyword id that the string represents. -1 if no not found.
+ */
+static TokenKeywordID lexer_get_keyword_id_by_string(const char* const string) {
+    return utils_string_array_index_of(string, keywords_table, TOKEN_KEYWORD_ID__COUNT);
+}
+/**
+ *
+ * @param string string
+ * @return the punctuator id that the string represents. -1 if no not found.
+ */
+static TokenPunctuatorID lexer_get_punctuator_id_by_string(const char* const string) {
+    return utils_string_array_index_of(string, punctuators_table, TOKEN_PUNCTUATOR_ID__COUNT);
+}
 
-// -------- Lexing Logic -------- //
+// ----------------- LexerStream ----------------- //
 
-typedef struct {
-    int SPI; // SPI: Stream Position Indicator. i.e., the index of the next char to parse.
-    char* data;
-} LexerStream;
-
+// C-tor and D-tor:
 /**
  * Create a new LexerStream struct.
  * @param data the lexeme that the lexer should parse
+ * @param size the size of data
  * @return a LexerStream handle
  */
-LexerStream* lexer_stream_create(const char* data);
+LexerStream* lexer_stream_create(const char* data, int size);
 
 /**
  * Destroys the LexerStream handle
- * @param handle
+ * @param this a handle to the lexer stream
  */
-void lexer_stream_destroy(LexerStream* handle);
+void lexer_stream_destroy(LexerStream* this);
 
+// Peeking, Popping:
 /**
  * Peeks the current char of the lexeme.
- * @param handle
+ * @param this a handle to the lexer stream
+ * @return the current char of the lexeme. LEXER_EOS if EOS was reached.
  */
-char lexer_stream_peek(const LexerStream* handle);
+byte lexer_stream_peek(const LexerStream* this);
 
 /**
- * Retrieves the current byte of the lexeme, then advances SPI.
- * @param handle
- * @return the current byte of the lexeme.
+ * Retrieves the current char of the lexeme, then advances SPI.
+ * @param this a handle to the lexer stream
+ * @return the current char of the lexeme.
  */
-char lexer_stream_pop(LexerStream* handle);
+byte lexer_stream_pop(LexerStream* this);
 
+/**
+ * Peeks a character, relative to SPI.
+ * @param this a handle to the lexer stream
+ * @param offset the relative distance between SPI and the peeked character.
+ * @return the peeked character relative to SPI. LEXER_EOS if EOS was reached.
+ */
+byte lexer_stream_peek_at(const LexerStream* this, unsigned int offset);
+
+/**
+ * Skips "offset" bytes from SPI
+ * @attention if fewer bytes than offset remain until EOS, SPI will be capped and set to the last valid position.
+ * @param this a handle to the lexer stream
+ * @param offset the relative distance between SPI and the next position.
+ */
+void lexer_stream_skip(LexerStream* this, unsigned int offset);
+
+/**
+ * Peeks the current ESCAPED char of the lexeme.
+ * @attention assumes we are inside a literal (i.e. within the ("), (') walls).
+ * Also, it may SYNTHETICALLY escape the char, depending on the character.
+ * (more on that in lexer_is_synthetically_escaped)
+ * @param this a handle to the lexer stream
+ * @param delimiter (") or ('), according to which type of literal we're peeking from.
+ * @return the current ESCAPED char of the lexeme.
+ */
+byte lexer_stream_peek_escaped(const LexerStream* this, byte delimiter);
+
+/**
+ * Retrieves the current ESCAPED char of the lexeme, then advances SPI.
+ * @attention assumes we are inside a literal (i.e. within the ("), (') walls).
+ * Also, it may SYNTHETICALLY escape the char, depending on the character.
+ * (more on that in lexer_is_synthetically_escaped)
+ * @param this a handle to the lexer stream
+ * @param delimiter (") or ('), according to which type of literal we're peeking from.
+ * @return the current ESCAPED char of the lexeme.
+ */
+byte lexer_stream_pop_escaped(LexerStream* this, byte delimiter);
+
+// Tokenizing:
 /**
  * extract the next token based on the lexeme.
- * @param handle
+ * @param this a handle to the lexer stream
  * @return the next token based on the lexeme.
  */
-Token* lexer_stream_extract_token(LexerStream* handle);
+Token lexer_stream_extract_token(LexerStream* this);
 
-// -------- END: Lexing Logic -------- //
+/**
+ * Retrieves a token list based on the lexeme.
+ * @param this a handle to the list
+ * @return a token list based on the lexeme.
+ */
+List* lexer_stream_extract_all_tokens(LexerStream* this);
 
 #endif //GIT_CODE_LEXER_H

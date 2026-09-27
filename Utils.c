@@ -9,14 +9,14 @@ char* utils_allocate_and_copy_string(const char* const source) {
     strcpy(copy, source);
     return copy;
 }
-bool utils_is_alpha(const char c) {
-    return  ('A' <= c && c <= 'Z') ||
-            ('a' <= c && c <= 'z');
-}
-bool utils_is_numeric(const char c) {
-    return '0' <= c && c <= '9';
+
+int utils_string_array_index_of(const char* const string, const char* const* const arr, const unsigned int arr_length) {
+    for (int i = 0; i < arr_length; ++i)
+        if (strcmp(arr[i], string) == 0)
+            return i;
+    return -1;
 }
 
-int utils_char_to_digit(const char c) {
-    return c - '0';
+int list_string_strcmp(const void* const first, const void* const second) {
+    return strcmp(first, second);
 }

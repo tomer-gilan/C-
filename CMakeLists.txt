@@ -7,9 +7,13 @@ add_executable(git_code
         main.c
         Lexer.c
         Lexer.h
-        Error.c
-        Error.h
+        Diagnostic.c
+        Diagnostic.h
         DataStructures.c
         DataStructures.h
         Utils.c
-        Utils.h)
+        Utils.h
+        Token.c
+        Token.h
+        Globals.c
+        Globals.h)
