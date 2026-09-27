@@ -9,9 +9,9 @@
 #include "Location.h"
 
 typedef struct {
-    List* identifiers_table;
-    List* string_literals_table;
-    List* source_file_table;
+    List* identifiers_table;        ///< @c List of @c Slice
+    List* string_literals_table;    ///< @c List of @c char* (@c string)
+    List* source_file_table;        ///< @c List of @c SourceFile
 } Context;
 
 /**
