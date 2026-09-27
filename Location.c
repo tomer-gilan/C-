@@ -4,9 +4,6 @@
 
 #include "Location.h"
 
-// --------- Position ------------- //
-const Location LOCATION_EMPTY = {.line = 0, .column = 0};
-
 void location_set_new_line(Location* const this) {
     this->column = 0;
     this->line++;

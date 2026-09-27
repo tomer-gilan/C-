@@ -2,38 +2,30 @@
 // Created by tomer on 27-Sep-26.
 //
 
-#ifndef GIT_CODE_LOCATION_H
-#define GIT_CODE_LOCATION_H
-
-// -------------- Position ---------------- //
+#ifndef C_COMPILER_LOCATION_H
+#define C_COMPILER_LOCATION_H
 
 typedef struct {
-    const char* name;
-    const char* text;
-    int length;
-} SourceFile;
-
-typedef struct {
-    SourceFile* file;
+    int source_file_index; ///< see @c Context 's @c source_file_table for more info
     int line;
     int column;
 } Location;
 
 /**
- * Sets the line and column of the location to a new line
+ * Sets the @c line and @c column of the @c Location to a new-line-position.
  * @param this a handle to the position
  */
 void location_set_new_line(Location* this);
 /**
- * advances column 'n' steps.
+ * advances column @b n steps.
  * @param this a handle to the position
- * @param n how much to advance 'column'
+ * @param n how much to advance @c column
  */
 void location_advance(Location* this, unsigned int n);
 /**
- * increments column
+ * increments @c column
  * @param this a handle to the position
  */
 void location_increment(Location* this);
 
-#endif //GIT_CODE_LOCATION_H
+#endif //C_COMPILER_LOCATION_H
