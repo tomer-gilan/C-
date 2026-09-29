@@ -6,10 +6,10 @@
 #define C_COMPILER_CONTEXT_H
 
 #include "List.h"
-#include "Position.h"
+#include "FilePosition.h"
 
 typedef struct {
-    List* identifiers_table;        ///< @c List of @c Slice
+    List* identifiers_table;        ///< @c List of @c StringView
     List* string_literals_table;    ///< @c List of @c char* (@c string)
     List* source_file_table;        ///< @c List of @c SourceFile
 } Context;

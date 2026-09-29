@@ -9,17 +9,20 @@ Context* context_create(const char* source_file_path) {
     *context = (Context){
         .identifiers_table      = list_create(NULL),
         .string_literals_table  = list_create(NULL),
-        .source_file_table      = list_create(NULL)
+        .source_file_table      = list_create(source_file_list_destroy)
     };
     return context;
 }
 void context_destroy(Context* const this) {
+    assert(this->identifiers_table != NULL && "table is NULL");
     list_destroy(this->identifiers_table);
     this->identifiers_table = NULL;
 
+    assert(this->string_literals_table != NULL && "table is NULL");
     list_destroy(this->string_literals_table);
     this->string_literals_table = NULL;
 
+    assert(this->source_file_table != NULL && "table is NULL");
     list_destroy(this->source_file_table);
     this->source_file_table = NULL;
 

@@ -22,11 +22,17 @@ typedef struct {
  * @retval NULL if @b path is invalid
  */
 SourceFile* source_file_create(const char* path);
-
 /**
  * Destroys the @c SourceFile .
  * @param this handle to the @c SourceFile
  */
 void source_file_destroy(SourceFile* this);
+/**
+ * checks if the @b index is in the bounds of @c text
+ */
+bool source_file_is_index_in_bounds(const SourceFile* this, int index);
+
+// for list.h
+void source_file_list_destroy(void* this);
 
 #endif //C_COMPILER_SOURCEFILE_H

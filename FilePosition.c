@@ -2,17 +2,17 @@
 // Created by tomer on 27-Sep-26.
 //
 
-#include "Position.h"
+#include "FilePosition.h"
 
 #include "SourceFile.h"
 
-void line_column_advance(FileLineColumn* const this, const char c) {
+void file_line_column_advance(FileLineColumn* const this, const char c) {
     if (c == '\n') {
         this->column = 0;
         this->line++;
     }
 }
-FileLineColumn position_get_file_line_column(const Position this, const Context* context) {
+FileLineColumn file_position_get_file_line_column(const FilePosition this, const Context* context) {
     assert(context != NULL && "Context was NULL");
     assert(context->source_file_table != NULL && "context->source_file_table was NULL");
 
@@ -21,6 +21,9 @@ FileLineColumn position_get_file_line_column(const Position this, const Context*
 
     FileLineColumn line_column = {.file_name = source_file->name, .line = 1, .column = 1};
     for (int i = 0; i < this.offset; ++i)
-        line_column_advance(&line_column, source_file->text[i]);
+        file_line_column_advance(&line_column, source_file->text[i]);
     return line_column;
+}
+SourceFile* file_position_get_source_file(const FilePosition this, Context* const context) {
+    return list_at(context->source_file_table, this.source_file_index);
 }

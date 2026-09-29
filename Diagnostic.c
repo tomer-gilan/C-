@@ -32,7 +32,7 @@ static bool diagnostic_is_valid_code(const DiagnosticCode code) {
 void diagnostic_issue(const Diagnostic handle) {
     assert(diagnostic_is_valid_code(handle.code) && "Unknown diagnostic code!");
 
-    const FileLineColumn file_line_column = position_get_file_line_column(handle.range.position, handle.context);
+    const FileLineColumn file_line_column = file_position_get_file_line_column(handle.range.position, handle.context);
     fprintf(stderr,"%s:%d:%d: [%s] %s:",
         file_line_column.file_name, file_line_column.line, file_line_column.column,
         diagnostic_severity_table[diagnostics_table[handle.code].severity],

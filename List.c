@@ -33,13 +33,15 @@ static bool list_is_index_in_bounds(const List* const this, const int index) {
 }
 
 List* list_create(void (*destroy_element)(void* element))  {
+    assert(destroy_element != NULL && "Must provide valid destroy_element callback");
+
     List* list = malloc(sizeof(List));
     assert(list != NULL && "malloc failed");
     *list = (List){
         .size = 0,
         .capacity = 0,
         .elements = malloc(sizeof(void*) * 1),
-        .destroy_element = destroy_element == NULL ? free : destroy_element
+        .destroy_element = destroy_element
     };
     return list;
 }

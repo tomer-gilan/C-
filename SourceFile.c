@@ -59,3 +59,10 @@ void source_file_destroy(SourceFile* const this) {
     free(this->text);
     free(this);
 }
+bool source_file_is_index_in_bounds(const SourceFile* this, const int index) {
+    return 0 <= index && index < this->length;
+}
+
+void source_file_list_destroy(void* this) {
+    source_file_destroy(this);
+}

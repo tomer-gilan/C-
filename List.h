@@ -11,8 +11,8 @@ typedef struct List List;
 
 /**
  * Creates a new @c List
- * @attention if @b destroy_element is @c NULL, it will default to @c free()
- * @param destroy_element a function that takes an element and destroys it
+ * @warning Asserts @b destroy_element is NOT @c NULL. You may pass @c free as a 'default'
+ * @param destroy_element a function that takes an element and destroys it.
  * @return a list handle
  */
 List* list_create(void (*destroy_element)(void* element));
