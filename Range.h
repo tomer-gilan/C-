@@ -17,7 +17,7 @@ typedef struct {
     int length;
 } Range;
 
-StringView range_to_string_view(Range this, const Context* context);
+StringView (Range this, const Context* context);
 /**
  * generates a @c Range based on two @c FilePosition.
  * @warning asserts both are sourced at the same file (since it's meaningless to talk about a range starting at one

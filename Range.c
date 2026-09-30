@@ -5,7 +5,13 @@
 #include "Range.h"
 
 StringView range_to_string_view(const Range this, const Context* const context) {
-    const SourceFile* source = list_at(context->source_file_table, this.position.source_file_index);
+    assert(this.length >= 0 && "invalid range length (negative)");
+    assert(source_file_is_index_in_bounds(
+        file_position_get_source_file_const(this.position, context),
+        this.position.offset + this.length)
+        && "invalid range (outside of SourceFile bounds)");
+
+    const SourceFile* source = list_at_const(context->source_file_table, this.position.source_file_index);
     return (StringView){
         .data = source->text + this.position.offset,
         .length = this.length
