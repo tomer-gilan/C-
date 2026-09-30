@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-typedef unsigned char byte;
-
 // -------------------- string utils -------------------- //
 /**
  * Allocated a new string, and copies the content of source to it.
