@@ -18,11 +18,11 @@ static bool is_file_path_delimiter(const char c) {
  * @return the substring of @b path containing the file name (anything after the last @c /).
  */
 static const char* get_file_name(const char* const path) {
-    const char* lastSlashIndex;
-    for (lastSlashIndex = path; *lastSlashIndex != '\0' && !is_file_path_delimiter(*lastSlashIndex); ++lastSlashIndex);
-    if (*lastSlashIndex == '\0')
-        return path; // did not find any delimiters, so returning the entire string.
-    return ++lastSlashIndex; // returning substring AFTER last occurrence.
+    int last_delimiter_index = -1;
+    for (int i = 0; path[i] != '\0'; ++i)
+        if (is_file_path_delimiter(path[i]))
+            last_delimiter_index = i;
+    return &(path[last_delimiter_index + 1]); // returning substring AFTER last occurrence.
 }
 
 SourceFile* source_file_create(const char* const path) {
