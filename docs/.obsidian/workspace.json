@@ -83,7 +83,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 343.3359184265137
+    "width": 343.3359184265137,
+    "collapsed": true
   },
   "right": {
     "id": "ed661377e3837690",
@@ -99,6 +100,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "reviews/2026-09-30-code-review.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,10 +191,11 @@
   },
   "active": "652088618281ae42",
   "lastOpenFiles": [
-    "UML.pptx",
-    "~$UML.pptx",
-    "research.md",
+    "research.md.tmp.6700.1a52e4eae597",
     "reviews/2026-09-30-code-review.md",
+    "~$UML.pptx",
+    "UML.pptx",
+    "research.md",
     "reviews",
     "README.md",
     "overview.md",
@@ -218,7 +221,6 @@
     "Lexer.md",
     "code/Token.h~",
     "code/Location.h~",
-    "code/Location.c~",
     "code/README.md",
     "deprecated/C~~_____deprecated/docs/Cheat_Sheets/Doxygen_Cheat_Sheet.md",
     "deprecated/C~~_____deprecated/docs/Cheat_Sheets/CLion_Cheat_Sheet.md",

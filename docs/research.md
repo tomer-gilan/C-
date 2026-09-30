@@ -81,6 +81,19 @@ Measures which parts of the code the tests actually executed. It tells you what 
 
 ---
 
+## Compile-time checks: `_Static_assert`
+
+From the 2026-09-30 code review (`reviews/2026-09-30-code-review.md`, Minor → Token.h): the "DO NOT FORGET TO UPDATE THE ALIASES" comment in `Token.h` is a job for the compiler. C11 has `_Static_assert`.
+
+- [ ] What `_Static_assert(constant-expression, "message")` does (C11 §6.7.10), and where it's allowed: file scope, block scope, inside a struct?
+- [ ] What counts as an integer constant expression (C11 §6.6)? Are enum constants one? Is `sizeof` of an array? Is a `const int` variable? (It isn't in C, unlike C++.)
+- [ ] Go through the aliases at the end of `TokenKind` and ask, for each one, which relationship `_Static_assert` could check. For example: is `TOKEN__PUNC_LAST` really the member just before `TOKEN__SPELLABLE_COUNT`? Is `TOKEN__KW_LAST` right before `TOKEN__PUNC_FIRST`?
+- [ ] Which mistakes it **can't** catch. For example, a new keyword added after `TOKEN_KW_RETURN` without updating `TOKEN__KW_LAST` still compiles if the checks only compare aliases with each other. Which check would catch that one?
+- [ ] Can it check that `token_kind_spelling_table` has an entry for every spellable kind? (Hint: an array's size vs. its *initialized* entries, and designated initializers.) If not, that belongs in a unit test (see `testing.md`).
+- [ ] Other places in the codebase where a comment says "keep X in sync with Y" or a table must match an enum (`diagnostics_table` vs. `DiagnosticCode`), and whether a static assert fits there.
+
+---
+
 ## Unit testing
 
 Background and decisions are in `testing.md`. Open questions:

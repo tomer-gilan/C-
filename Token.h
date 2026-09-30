@@ -61,9 +61,9 @@ typedef enum {
     // String Literals
     TOKEN_STRING_LITERAL,
     // Specials
-    TOKEN_KIND_NONE,
-    TOKEN_KIND_UNKNOWN,
-    TOKEN_KIND_EOF,
+    TOKEN_NONE,
+    TOKEN_UNKNOWN,
+    TOKEN_EOF,
     // Aliases
     TOKEN__KW_FIRST = TOKEN_KW_CHAR,
     TOKEN__KW_LAST = TOKEN_KW_RETURN,

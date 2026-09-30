@@ -24,7 +24,7 @@ Lexer* lexer_create(Context* const context, const int source_file_index) {
         .cursor = {.source_file_index = source_file_index, .offset = 0},
         .context = context,
         .token_eof = {
-            .kind = TOKEN_KIND_EOF,
+            .kind = TOKEN_EOF,
             .range = {
                 .position = {
                     .source_file_index = source_file_index,
@@ -375,7 +375,7 @@ static Token lexer_get_unknown_token(Lexer* const this) {
     const FilePosition start = this->cursor;
     lexer_pop(this);
     return (Token){
-        .kind = TOKEN_KIND_UNKNOWN,
+        .kind = TOKEN_UNKNOWN,
         .range = range_from_file_positions(start, this->cursor)
     };
 }

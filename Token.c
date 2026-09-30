@@ -53,11 +53,11 @@ TokenKind token_kind_from_spelling(const StringView spelling) {
     for (TokenKind kind = TOKEN__SPELLABLE_FIRST; kind <= TOKEN__SPELLABLE_LAST; ++kind)
         if (string_view_equals(spelling, token_kind_spelling_table[kind]))
             return kind;
-    return TOKEN_KIND_NONE;
+    return TOKEN_NONE;
 }
 
 bool token_is_EOF(const Token token) {
-    return token.kind == TOKEN_KIND_EOF;
+    return token.kind == TOKEN_EOF;
 }
 bool token_kind_is_keyword(const TokenKind kind) {
     return TOKEN__KW_FIRST <= kind && kind <= TOKEN__KW_LAST;

@@ -247,3 +247,27 @@ All allocation goes through `xmalloc` / `xrealloc` (and maybe `xstrdup`) wrapper
 ### Consequences
 - Call sites never check for `NULL` from allocation, which removes a lot of noise.
 - The redundant `assert(... && "malloc failed")` lines go away.
+
+---
+
+## ADR-014: Punctuators are lexed by growing one character at a time, which requires a prefix-closed punctuator set
+
+- **Status:** Accepted
+- **Date:** 2026-09-30
+
+### Context
+`lexer_lex_punctuator` does maximal munch by extending the candidate spelling one character at a time. It keeps a character only if the longer spelling is still a punctuator (`token_kind_from_spelling`), and stops at the first one that isn't. It can't pop a character and check it afterwards, because there's no un-pop. `is_char_part_of_punctuator` decides whether to enter this path at all: it's true for any character that appears anywhere in any punctuator's spelling.
+
+This only works if the punctuator set is **prefix-closed**: every prefix of every punctuator is itself a punctuator. In particular, every character that appears in a punctuator is a one-character punctuator.
+
+The C~~ punctuator set (`SUBSET.md`, A.1.7) is prefix-closed today: `<<` `>>` `<=` `>=` `==` `!=` `&&` `||` are the only multi-character punctuators, and `<` `>` `=` `!` `&` `|` are all in the set.
+
+### Decision
+Keep the one-character-at-a-time munch, and treat "the punctuator set is prefix-closed" as an **invariant** of the lexer. It isn't checked in code yet, and that is accepted for now.
+
+### Consequences
+- Adding a punctuator whose prefixes aren't all punctuators breaks the lexer:
+  - A missing **one-character** prefix (e.g. keeping `||` but dropping `|`) makes `lexer_lex_punctuator` return a **zero-length token without advancing**, so `lexer_lex_source_file` **loops forever**, even on valid input.
+  - A missing **longer** prefix (e.g. standard C's `...` without `..`) produces **wrong tokens**: `...` lexes as three `.` tokens.
+- So any change to the punctuator set in `SUBSET.md` or `Token.h` must re-check this invariant, or change the munching algorithm.
+- Possible guards, when wanted: a unit test that checks every prefix of every punctuator spelling is in the table, and/or an assert that every non-EOF token has length > 0 (a progress guarantee that covers every lexing path). See `reviews/2026-09-30-code-review.md`, M5.
