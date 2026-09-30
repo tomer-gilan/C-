@@ -21,13 +21,13 @@ typedef struct {
 } FilePosition;
 
 typedef struct {
-    char* file_name;
+    const char* file_name;
     int line; ///< 1-based line indexing
     int column; ///< 1-based column indexing
 } FileLineColumn;
 
 /**
- * advances position according to c. if c is '\n', column resets and line++.
+ * advances position according to @b c. if @b c is \n, column resets and line++.
  */
 void file_line_column_advance(FileLineColumn* this, char c);
 /**

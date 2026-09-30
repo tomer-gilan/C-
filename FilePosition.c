@@ -17,7 +17,7 @@ FileLineColumn file_position_get_file_line_column(const FilePosition this, const
     assert(context->source_file_table != NULL && "context->source_file_table was NULL");
 
     const SourceFile* source_file = list_at_const(context->source_file_table, this.source_file_index);
-    assert(this.offset <= source_file->length && "Location's offset out of bounds (source_file->length)");
+    assert(this.offset <= source_file->length && "FilePosition's offset out of bounds (source_file->length)");
 
     FileLineColumn file_line_column = {.file_name = source_file->name, .line = 1, .column = 1};
     for (int i = 0; i < this.offset; ++i)
