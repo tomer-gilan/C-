@@ -80,7 +80,7 @@ int list_index_of(const List* this, const void* element, int (*equals)(const voi
  * @param this a handle to the @c List .
  * @param element the list member in question.
  * @param equals the same as in @c list_index_of , see more info there
- * @return the index of @b element in the @c List
+ * @retval true if @b element is in the list.
  * @retval false otherwise.
  */
 bool list_contains(const List* this, const void* element, int (*equals)(const void* first, const void* second));

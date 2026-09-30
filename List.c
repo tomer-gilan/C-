@@ -72,6 +72,7 @@ void* list_pop(List* this) {
 }
 void list_pop_destroy(List* this) {
     assert(this != NULL && "list handle was NULL");
+    assert(!list_is_empty(this) && "list was empty");
     this->destroy_element(list_pop(this));
 }
 void* list_at(List* const this, const int index) {
