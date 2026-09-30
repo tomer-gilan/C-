@@ -24,7 +24,7 @@ character-constant
 * including escaped characters
 ### A.1.7 \[Punctuators]
 punctuator: one of
-	 \[] () {}  -> &
+	 \[] () {} , &
 	 * + - ~  ! / %
 	 << >> > <
 	 <= >= == !=
