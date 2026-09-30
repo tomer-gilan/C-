@@ -2,7 +2,7 @@
 
 A quick-lookup glossary of terms you'll run into while building this compiler. Alphabetical, with a `[stage]` tag and a `(shape)` hint in each heading so you can recognize the term at a glance — the paragraph below is there if you need the full explanation.
 
-For the deep-dive on C's specific grammar (Annex A), see [annex-a-breakdown.md](annex-a-breakdown.md) — this file is the fast lookup; that one is the walkthrough. For the standard's minimum-guaranteed size/nesting limits (identifier length, string literal length, nesting depth, etc.), see [translation-limits.md](translation-limits.md).
+For the deep-dive on C's specific grammar (Annex A), see [annex-a-breakdown.md](annex-a-breakdown.md) — this file is the fast lookup; that one is the walkthrough. For the standard's minimum-guaranteed size/nesting limits (identifier length, string literal length, nesting depth, etc.), see [translation-limits.md](educational/translation-limits.md).
 
 ---
 
