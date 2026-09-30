@@ -4,13 +4,13 @@
 
 #include "FilePosition.h"
 
-#include "SourceFile.h"
-
 void file_line_column_advance(FileLineColumn* const this, const char c) {
     if (c == '\n') {
-        this->column = 0;
+        this->column = 1;
         this->line++;
     }
+    else
+        this->column++;
 }
 FileLineColumn file_position_get_file_line_column(const FilePosition this, const Context* context) {
     assert(context != NULL && "Context was NULL");
@@ -19,10 +19,10 @@ FileLineColumn file_position_get_file_line_column(const FilePosition this, const
     const SourceFile* source_file = list_at_const(context->source_file_table, this.source_file_index);
     assert(this.offset <= source_file->length && "Location's offset out of bounds (source_file->length)");
 
-    FileLineColumn line_column = {.file_name = source_file->name, .line = 1, .column = 1};
+    FileLineColumn file_line_column = {.file_name = source_file->name, .line = 1, .column = 1};
     for (int i = 0; i < this.offset; ++i)
-        file_line_column_advance(&line_column, source_file->text[i]);
-    return line_column;
+        file_line_column_advance(&file_line_column, source_file->text[i]);
+    return file_line_column;
 }
 SourceFile* file_position_get_source_file(const FilePosition this, Context* const context) {
     return list_at(context->source_file_table, this.source_file_index);

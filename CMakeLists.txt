@@ -15,7 +15,15 @@ add_executable(c_compiler
         Utils.h
         Token.c
         Token.h
+        FilePosition.c
+        FilePosition.h
+        SourceFile.c
+        SourceFile.h
         Context.c
         Context.h
-        Location.c
-        Location.h)
+        Driver.c
+        Driver.h
+        Range.c
+        Range.h
+        StringView.c
+        StringView.h)

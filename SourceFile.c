@@ -4,8 +4,6 @@
 
 #include "SourceFile.h"
 
-#include "Utils.h"
-
 /**
  * @param c the character to check
  * @retval true if c is a delimiter ('\' or '/')
@@ -34,6 +32,7 @@ SourceFile* source_file_create(const char* const path) {
 
     fseek(file, 0, SEEK_END); // jump to the end...
     const long size = ftell(file);      // ...position = file size in bytes
+    assert(size != -1 && "Problem with file");
     rewind(file);                       // back to the start
 
     char* buffer = malloc(size + 1);    // +1 for a '\0' terminator

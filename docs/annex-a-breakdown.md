@@ -87,25 +87,25 @@ The full expression grammar, from atomic values up to assignments. **The hierarc
 
 The levels from tightest to loosest:
 
-| Rule | Operators | Example |
-|---|---|---|
-| primary-expression | literals, identifiers, `(expr)` | `42`, `x`, `(a+b)` |
-| postfix-expression | `[]`, `()`, `.`, `->`, `++`, `--` | `arr[i]`, `foo()`, `p->x`, `x++` |
-| unary-expression | `++`, `--`, `&`, `*`, `+`, `-`, `~`, `!`, `sizeof` | `*p`, `&x`, `!flag`, `sizeof(int)` |
-| cast-expression | `(type)` | `(int)3.14` |
-| multiplicative | `*`, `/`, `%` | `a * b` |
-| additive | `+`, `-` | `a + b` |
-| shift | `<<`, `>>` | `x << 2` |
-| relational | `<`, `>`, `<=`, `>=` | `a < b` |
-| equality | `==`, `!=` | `a == b` |
-| AND | `&` | `a & b` |
-| exclusive-OR | `^` | `a ^ b` |
-| inclusive-OR | `\|` | `a \| b` |
-| logical-AND | `&&` | `a && b` |
-| logical-OR | `\|\|` | `a \|\| b` |
-| conditional | `?:` | `a ? b : c` |
-| assignment | `=`, `+=`, `-=`, etc. | `x = 5` |
-| expression (comma) | `,` | `a=1, b=2` |
+| Rule               | Operators                                          | Example                            |
+| ------------------ | -------------------------------------------------- | ---------------------------------- |
+| primary-expression | literals, identifiers, `(expr)`                    | `42`, `x`, `(a+b)`                 |
+| postfix-expression | `[]`, `()`, `.`, `->`, `++`, `--`                  | `arr[i]`, `foo()`, `p->x`, `x++`   |
+| unary-expression   | `++`, `--`, `&`, `*`, `+`, `-`, `~`, `!`, `sizeof` | `*p`, `&x`, `!flag`, `sizeof(int)` |
+| cast-expression    | `(type)`                                           | `(int)3.14`                        |
+| multiplicative     | `*`, `/`, `%`                                      | `a * b`                            |
+| additive           | `+`, `-`                                           | `a + b`                            |
+| shift              | `<<`, `>>`                                         | `x << 2`                           |
+| relational         | `<`, `>`, `<=`, `>=`                               | `a < b`                            |
+| equality           | `==`, `!=`                                         | `a == b`                           |
+| AND                | `&`                                                | `a & b`                            |
+| exclusive-OR       | `^`                                                | `a ^ b`                            |
+| inclusive-OR       | `\|`                                               | `a \| b`                           |
+| logical-AND        | `&&`                                               | `a && b`                           |
+| logical-OR         | `\|\|`                                             | `a \|\| b`                         |
+| conditional        | `?:`                                               | `a ? b : c`                        |
+| assignment         | `=`, `+=`, `-=`, etc.                              | `x = 5`                            |
+| expression (comma) | `,`                                                | `a=1, b=2`                         |
 
 **Gotcha:** The comma operator `,` as an expression (`a=1, b=2`) is the lowest-precedence operator and evaluates both sides but returns the right side. It's distinct from the comma in function arguments. Most compilers rarely use it — safe to skip.  
 **Gotcha:** `constant-expression` is just a conditional-expression that must be evaluable at compile time. Used in array sizes (`int a[10]`), enum values, and `_Static_assert`.  

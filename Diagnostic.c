@@ -26,7 +26,7 @@ static const DiagnosticDescriptor diagnostics_table[DIAGNOSTIC_CODE__COUNT] = {
 };
 
 static bool diagnostic_is_valid_code(const DiagnosticCode code) {
-    return 0 < code && code < DIAGNOSTIC_CODE__COUNT;
+    return 0 <= code && code < DIAGNOSTIC_CODE__COUNT;
 }
 
 void diagnostic_issue(const Diagnostic handle) {

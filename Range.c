@@ -5,8 +5,9 @@
 #include "Range.h"
 
 StringView range_to_string_view(const Range this, const Context* const context) {
+    const SourceFile* source = list_at(context->source_file_table, this.position.source_file_index);
     return (StringView){
-        .data = (const char*)list_at(context->source_file_table, this.position.source_file_index) + this.position.offset,
+        .data = source->text + this.position.offset,
         .length = this.length
     };
 }

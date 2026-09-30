@@ -6,6 +6,7 @@
 #define C_COMPILER_RANGE_H
 
 #include "FilePosition.h"
+#include "StringView.h"
 
 /**
  * a @c Range is similar in nature to physics vector. It has a start (@c Location) and a @c length .

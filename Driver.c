@@ -5,17 +5,23 @@
 #include "Driver.h"
 
 Driver* driver_create(const int argc, const char* const* argv) {
+    if (argc <= 1) {
+        // TODO: issue a diagnostic "missing source file". note that currently there's no way to do it without a context.
+        exit(1); // fatal diagnostic, so exit(1).
+    }
     const char* source_file_path = argv[1]; // TODO: change hard-wiring to command line argument parsing.
+    Context* const context = context_create(source_file_path);
+    if (context == NULL)
+        return NULL;
     Driver* driver = malloc(sizeof (Driver));
     *driver = (Driver){
         .argc = argc,
         .argv = argv,
-        .context = context_create(source_file_path)
+        .context = context
     };
     return driver;
 }
 void driver_destroy(Driver* this) {
     context_destroy(this->context);
-
     free(this);
 }

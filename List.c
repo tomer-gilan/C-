@@ -2,10 +2,7 @@
 // Created by tomer on 23-Sep-26.
 //
 
-#include <assert.h>
-
 #include "List.h"
-#include "Diagnostic.h"
 
 struct List {
     int size;
@@ -22,7 +19,7 @@ static bool list_is_at_full_capacity(const List* this) {
 static void list_expand(List* this) {
     assert(this != NULL && "list handle was NULL");
     this->capacity *= 2;
-    this->elements = realloc(this->elements, this->capacity);
+    this->elements = realloc(this->elements, sizeof(void*) * this->capacity);
     assert(this->elements != NULL && "realloc failed");
 }
 // maybe in the future add collapse..
@@ -39,7 +36,7 @@ List* list_create(void (*destroy_element)(void* element))  {
     assert(list != NULL && "malloc failed");
     *list = (List){
         .size = 0,
-        .capacity = 0,
+        .capacity = 1,
         .elements = malloc(sizeof(void*) * 1),
         .destroy_element = destroy_element
     };
@@ -49,6 +46,8 @@ void list_destroy(List* this)  {
     assert(this != NULL && "list handle was NULL");
     while (!list_is_empty(this))
         list_pop_destroy(this);
+    free(this->elements);
+    free(this);
 }
 int list_get_size(const List* this) {
     assert(this != NULL && "list handle was NULL");
@@ -82,6 +81,7 @@ void* list_at(List* const this, const int index) {
 }
 const void* list_at_const(const List* this, const int index) {
     assert(this != NULL && "list handle was NULL");
+    assert(list_is_index_in_bounds(this, index) && "list index out of bounds");
     return this->elements[index];
 }
 int list_index_of(const List* const this, const void* const element, int (*equals)(const void*, const void*)) {

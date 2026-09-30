@@ -26,12 +26,15 @@ char* utils_allocate_and_copy_string(const char* source);
  * @return the index of 'string' in 'arr' (-1 if not found).
  */
 int utils_string_array_index_of(const char* string, const char* const* arr, unsigned int arr_length);
+
 /**
  * Functionally the exact same as strcmp, just taking void* instead of char*
  * @param first the first string
  * @param second the second string
  * @return the same as strcmp
  */
-int utils_string_strcmp(const void* first, const void* second);
+int utils_string_list_strcmp(const void* first, const void* second);
+// for list.h
+void* utils_string_list_allocate_and_copy(const void* string);
 
 #endif //C_COMPILER_UTILS_H

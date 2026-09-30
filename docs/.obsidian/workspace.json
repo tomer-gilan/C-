@@ -11,10 +11,14 @@
             "id": "652088618281ae42",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "reviews/2026-09-30-code-review.md",
+                "mode": "preview",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "2026-09-30-code-review"
             }
           }
         ]
@@ -185,9 +189,18 @@
   },
   "active": "652088618281ae42",
   "lastOpenFiles": [
-    "conventions.md",
-    "implementation-defined.md",
+    "UML.pptx",
+    "~$UML.pptx",
+    "research.md",
+    "reviews/2026-09-30-code-review.md",
+    "reviews",
     "README.md",
+    "overview.md",
+    "implementation-defined.md",
+    "dictionary.md",
+    "conventions.md",
+    "architecture-decisions.md",
+    "annex-a-breakdown.md",
     "sedwdTdBO",
     "sedCvjaO8",
     "educational/sedQ6A8GH",
@@ -201,25 +214,16 @@
     "code-review-lexer.md",
     "testing.md",
     "testing.md.tmp.11476.a3518cc72bb0",
-    "research.md",
     "TODO.md",
-    "architecture-decisions.md",
     "Lexer.md",
-    "overview.md",
     "code/Token.h~",
     "code/Location.h~",
     "code/Location.c~",
-    "code/Token.c~",
-    "code/Diagnostic.c",
     "code/README.md",
     "deprecated/C~~_____deprecated/docs/Cheat_Sheets/Doxygen_Cheat_Sheet.md",
     "deprecated/C~~_____deprecated/docs/Cheat_Sheets/CLion_Cheat_Sheet.md",
     "deprecated/C~~_____deprecated/docs/translation-limits.md",
     "deprecated/C~~_____deprecated/docs/SUBSET.md",
-    "deprecated/C~~_____deprecated/docs/overview.md",
-    "deprecated/C~~_____deprecated/docs/Lexer.md",
-    "deprecated/C~~_____deprecated/docs/followup-setup-testing-expectations.md",
-    "deprecated/C~~_____deprecated/docs/dictionary.md",
-    "deprecated/C~~_____deprecated/docs/code-review-lexer.md"
+    "deprecated/C~~_____deprecated/docs/overview.md"
   ]
 }

@@ -4,8 +4,6 @@
 
 #include "StringView.h"
 
-#include <stdlib.h>
-
 StringView string_view_from_string(const char* string) {
     return (StringView){.data = string, .length = (int)strlen(string)};
 }
@@ -16,7 +14,7 @@ bool string_view_equals(const StringView first, const StringView second) {
 
 // for list.h usage:
 int string_view_list_equals(const void* const first, const void* const second) {
-    return string_view_equals(*(StringView*)first, *(StringView*)second);
+    return string_view_equals(*(StringView*)first, *(StringView*)second) ? 0 : 1;
 }
 void* string_view_list_duplicate(const void* const string_view) {
     StringView* new = malloc(sizeof(StringView));

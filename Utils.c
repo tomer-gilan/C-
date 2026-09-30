@@ -17,6 +17,9 @@ int utils_string_array_index_of(const char* const string, const char* const* con
     return -1;
 }
 
-int list_string_strcmp(const void* const first, const void* const second) {
+int utils_string_list_strcmp(const void* const first, const void* const second) {
     return strcmp(first, second);
+}
+void* utils_string_list_allocate_and_copy(const void* const string) {
+    return utils_allocate_and_copy_string(string);
 }

@@ -5,8 +5,10 @@
 #ifndef C_COMPILER_CONTEXT_H
 #define C_COMPILER_CONTEXT_H
 
+#include <assert.h>
+
 #include "List.h"
-#include "FilePosition.h"
+#include "SourceFile.h"
 
 typedef struct {
     List* identifiers_table;        ///< @c List of @c StringView

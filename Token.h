@@ -9,13 +9,12 @@
 
 #include "Range.h"
 #include "StringView.h"
-#include "List.h"
 
 // Token Kinds. WHEN ADDING A NEW ONE, DO NOT FORGOT TO UPDATE THE ALIASES AT THE END!!
 typedef enum {
     // First, all spellable token kinds:
     // Keywords
-    TOKEN_KW_CHAR,              // char
+    TOKEN_KW_CHAR = 0,          // char
     TOKEN_KW_INT,               // int
     TOKEN_KW_VOID,              // void
     TOKEN_KW_WHILE,             // while
@@ -62,7 +61,8 @@ typedef enum {
     // String Literals
     TOKEN_STRING_LITERAL,
     // Specials
-    TOKEN_KIND_NONE = 0,
+    TOKEN_KIND_NONE,
+    TOKEN_KIND_UNKNOWN,
     TOKEN_KIND_EOF,
     // Aliases
     TOKEN__KW_FIRST = TOKEN_KW_CHAR,

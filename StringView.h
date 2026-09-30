@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef struct {
     const char* data;

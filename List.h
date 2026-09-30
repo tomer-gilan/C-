@@ -5,6 +5,8 @@
 #ifndef C_COMPILER_LIST_H
 #define C_COMPILER_LIST_H
 
+#include <assert.h>
+
 #include "Utils.h"
 
 typedef struct List List;

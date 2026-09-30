@@ -5,12 +5,16 @@
 #include "Context.h"
 
 Context* context_create(const char* source_file_path) {
+    SourceFile* const source = source_file_create(source_file_path);
+    if (source == NULL)
+        return NULL;
     Context* context = malloc(sizeof (Context));
     *context = (Context){
-        .identifiers_table      = list_create(NULL),
-        .string_literals_table  = list_create(NULL),
+        .identifiers_table      = list_create(free),
+        .string_literals_table  = list_create(free),
         .source_file_table      = list_create(source_file_list_destroy)
     };
+    list_push(context->source_file_table, source);
     return context;
 }
 void context_destroy(Context* const this) {

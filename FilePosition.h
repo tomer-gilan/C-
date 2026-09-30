@@ -9,9 +9,7 @@
 #include <stdlib.h>
 
 #include "Context.h"
-#include "Range.h"
 #include "SourceFile.h"
-#include "StringView.h"
 
 /**
  * A @c FilePosition represents a certain place within a @c SourceFile.
@@ -24,8 +22,8 @@ typedef struct {
 
 typedef struct {
     char* file_name;
-    int line;
-    int column;
+    int line; ///< 1-based line indexing
+    int column; ///< 1-based column indexing
 } FileLineColumn;
 
 /**
