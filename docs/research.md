@@ -1,0 +1,91 @@
+# Research
+
+Topics to study. Each one lists the questions to answer, not the answers.
+
+---
+
+## Translation phases (C11 §5.1.1.2)
+
+The standard defines the "stages of compilation" as **8 translation phases** (not 7). My compiler has no preprocessor, but several phases still apply to the lexer.
+
+- [ ] Read §5.1.1.2 in N1570 and summarize each phase in one line.
+- [ ] Figure out which phases my compiler performs, which it skips, and where each one lives (lexer, parser, or nowhere):
+  - [ ] **Phase 1**: source character mapping (and trigraphs). Relates to the "7-bit ASCII source only" idea: is that a phase-1 decision?
+  - [ ] **Phase 2**: backslash-newline **line splicing**. This is *not* part of the preprocessor directives. Does SUBSET.md include it or exclude it? What does my lexer do with `in\` + newline + `t` today?
+  - [ ] **Phase 3**: decomposition into preprocessing tokens; **comments are replaced by one space**. My lexer still has a TODO for comments. Which comment forms are in the subset?
+  - [ ] **Phase 4**: preprocessing directives and macro expansion. Out of scope (SUBSET.md), but know where the boundary is.
+  - [ ] **Phase 5**: escape sequences in character constants and string literals are converted. My lexer already does this. Confirm it matches the standard's list.
+  - [ ] **Phase 6**: **adjacent string literal concatenation** (`"ab" "cd"` → `"abcd"`). My lexer doesn't do this. Is it in the subset? If yes, does it belong in the lexer, a pass between lexer and parser, or the parser?
+  - [ ] **Phase 7**: preprocessing tokens become tokens; syntactic and semantic analysis (my lexer, parser, semantic analysis).
+  - [ ] **Phase 8**: linking (handed off to gcc/`ld`, per ADR-001).
+- [ ] Record the outcome in SUBSET.md (what's supported) and, where it's a design choice, in `architecture-decisions.md`.
+
+---
+
+## Source slices (removing the 4095-byte literal limit)
+
+Background: a *slice* (or *view*) is a (pointer or offset, length) pair that refers to text that already exists somewhere, instead of copying it. Your `Range` and `StringView` are slices, and identifiers already work this way: the token's `Range` points into the source text, and the identifier table stores `StringView`s into it. String and character literals don't. The lexer decodes them into a fixed 4096-byte `malloc`'d buffer, which is where the 4095-byte limit (`implementation-defined.md`) and the old silent truncation come from.
+
+- [ ] Why can't a string literal's *contents* just be a slice of the source, the way an identifier's can? (Hint: what do escape sequences do to the length?)
+- [ ] What are the options for decoding without a fixed-size buffer?
+  - Decode into a growable buffer (`realloc` as needed).
+  - Measure first, then allocate exactly: one pass counts the decoded length, a second pass writes it.
+  - Keep only the `Range` on the token and decode lazily, when the string table (or codegen) needs the bytes.
+- [ ] Note that the decoded length is never *longer* than the spelling (every escape is ≥ 2 characters that decode to 1 byte). How could that give a simple exact-or-larger allocation?
+- [ ] Which of these fits ADR-010 (literals interned as bytes + length) best?
+- [ ] Once it's unbounded: remove the limit from `implementation-defined.md`, with a new ADR or an update to the existing entry.
+
+---
+
+## Memory checking: Valgrind
+
+The build already runs on Ubuntu (CLion remote toolchain, ADR-001), so all of this is available.
+
+- [ ] **Valgrind (Memcheck)**: runs the unmodified binary on a simulated CPU and tracks every allocation and memory access. Slow (~20-50x), needs no recompilation.
+  - [ ] Run: `valgrind --leak-check=full --show-leak-kinds=all ./c_compiler test.c`
+  - [ ] Learn the leak categories: *definitely lost*, *indirectly lost*, *possibly lost*, *still reachable*. Which ones matter, and why "indirectly lost" usually goes away once you fix the "definitely lost" block that owned it.
+  - [ ] Learn to read the other errors: invalid read/write, use of uninitialised value, invalid free. `--track-origins=yes` shows where an uninitialised value came from.
+- [ ] `ctest -T memcheck`: running the whole test suite under Valgrind.
+
+---
+
+## Sanitizers
+
+Compiler instrumentation: the compiler inserts checks into the binary at build time. Much faster than Valgrind (~2x), and errors are reported at the exact moment they happen, with a stack trace.
+
+- [ ] **How they work**: shadow memory, redzones around allocations, instrumented loads/stores. Why that makes them fast.
+- [ ] **AddressSanitizer (ASan)**: `-fsanitize=address -fno-omit-frame-pointer -g`. Heap/stack/global buffer overflows, use-after-free, double free.
+- [ ] **LeakSanitizer (LSan)**: included in ASan on Linux; reports leaks at exit. How it compares to Valgrind's leak report.
+- [ ] **UndefinedBehaviorSanitizer (UBSan)**: `-fsanitize=undefined`. Signed overflow, bad shifts, misaligned access, out-of-range enum/bool values, etc. Can be combined with ASan. Look at `-fno-sanitize-recover` (stop on the first error instead of continuing).
+- [ ] **MemorySanitizer (MSan)**: uninitialised reads. Clang-only, and needs everything instrumented. Is it worth it here, given Valgrind covers the same thing?
+- [ ] Which sanitizers can be combined in one build, and which can't (ASan + MSan, ASan + Valgrind).
+- [ ] Reading a sanitizer report: the error type, the access, where the memory was allocated and freed.
+- [ ] Wire a sanitizer build into CMake as a separate build type or CLion profile, so the plain Debug build stays plain. Run the test suite under it.
+- [ ] Also turn on warnings: `-Wall -Wextra` (maybe `-Wpedantic`, `-Wconversion` later).
+- [ ] The limit shared by all dynamic tools: they only find bugs on paths that actually *run*, so they're only as good as the test inputs (see "Code coverage").
+
+---
+
+## Code coverage
+
+Measures which parts of the code the tests actually executed. It tells you what is **untested**. It does not tell you that tested code is correct.
+
+- [ ] **Kinds of coverage**: function, line (statement), branch, condition. Why 100% line coverage can still miss a branch (`if` without `else`, short-circuit `&&`/`||`). What MC/DC is, and why safety-critical code requires it.
+- [ ] **gcov**: GCC's coverage tool. Build with `--coverage` (= `-fprofile-arcs -ftest-coverage`), run the tests, and read the `.gcda`/`.gcno` data.
+- [ ] **Reports**: `lcov` + `genhtml`, or `gcovr`, for an HTML report with lines colored by hit/miss.
+- [ ] **CLion**: "Run with Coverage" on the CTest configuration; the coverage tool window and editor gutter highlighting.
+- [ ] Why coverage builds should use `-O0` (optimization merges and removes lines, which confuses the counts).
+- [ ] Keep coverage as a separate build type (like the sanitizer build), not part of Debug.
+- [ ] How to use it well: look for **uncovered branches in the lexer** (error paths, EOF paths), then write tests for them. Don't chase a percentage; a target number invites tests that execute code without checking anything.
+- [ ] Coverage ≠ correctness: a line can run under a test with no assertion that would catch it being wrong.
+
+---
+
+## Unit testing
+
+Background and decisions are in `testing.md`. Open questions:
+
+- [ ] Compare harnesses after the hand-rolled one works: Unity, µnit, CMocka, Criterion. What does each add (fixtures, mocking, death tests, output format)?
+- [ ] How CTest works: `enable_testing()`, `add_test`, labels, `ctest --output-on-failure`, running a subset with `-R`.
+- [ ] Mocking in C: what it is, and when (if ever) this project would need it.
+- [ ] Testing that an `assert` fires ("death tests"): how frameworks do it with `fork()`, and whether it's worth it here.

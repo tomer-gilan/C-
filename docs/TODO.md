@@ -1,0 +1,74 @@
+# TODO
+
+## Diagnostics mechanism
+
+Replace the scattered `// TODO: issue diagnostic` comments with a real reporting path.
+
+- [x] Decide where diagnostics are collected: in `Context` (ADR-012).
+- [ ] Implement the collection: a `List` of diagnostic instances in `Context`, printed per stage, sorted by position, in the format from `implementation-defined.md` (header line + source line + `^` caret).
+- [ ] Track an error count, so the driver can stop after a stage that reported errors (don't run the parser on a broken token stream).
+- [x] Decide on emit-immediately vs. collect-then-print: collect (ADR-012).
+- [x] Fix `diagnostic_is_valid_code` in `Diagnostic.c`: `0 < code` rejects code `0` (`DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER`).
+- [ ] Add missing codes: empty character constant, multi-character constant, unterminated literal (at EOF), string literal too long.
+- [ ] Wire up every lexer call site:
+  - [ ] `lexer_string_view_to_int`: constant out of bounds
+  - [ ] `lexer_lex_literal_to_buffer`: invalid escape sequence
+  - [ ] `lexer_lex_literal_to_buffer`: unexpected EOF (unterminated literal)
+  - [ ] `lexer_lex_literal_to_buffer`: literal longer than `LEXER_LITERAL_MAX_DIFFARANTIABLE_LENGTH` (currently truncated silently). 4095 bytes is now a documented limit with an error (`implementation-defined.md`).
+  - [ ] `lexer_lex_constant_int`: invalid numerical sequence (`123abc`)
+  - [ ] `lexer_lex_constant_char`: empty character constant (`''`)
+  - [ ] `lexer_lex_constant_char`: multi-character constant (`'ab'`)
+  - [ ] `lexer_lex_token`: unknown character
+- [ ] Audit asserts that fire on *user/environment* errors rather than compiler bugs (e.g. `argc > 1` in `driver_create`, `ftell` failure in `source_file_create`) and turn them into diagnostics.
+
+## Allocation: `xmalloc` / `xrealloc`
+
+`assert(ptr != NULL)` after an allocation disappears under `NDEBUG`, and most call sites don't check at all.
+
+- [ ] Add `xmalloc` / `xrealloc` (and maybe `xstrdup`) wrappers that abort with a message on failure.
+- [ ] Replace every raw call site:
+  - [ ] `Context.c` (`context_create`)
+  - [ ] `Driver.c` (`driver_create`)
+  - [ ] `Lexer.c` (`lexer_create`, both literal buffers, per-token allocation in `lexer_lex_source_file`)
+  - [ ] `List.c` (`list_create` x2, `list_expand`)
+  - [ ] `SourceFile.c` (text buffer, `SourceFile` struct)
+  - [ ] `StringView.c` (`string_view_list_duplicate`)
+  - [ ] `Utils.c` (`utils_allocate_and_copy_string`)
+- [ ] Remove the now-redundant `assert(... != NULL && "malloc failed")` lines.
+
+## Lexer changes from the 2026-09-30 decisions
+
+Decided in `implementation-defined.md`, `SUBSET.md` (pending, see below) and the ADRs; the lexer doesn't do these yet.
+
+- [ ] **Bug: string literals can't hold `\0`** (ADR-010). They're interned as NUL-terminated C strings via `utils_string_list_strcmp`, so `"a\0b"` is stored as `"a"` and merged with a real `"a"`. Store and intern (bytes, length) pairs instead, with a length-aware comparison.
+- [ ] Escape sequences: add `\0`, remove `\e` (a GNU extension, not standard C).
+- [ ] Whitespace: accept all of space, `\t`, `\n`, `\v`, `\f`, `\r` (CRLF files currently fail on every line). Only `\n` advances the line count.
+- [ ] Comments: lex and skip `/* ... */` and `// ...` (an unterminated `/*` is an error). Don't confuse `/` the operator with the start of a comment.
+- [ ] Bytes 0x80–0xFF: allowed raw inside literals and comments, *unknown character* error anywhere else.
+- [ ] Integer constant that doesn't fit in `int`: error, instead of silently becoming 0.
+
+## SUBSET.md updates
+
+Decisions from the 2026-09-30 quiz, to be written into `SUBSET.md`:
+
+- [ ] A.1.2 keyword note: rewrite it. "Only signed integers and signed characters" leaves out `void`. `void` covers function return types, `(void)` parameter lists and **`void*`**. Decide the conversion rules `void*` needs (implicit `void*` ↔ `T*`, as in C?).
+- [ ] Notable left-outs: add `sizeof` (out for now), backslash-newline line splicing (out), adjacent string literal concatenation (out for now).
+- [ ] Comments: both `/* */` and `//` are in (translation phase 3; each comment becomes one space).
+- [ ] A.1.5/A.1.6 escape sequences: exactly the 11 simple escapes `\'` `\"` `\?` `\\` `\a` `\b` `\f` `\n` `\r` `\t` `\v`, plus `\0`. No other octal escapes, no hex escapes, no `\e`.
+- [ ] Unary operators: all six prefix operators `- + ! ~ * &` are in.
+- [ ] Fill in the empty **A.2 Phrase structure grammar**: A.2.1 Expressions, A.2.2 Declarations, A.2.3 Statements, A.2.4 External definitions. Write each as a trimmed-down (E)BNF of what C~~ accepts (see `annex-a-breakdown.md`). This is the parser's spec, so it has to exist before the parser does.
+- [ ] Record pointer − pointer as unsupported (only pointer ± int; see `implementation-defined.md`).
+
+## Docs
+
+- [ ] Fix `overview.md`: it's still pre-decision generic advice. Record the actual answers to §2 and §6 (implementation language, host, preprocessor, backend, self-hosting); they're now in ADR-001 and ADR-004 to ADR-006, so link to those, and replace §4 ("minimal subset") with a pointer to `SUBSET.md`, which it currently contradicts (e.g. bitwise operators).
+- [ ] System V AMD64 ABI / codegen cheat sheet in `Cheat_Sheets/` (argument and return registers, caller- vs. callee-saved, 16-byte stack alignment before `call`, stack frame layout). Needed before codegen, not before.
+- [ ] Token-dump format spec: the exact line format of the lexer's token dump (fields, order, separators, trailing newline). It's the contract for the golden-file tests (`testing.md`, "The dump format"), so settle it before writing any `.expected` file.
+
+## Research
+
+See `research.md` (translation phases, Valgrind, sanitizers, code coverage, unit testing) and `testing.md` (test suite roadmap).
+
+## Other
+
+- [ ] Real `main`: build a `Driver`, lex the file, dump tokens (kind, spelling, line:column). `main.c` is still a sample C program.

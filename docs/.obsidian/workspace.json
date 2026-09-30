@@ -1,0 +1,225 @@
+{
+  "main": {
+    "id": "b0ea3d73e0077b9d",
+    "type": "split",
+    "children": [
+      {
+        "id": "5d168495f5b26fc9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "652088618281ae42",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "0f4b32f85c62b780",
+    "type": "split",
+    "children": [
+      {
+        "id": "27e14ec4d0efc63a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "62cc66ea32fc28d3",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "92d48b71ae5cf9f4",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "70c4e96c987b8ef8",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 343.3359184265137
+  },
+  "right": {
+    "id": "ed661377e3837690",
+    "type": "split",
+    "children": [
+      {
+        "id": "978e2f919bd76a32",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1787d1c7e847d912",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "4979c2e0f98907b6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Lexer.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "beb8b2fa21d2aedc",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "7e310109f3eb1940",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "8c755af42364a86e",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Lexer.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "652088618281ae42",
+  "lastOpenFiles": [
+    "conventions.md",
+    "implementation-defined.md",
+    "README.md",
+    "sedwdTdBO",
+    "sedCvjaO8",
+    "educational/sedQ6A8GH",
+    "educational/Lexer.md",
+    "educational/code-review-lexer.md",
+    "educational/followup-setup-testing-expectations.md",
+    "educational/translation-limits.md",
+    "educational",
+    "followup-setup-testing-expectations.md",
+    "translation-limits.md",
+    "code-review-lexer.md",
+    "testing.md",
+    "testing.md.tmp.11476.a3518cc72bb0",
+    "research.md",
+    "TODO.md",
+    "architecture-decisions.md",
+    "Lexer.md",
+    "overview.md",
+    "code/Token.h~",
+    "code/Location.h~",
+    "code/Location.c~",
+    "code/Token.c~",
+    "code/Diagnostic.c",
+    "code/README.md",
+    "deprecated/C~~_____deprecated/docs/Cheat_Sheets/Doxygen_Cheat_Sheet.md",
+    "deprecated/C~~_____deprecated/docs/Cheat_Sheets/CLion_Cheat_Sheet.md",
+    "deprecated/C~~_____deprecated/docs/translation-limits.md",
+    "deprecated/C~~_____deprecated/docs/SUBSET.md",
+    "deprecated/C~~_____deprecated/docs/overview.md",
+    "deprecated/C~~_____deprecated/docs/Lexer.md",
+    "deprecated/C~~_____deprecated/docs/followup-setup-testing-expectations.md",
+    "deprecated/C~~_____deprecated/docs/dictionary.md",
+    "deprecated/C~~_____deprecated/docs/code-review-lexer.md"
+  ]
+}
