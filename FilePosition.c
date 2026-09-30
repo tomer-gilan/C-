@@ -27,3 +27,6 @@ FileLineColumn file_position_get_file_line_column(const FilePosition this, const
 SourceFile* file_position_get_source_file(const FilePosition this, Context* const context) {
     return context_source_file_at(context, this.source_file_index);
 }
+const SourceFile* file_position_get_source_file_const(FilePosition const this, const Context* context) {
+    return context_source_file_at_const(context, this.source_file_index);
+}
