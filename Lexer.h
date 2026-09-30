@@ -32,6 +32,7 @@ void lexer_destroy(Lexer* this);
 
 /**
  * Retrieves a token list based on the lexeme.
+ * @warning ownership of returned @c List is transferred to the callee.
  * @param this a handle to the @c Lexer
  * @return a token list based on the lexeme.
  */

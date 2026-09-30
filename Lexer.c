@@ -4,7 +4,7 @@
 
 #include "Lexer.h"
 
-#define LEXER_LITERAL_MAX_DIFFARANTIABLE_LENGTH 4095
+#define LEXER_MAX_DECODE_LITERAL_LENGTH 4095
 #define LEXER_EOF ((int)(-1))
 #define LEXER_UNKNOWN_ESCAPE_CHARACTER ((int)(-2))
 
@@ -73,9 +73,10 @@ static int lexer_pop(Lexer* this) {
     return peek;
 }
 /**
- * Pops characters until cursor reaches the relative @b offset
+ * Pops characters until @b predicate is @c false.
  * @param this a handle to the lexer stream
  * @param predicate @c cursor of @c Lexer advances as long as @b predicate is true
+ * @return the skipped @c Range
  */
 static Range lexer_skip_while(Lexer* const this, bool (*predicate)(int character)) {
     const FilePosition start = this->cursor;
@@ -117,7 +118,7 @@ static bool is_char_word_character(const int c) {
  * @retval true if @b character is a part of a punctuator's spelling.
  * @retval false otherwise
  */
-static bool is_char_punctuator(const int c) {
+static bool is_char_part_of_punctuator(const int c) {
     for (TokenKind kind = TOKEN__PUNC_FIRST; kind <= TOKEN__PUNC_LAST; ++kind) {
         const StringView spelling = token_kind_spelling_table[kind];
         for (int i = 0; i < spelling.length; ++i)
@@ -137,17 +138,15 @@ static bool is_char_whitespace(const int c) {
 
 // Converters
 /**
- * Converts 'string' to it's integer form.
- * @attention throws error when string is invalid.
- * @param view the @c StringView to be converted
- * @return the numeric equivalence of the string
+ * Converts @c StringView @b view to its integer form.
+ * @attention asserts @c view contains numerics only. Does NOT check for a leading 0.
  */
 static int lexer_string_view_to_int(const StringView view) {
     int number = 0;
-    int count = 0;
-    for (const char* iterator = view.data; is_char_numeric(*iterator); ++iterator, ++count) {
-        assert(is_char_numeric(*iterator) && "non-numeric char");
-        const int digit = *iterator - '0';
+    for (int i = 0; i < view.length; ++i) {
+        const int c = (unsigned char)view.data[i];
+        assert(is_char_numeric(c) && "non-numeric char");
+        const int digit = c - '0';
         if (number > (INT_MAX - digit) / 10) { // checks for overflow before it happens, so no UB by definition.
             // TODO: issue diagnostic, too long numerical sequence
             return 0;
@@ -155,8 +154,6 @@ static int lexer_string_view_to_int(const StringView view) {
         number *= 10;
         number += digit;
     }
-    assert(count == view.length && "Corrupted string view");
-
     return number;
 }
 static int lexer_escape_character(const int character) {
@@ -207,6 +204,7 @@ static int lexer_escape_character(const int character) {
 
 /**
  * @internal to be used only by other lexing functions.
+ * @param this a handle to the @c Lexer
  * @param buff4096 callee allocated buffer of 4096 bytes.
  * @param bytes_written the number of bytes written to @b buffer4096
  * @param delimiter ' or "
@@ -236,7 +234,7 @@ static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int*
                  * escaped character.
                  */
             }
-            if (*bytes_written < LEXER_LITERAL_MAX_DIFFARANTIABLE_LENGTH)
+            if (*bytes_written < LEXER_MAX_DECODE_LITERAL_LENGTH)
                 buff4096[(*bytes_written)++] = (char)c;
             should_escape_character = false;
         }
@@ -250,7 +248,7 @@ static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int*
         else if (c == delimiter) { // i.e. if we encounter a non-escaped delimiter
             return range_from_file_positions(start, this->cursor);
         }
-        else if (*bytes_written < LEXER_LITERAL_MAX_DIFFARANTIABLE_LENGTH) // finally, the trivial case of a regular non escaped character.
+        else if (*bytes_written < LEXER_MAX_DECODE_LITERAL_LENGTH) // finally, the trivial case of a regular non escaped character.
                 buff4096[(*bytes_written)++] = (char)c;
     }
     // if we got here something went wrong.
@@ -288,17 +286,16 @@ static Token lexer_lex_word(Lexer* const this) { // TOKEN_KW and TOKEN_IDENT
     return (Token){.kind = kind, .range = range, .as.id = id};
 }
 static Token lexer_lex_punctuator(Lexer* const this) {
-    assert(is_char_punctuator(lexer_peek(this))); // otherwise it's invalid by definition.
+    assert(is_char_part_of_punctuator(lexer_peek(this))); // otherwise it's invalid by definition.
 
-    const FilePosition start = this->cursor;
-    Range range = range_from_file_positions(start, this->cursor);
+    Range range = range_from_file_positions(this->cursor, this->cursor);
     /* Notice the different munching strategy here. In word munching we naively munched every word character.
      * This case is more complicated, because we need to greedily munch the punctuator sequence, without swallowing
      * a punctuator that causes the overall sequence to be invalid (for example, ...+++... should be split ...++|+...)
      * and not ...+++|..., and you cannot pop a character and check it against the current range, because you cannot
      * unpop it.
      */
-    while (is_char_punctuator(lexer_peek(this))) {
+    while (is_char_part_of_punctuator(lexer_peek(this))) {
         range_extend(&range, 1);  // to include the current peeked punctuator (without actually popping it yet,
                                     // since the overall punctuator sequence may not be valid
         if (!token_kind_is_punctuator(token_kind_from_spelling(range_to_string_view(range, this->context)))) {
@@ -314,6 +311,8 @@ static Token lexer_lex_constant_int(Lexer* const this) {
 
     const FilePosition start = this->cursor;
     bool calculate_value = true;
+    if (lexer_peek(this) == '0' && is_char_numeric(lexer_peek_at(this, 1)))
+        calculate_value = false; // for example, the token 01234 is invalid since its octal base which is unsupported.
     while (is_char_numeric(lexer_peek(this)))
         lexer_pop(this);
     if (is_char_word_character(lexer_peek(this))) {
@@ -333,7 +332,7 @@ static Token lexer_lex_constant_char(Lexer* const this) {
     // NOTE - yes, we return a TOKEN_CONST_INT, because the C standard states that char literals
     // should be interpreted as integer constants.
 
-    char* buffer4096 = malloc(sizeof(char) * 4096);
+    char* buffer4096 = malloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
     int bytes_written;
     const Range range = lexer_lex_literal_to_buffer(this, buffer4096, &bytes_written, '\'');
     char value;
@@ -354,8 +353,8 @@ static Token lexer_lex_constant_char(Lexer* const this) {
         .as.value = value
     };
 }
-static Token lexer_lex_string_literal(Lexer* this) {
-    char* buffer4096 = malloc(sizeof(char) * (LEXER_LITERAL_MAX_DIFFARANTIABLE_LENGTH + 1));
+static Token lexer_lex_string_literal(Lexer* const this) {
+    char* buffer4096 = malloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
     int bytes_written;
     const Range range = lexer_lex_literal_to_buffer(this, buffer4096, &bytes_written, '\"');
     buffer4096[bytes_written] = '\0';
@@ -391,12 +390,12 @@ static Token lexer_lex_token(Lexer* const this) {
     while (is_char_whitespace(c = lexer_peek(this)))
         lexer_pop(this);
     if (c == LEXER_EOF)
-        return TOKEN_EOF;
+        return this->token_eof;
     if (c == '\'')
         return lexer_lex_constant_char(this);
     if (c == '\"')
         return lexer_lex_string_literal(this);
-    if (is_char_punctuator(c))
+    if (is_char_part_of_punctuator(c))
         return lexer_lex_punctuator(this);
     if (is_char_numeric(c))
         return lexer_lex_constant_int(this);
@@ -408,7 +407,7 @@ static Token lexer_lex_token(Lexer* const this) {
     // TODO: issue diagnostic, unknown character.
     return lexer_get_unknown_token(this);
 }
-List* lexer_lex_source_file(Lexer* this) {
+List* lexer_lex_source_file(Lexer* const this) {
     List* token_list = list_create(free);
     Token* new_token;
     do {
