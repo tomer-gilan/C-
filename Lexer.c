@@ -10,8 +10,9 @@
 
 // ---------------------- Lexer ---------------------- //
 struct Lexer {
-    FilePosition cursor;
+    FilePosition cursor; ///< where the lexing currently stands.
     Context* context;
+    Token token_eof; ///< token representing the end of lexing.
 };
 
 // C-tor, D-tor:
@@ -21,7 +22,17 @@ Lexer* lexer_create(Context* const context, const int source_file_index) {
     Lexer* lexer_stream = malloc(sizeof(Lexer));
     *lexer_stream = (Lexer){
         .cursor = {.source_file_index = source_file_index, .offset = 0},
-        .context = context
+        .context = context,
+        .token_eof = {
+            .kind = TOKEN_KIND_EOF,
+            .range = {
+                .position = {
+                    .source_file_index = source_file_index,
+                    .offset = context_source_file_at(context, source_file_index)->length
+                },
+                .length = 0
+            }
+        }
     };
     return lexer_stream;
 }
@@ -39,7 +50,7 @@ void lexer_destroy(Lexer* this) {
 static int lexer_peek_at(const Lexer* this, const int offset) {
     const SourceFile* const source = file_position_get_source_file(this->cursor, this->context);
     const int final_offset = this->cursor.offset + offset;
-    return source_file_is_index_in_bounds(source, final_offset) ? source->text[final_offset] : LEXER_EOF;
+    return source_file_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->text[final_offset]) : LEXER_EOF;
 }
 /**
  * Peeks the character the @c cursor points at.
@@ -231,6 +242,10 @@ static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int*
         }
         else if (c == '\\') { // i.e. if we encounter a non-escaped backslash, the next character SHOULD be escaped.
             should_escape_character = true;
+        }
+        else if (c == '\n') {
+            // TODO: issue a diagnostic, missing delimiter.
+            return range_from_file_positions(start, this->cursor);
         }
         else if (c == delimiter) { // i.e. if we encounter a non-escaped delimiter
             return range_from_file_positions(start, this->cursor);

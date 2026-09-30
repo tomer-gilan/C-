@@ -4,8 +4,6 @@
 
 #include "Token.h"
 
-const Token TOKEN_EOF = {.kind = TOKEN_KIND_EOF};
-
 const StringView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT] = {
     // Keywords
     [TOKEN_KW_CHAR]             = string_view_from_literal("char"),

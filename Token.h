@@ -84,7 +84,6 @@ typedef struct {
     } as; ///< a tagged @c union, encapsulating the different @c TokenKind 's fields.
 } Token; ///< tagged union
 
-extern const Token TOKEN_EOF;
 extern const StringView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT];
 
 StringView token_kind_get_spelling(TokenKind kind);
