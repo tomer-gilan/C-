@@ -32,3 +32,6 @@ void context_destroy(Context* const this) {
 
     free(this);
 }
+SourceFile* context_source_file_at(Context* const this, const int index) {
+    return list_at(this->source_file_table, index);
+}

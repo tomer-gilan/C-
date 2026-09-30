@@ -28,5 +28,10 @@ Context* context_create(const char* source_file_path);
  * @param this handle to the @c Context
  */
 void context_destroy(Context* this);
+/**
+ * retrieves @c SrouceFile at @b index.
+ * @warning ownership of @c SourceFile does not transfer.
+ */
+SourceFile* context_source_file_at(Context* this, int index);
 
 #endif //C_COMPILER_CONTEXT_H
