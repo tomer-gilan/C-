@@ -4,9 +4,6 @@
 
 #include "StringView.h"
 
-StringView string_view_from_string(const char* string) {
-    return (StringView){.data = string, .length = (int)strlen(string)};
-}
 bool string_view_equals(const StringView first, const StringView second) {
     return  first.length == second.length &&
             memcmp(first.data, second.data, first.length) == 0;

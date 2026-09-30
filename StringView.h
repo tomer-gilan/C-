@@ -15,11 +15,6 @@ typedef struct {
 } StringView;
 
 /**
- * @warning assumes @b string outlives @c StringView
- * @param string the @b '\0' terminated source buffer.
- */
-StringView string_view_from_string(const char* string);
-/**
  * This macro generates an initialization list for a @c StringView, sourced specifically from a string literal.
  * @warning passing anything other than string literals will cause a compilation error.
  * @note as a general guideline, no macros of this style are welcome in this project.
