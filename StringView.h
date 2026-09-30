@@ -2,8 +2,8 @@
 // Created by tomer on 28-Sep-26.
 //
 
-#ifndef C_COMPILER_STRINGVIEW_H
-#define C_COMPILER_STRINGVIEW_H
+#ifndef C_COMPILER_STRING_VIEW_H
+#define C_COMPILER_STRING_VIEW_H
 
 #include <string.h>
 #include <stdbool.h>
@@ -32,4 +32,4 @@ int string_view_list_equals(const void* first, const void* second);
  */
 void* string_view_list_duplicate(const void* string_view);
 
-#endif //C_COMPILER_STRINGVIEW_H
+#endif //C_COMPILER_STRING_VIEW_H

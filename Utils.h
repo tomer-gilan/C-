@@ -16,14 +16,6 @@
  * @return the copy of the source
  */
 char* utils_allocate_and_copy_string(const char* source);
-/**
- *
- * @param string the element to find the index of
- * @param arr the array to search in
- * @param arr_length the length of 'arr'
- * @return the index of 'string' in 'arr' (-1 if not found).
- */
-int utils_string_array_index_of(const char* string, const char* const* arr, unsigned int arr_length);
 
 /**
  * Functionally the exact same as strcmp, just taking void* instead of char*
