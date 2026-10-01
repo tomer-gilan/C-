@@ -1,3 +1,33 @@
 /docs/reviews/2026-09-30-code-review.md
 /.idea/dictionaries/project.xml
 /docs/UML.pptx
+
+# ---- Build output ----
+# CLion's build directories (one per profile: Debug, ASan, Coverage...)
+cmake-build-*/
+# a plain `cmake -B build` from a terminal
+build/
+# the old sample binary at the repo root (anchored: only this one)
+/main
+*.o
+*.a
+a.out
+
+# ---- Coverage and crash leftovers (testing.md steps 6, 9) ----
+*.gcda
+*.gcno
+*.gcov
+core
+core.*
+
+# ---- CLion / JetBrains ----
+# Everything in .idea except shared run configurations (ADR-002's CTest config).
+# `.idea/*` (not `.idea/`) so that the `!` re-include below can work.
+.idea/*
+!.idea/runConfigurations/
+
+# ---- Docs tooling ----
+# Obsidian vault config and layout: personal, not project
+docs/.obsidian/
+# Office lock files (e.g. docs/~$UML.pptx)
+~$*
