@@ -11,14 +11,14 @@
 typedef struct {
     List* identifiers_table;        ///< @c List of @c StringView
     List* string_literals_table;    ///< @c List of @c char* (@c string)
-    List* source_file_table;        ///< @c List of @c SourceText
+    List* source_text_table;        ///< @c List of @c SourceText
 } Context;
 
 /**
  * Creates a new @c Context .
- * @param source a @c SourceFile containing the source code.
+ * @warning ownership of @b source is transferred to the callee.
+ * @param source a @c SourceText containing the source code.
  * @return a @c Context handle
- * @retval NULL if @b source_file_path is invalid
  */
 Context* context_create(SourceText* source);
 /**
@@ -27,13 +27,13 @@ Context* context_create(SourceText* source);
  */
 void context_destroy(Context* this);
 /**
- * retrieves @c SrouceFile at @b index.
+ * retrieves @c SrouceText at @b index.
  * @warning ownership of @c SourceText does not transfer.
  */
-SourceText* context_source_file_at(Context* this, int index);
+SourceText* context_source_text_at(Context* this, int index);
 /**
- * @c const version of @c context_source_file_at
+ * @c const version of @c context_source_text_at
  */
-const SourceText* context_source_file_at_const(const Context* this, int index);
+const SourceText* context_source_text_at_const(const Context* this, int index);
 
 #endif //C_COMPILER_CONTEXT_H

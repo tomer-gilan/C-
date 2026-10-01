@@ -59,13 +59,20 @@ SourceText* source_text_create_from_path(const char* const path) {
     };
     return source_file;
 }
-SourceText * source_text_create_from_buffer(const char* const buffer, const int length) {
+SourceText* source_text_create_from_buffer(const char* const buffer, const int length) {
+    assert(length >= 0 && "invalid length");
+
+    char* new_buffer = utils_xmalloc((length + 1) * (int)sizeof(char)); // this also deals with edge case where length==0
+    memcpy(new_buffer, buffer, length);
+    new_buffer[length] = '\0';
+
     SourceText* source_text = utils_xmalloc(sizeof (SourceText));
     *source_text = (SourceText){
         .name = utils_allocate_and_copy_string("<from string>"),
-        .text = utils_allocate_and_copy_buffer(buffer, length),
+        .text = new_buffer,
         .length = length
     };
+
     return source_text;
 }
 

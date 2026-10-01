@@ -13,10 +13,12 @@ Driver* driver_create(const int argc, const char* const* argv) {
         // TODO: issue a diagnostic "missing source file". note that currently there's no way to do it without a context.
         exit(1); // fatal diagnostic, so exit(1).
     }
-    const char* source_file_path = argv[1]; // TODO: change hard-wiring to command line argument parsing.
-    Context* const context = context_create(source_file_path);
-    if (context == NULL)
-        return NULL;
+
+    SourceText* const source_text = source_text_create_from_path(argv[1]); // TODO: change hard-wiring to command line argument parsing.
+    if (source_text == NULL)
+        return NULL; // as the docs specify.
+    Context* const context = context_create(source_text);
+
     Driver* driver = utils_xmalloc(sizeof (Driver));
     *driver = (Driver){
         .argc = argc,

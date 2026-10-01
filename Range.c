@@ -13,7 +13,7 @@ StringView range_to_string_view(const Range this, const Context* const context) 
         this.position.offset + this.length)
         && "invalid range (outside of SourceText bounds)");
 
-    const SourceText* source = list_at_const(context->source_file_table, this.position.source_file_index);
+    const SourceText* source = list_at_const(context->source_text_table, this.position.source_file_index);
     return (StringView){
         .data = source->text + this.position.offset,
         .length = this.length

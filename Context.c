@@ -15,9 +15,9 @@ Context* context_create(SourceText* const source) {
     *context = (Context){
         .identifiers_table      = list_create(free),
         .string_literals_table  = list_create(free),
-        .source_file_table      = list_create(source_text_list_destroy)
+        .source_text_table      = list_create(source_text_list_destroy)
     };
-    list_push(context->source_file_table, source);
+    list_push(context->source_text_table, source);
     return context;
 }
 void context_destroy(Context* const this) {
@@ -29,15 +29,15 @@ void context_destroy(Context* const this) {
     list_destroy(this->string_literals_table);
     this->string_literals_table = NULL;
 
-    assert(this->source_file_table != NULL && "table is NULL");
-    list_destroy(this->source_file_table);
-    this->source_file_table = NULL;
+    assert(this->source_text_table != NULL && "table is NULL");
+    list_destroy(this->source_text_table);
+    this->source_text_table = NULL;
 
     free(this);
 }
-SourceText* context_source_file_at(Context* const this, const int index) {
-    return list_at(this->source_file_table, index);
+SourceText* context_source_text_at(Context* const this, const int index) {
+    return list_at(this->source_text_table, index);
 }
-const SourceText* context_source_file_at_const(const Context* const this, const int index) {
-    return list_at(this->source_file_table, index);
+const SourceText* context_source_text_at_const(const Context* const this, const int index) {
+    return list_at(this->source_text_table, index);
 }

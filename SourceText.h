@@ -15,18 +15,18 @@ typedef struct {
 
 /**
  * Creates a new @c SourceText from a given @b path.
+ * @note adds a '\0' at the end of the copied buffer
  * @param path the path to the source file.
- * @return a @c SourceText handle
  * @retval NULL if @b path is invalid
  */
 SourceText* source_text_create_from_path(const char* path);
 /**
  * Creates a new @c SourceText from a given @b string.
+ * @note adds a '\0' at the end of the copied buffer
  * @attention ownership of @b string REMAINS at the callee, i.e. content of @b string is duplicated.
  * @param buffer the source data (may include @c '\0')
  * @param length the length of the @b buffer
- * @return a @c SourceText handle
- * @retval NULL if @b path is invalid
+ * @retval NULL if @b length is 0
  */
 SourceText* source_text_create_from_buffer(const char* buffer, int length);
 /**

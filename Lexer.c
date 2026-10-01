@@ -34,7 +34,7 @@ Lexer* lexer_create(Context* const context, const int source_file_index) {
             .range = {
                 .position = {
                     .source_file_index = source_file_index,
-                    .offset = context_source_file_at(context, source_file_index)->length
+                    .offset = context_source_text_at(context, source_file_index)->length
                 },
                 .length = 0
             }
