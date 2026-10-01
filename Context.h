@@ -16,11 +16,11 @@ typedef struct {
 
 /**
  * Creates a new @c Context .
- * @param source_file_path the path to the source file.
+ * @param source a @c SourceFile containing the source code.
  * @return a @c Context handle
  * @retval NULL if @b source_file_path is invalid
  */
-Context* context_create(const char* source_file_path);
+Context* context_create(SourceText* source);
 /**
  * Destroys the @c Context .
  * @param this handle to the @c Context

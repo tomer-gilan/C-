@@ -8,10 +8,9 @@
 #include "Context.h"
 #include "Utils.h"
 
-Context* context_create(const char* source_file_path) {
-    SourceText* const source = source_text_create_from_path(source_file_path);
-    if (source == NULL)
-        return NULL;
+Context* context_create(SourceText* const source) {
+    assert(source != NULL && "Invalid source!");
+
     Context* context = utils_xmalloc(sizeof (Context));
     *context = (Context){
         .identifiers_table      = list_create(free),
