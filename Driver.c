@@ -6,6 +6,8 @@
 
 #include "Driver.h"
 
+#include "Utils.h"
+
 Driver* driver_create(const int argc, const char* const* argv) {
     if (argc <= 1) {
         // TODO: issue a diagnostic "missing source file". note that currently there's no way to do it without a context.
@@ -15,7 +17,7 @@ Driver* driver_create(const int argc, const char* const* argv) {
     Context* const context = context_create(source_file_path);
     if (context == NULL)
         return NULL;
-    Driver* driver = malloc(sizeof (Driver));
+    Driver* driver = xmalloc(sizeof (Driver));
     *driver = (Driver){
         .argc = argc,
         .argv = argv,

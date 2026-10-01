@@ -3,9 +3,9 @@
 //
 
 #include <string.h>
-#include <stdlib.h>
 
 #include "StringView.h"
+#include "Utils.h"
 
 bool string_view_equals(const StringView first, const StringView second) {
     return  first.length == second.length &&
@@ -17,7 +17,7 @@ int string_view_list_equals(const void* const first, const void* const second) {
     return string_view_equals(*(StringView*)first, *(StringView*)second) ? 0 : 1;
 }
 void* string_view_list_duplicate(const void* const string_view) {
-    StringView* new = malloc(sizeof(StringView));
+    StringView* new = xmalloc(sizeof(StringView));
     *new = *(StringView*)string_view;
     return new;
 }

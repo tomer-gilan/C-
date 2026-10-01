@@ -40,7 +40,7 @@ SourceFile* source_file_create(const char* const path) {
     assert(size != -1 && "Problem with file");
     rewind(file);                       // back to the start
 
-    char* buffer = malloc(size + 1);    // +1 for a '\0' terminator
+    char* buffer = xmalloc(size + 1);    // +1 for a '\0' terminator
     long read = (long)fread(buffer, 1, size, file); // trust fread's count, not ftell's
     if (read != (size_t)size) {         // short read = I/O error or file changed
         free(buffer);
@@ -50,7 +50,7 @@ SourceFile* source_file_create(const char* const path) {
     buffer[read] = '\0';                // handy for debugging/printing
     fclose(file);
 
-    SourceFile* source_file = malloc(sizeof (SourceFile));
+    SourceFile* source_file = xmalloc(sizeof (SourceFile));
     *source_file = (SourceFile){
         .name = utils_allocate_and_copy_string(get_file_name(path)),
         .text = buffer,

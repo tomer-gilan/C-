@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "List.h"
+#include "Utils.h"
 
 struct List {
     int size;
@@ -22,8 +23,8 @@ static bool list_is_at_full_capacity(const List* this) {
 static void list_expand(List* this) {
     assert(this != NULL && "list handle was NULL");
     this->capacity *= 2;
-    this->elements = realloc(this->elements, sizeof(void*) * this->capacity);
-    assert(this->elements != NULL && "realloc failed");
+    this->elements = xrealloc(this->elements, sizeof(void*) * this->capacity);
+    assert(this->elements != NULL && "xrealloc failed");
 }
 // maybe in the future add collapse..
 // -------- END: List: private functions --------- //
@@ -35,12 +36,12 @@ static bool list_is_index_in_bounds(const List* const this, const int index) {
 List* list_create(void (*destroy_element)(void* element))  {
     assert(destroy_element != NULL && "Must provide valid destroy_element callback");
 
-    List* list = malloc(sizeof(List));
-    assert(list != NULL && "malloc failed");
+    List* list = xmalloc(sizeof(List));
+    assert(list != NULL && "xmalloc failed");
     *list = (List){
         .size = 0,
         .capacity = 1,
-        .elements = malloc(sizeof(void*) * 1),
+        .elements = xmalloc(sizeof(void*) * 1),
         .destroy_element = destroy_element
     };
     return list;

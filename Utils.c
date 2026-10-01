@@ -12,19 +12,19 @@
 void* xmalloc(const size_t size) {
     void* ptr = malloc(size);
     if (ptr == NULL)
-        fprintf(stderr, "malloc failed.\n");
+        fprintf(stderr, "xmalloc failed.\n");
     return ptr;
 }
 void* xrealloc(void* ptr, size_t size) {
     void* new_ptr = realloc(ptr, size);
     if (new_ptr == NULL)
-        fprintf(stderr, "realloc failed.\n");
+        fprintf(stderr, "xrealloc failed.\n");
     return new_ptr;
 }
 
 // -------------------- string utils -------------------- //
 char* utils_allocate_and_copy_string(const char* const source) {
-    char* copy = malloc(sizeof(char) * (strlen(source) + 1));
+    char* copy = xmalloc(sizeof(char) * (strlen(source) + 1));
     strcpy(copy, source);
     return copy;
 }
