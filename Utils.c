@@ -19,7 +19,7 @@ void* utils_xmalloc(const size_t size) {
 }
 void* utils_xrealloc(void* const ptr, const size_t size) {
     void* new_ptr = realloc(ptr, size);
-    if (new_ptr == NULL) {
+    if (new_ptr == NULL && size != 0) { // why size != 0? Because realloc can legally return NULL when size == 0
         fputs("xrealloc failed.\n", stderr);
         abort();
     }
