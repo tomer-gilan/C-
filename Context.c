@@ -9,14 +9,14 @@
 #include "Utils.h"
 
 Context* context_create(const char* source_file_path) {
-    SourceText* const source = source_file_create_from_path(source_file_path);
+    SourceText* const source = source_text_create_from_path(source_file_path);
     if (source == NULL)
         return NULL;
     Context* context = utils_xmalloc(sizeof (Context));
     *context = (Context){
         .identifiers_table      = list_create(free),
         .string_literals_table  = list_create(free),
-        .source_file_table      = list_create(source_file_list_destroy)
+        .source_file_table      = list_create(source_text_list_destroy)
     };
     list_push(context->source_file_table, source);
     return context;

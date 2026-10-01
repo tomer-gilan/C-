@@ -56,7 +56,7 @@ void lexer_destroy(Lexer* this) {
 static int lexer_peek_at(const Lexer* this, const int offset) {
     const SourceText* const source = file_position_get_source_file(this->cursor, this->context);
     const int final_offset = this->cursor.offset + offset;
-    return source_file_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->text[final_offset]) : LEXER_EOF;
+    return source_text_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->text[final_offset]) : LEXER_EOF;
 }
 /**
  * Peeks the character the @c cursor points at.
