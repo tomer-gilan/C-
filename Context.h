@@ -30,10 +30,10 @@ void context_destroy(Context* this);
  * retrieves @c SrouceFile at @b index.
  * @warning ownership of @c SourceFile does not transfer.
  */
-SourceFile* context_source_file_at(Context* this, int index);
+SourceText* context_source_file_at(Context* this, int index);
 /**
  * @c const version of @c context_source_file_at
  */
-const SourceFile* context_source_file_at_const(const Context* this, int index);
+const SourceText* context_source_file_at_const(const Context* this, int index);
 
 #endif //C_COMPILER_CONTEXT_H

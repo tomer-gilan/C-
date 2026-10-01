@@ -9,7 +9,7 @@
 #include "Utils.h"
 
 Context* context_create(const char* source_file_path) {
-    SourceFile* const source = source_file_create(source_file_path);
+    SourceText* const source = source_file_create_from_path(source_file_path);
     if (source == NULL)
         return NULL;
     Context* context = utils_xmalloc(sizeof (Context));
@@ -36,9 +36,9 @@ void context_destroy(Context* const this) {
 
     free(this);
 }
-SourceFile* context_source_file_at(Context* const this, const int index) {
+SourceText* context_source_file_at(Context* const this, const int index) {
     return list_at(this->source_file_table, index);
 }
-const SourceFile* context_source_file_at_const(const Context* const this, const int index) {
+const SourceText* context_source_file_at_const(const Context* const this, const int index) {
     return list_at(this->source_file_table, index);
 }

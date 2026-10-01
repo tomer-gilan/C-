@@ -36,10 +36,10 @@ FileLineColumn file_position_get_file_line_column(FilePosition this, const Conte
  * @note @b context is deliberately non-const, since the @c SourceFile which is returned
  * can modify the state of @c Context.
  */
-SourceFile* file_position_get_source_file(FilePosition this, Context* context);
+SourceText* file_position_get_source_file(FilePosition this, Context* context);
 /**
  * @c const version of @c file_position_get_source_file
  */
-const SourceFile* file_position_get_source_file_const(FilePosition this, const Context* context);
+const SourceText* file_position_get_source_file_const(FilePosition this, const Context* context);
 
 #endif //C_COMPILER_FILE_POSITION_H

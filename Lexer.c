@@ -54,7 +54,7 @@ void lexer_destroy(Lexer* this) {
  * @return the character as an @c int
  */
 static int lexer_peek_at(const Lexer* this, const int offset) {
-    const SourceFile* const source = file_position_get_source_file(this->cursor, this->context);
+    const SourceText* const source = file_position_get_source_file(this->cursor, this->context);
     const int final_offset = this->cursor.offset + offset;
     return source_file_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->text[final_offset]) : LEXER_EOF;
 }

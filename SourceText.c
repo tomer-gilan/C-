@@ -30,7 +30,7 @@ static const char* get_file_name(const char* const path) {
     return &(path[last_delimiter_index + 1]); // returning substring AFTER last occurrence.
 }
 
-SourceFile* source_file_create(const char* const path) {
+SourceText* source_file_create_from_path(const char* const path) {
     FILE* file = fopen(path, "rb");
     if (file == NULL)
         return NULL;
@@ -50,20 +50,20 @@ SourceFile* source_file_create(const char* const path) {
     buffer[read] = '\0';                // handy for debugging/printing
     fclose(file);
 
-    SourceFile* source_file = utils_xmalloc(sizeof (SourceFile));
-    *source_file = (SourceFile){
+    SourceText* source_file = utils_xmalloc(sizeof (SourceText));
+    *source_file = (SourceText){
         .name = utils_allocate_and_copy_string(get_file_name(path)),
         .text = buffer,
         .length = (int)read
     };
     return source_file;
 }
-void source_file_destroy(SourceFile* const this) {
+void source_file_destroy(SourceText* const this) {
     free(this->name);
     free(this->text);
     free(this);
 }
-bool source_file_is_index_in_bounds(const SourceFile* this, const int index) {
+bool source_file_is_index_in_bounds(const SourceText* this, const int index) {
     return 0 <= index && index < this->length;
 }
 

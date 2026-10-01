@@ -34,15 +34,15 @@ Replace the scattered `// TODO: issue diagnostic` comments with a real reporting
   - [x] `SourceFile.c` (text buffer, `SourceFile` struct)
   - [x] `StringView.c` (`string_view_list_duplicate`)
   - [x] `Utils.c` (`utils_allocate_and_copy_string`)
-- [ ] Remove the now-redundant `assert(... != NULL && "malloc failed")` lines.
+- [x] Remove the now-redundant `assert(... != NULL && "malloc failed")` lines.
 
 ## Lexer changes from the 2026-09-30 decisions
 
 Decided in `implementation-defined.md`, `SUBSET.md` (pending, see below) and the ADRs; the lexer doesn't do these yet.
 
 - [ ] **Bug: string literals can't hold `\0`** (ADR-010). They're interned as NUL-terminated C strings via `utils_string_list_strcmp`, so `"a\0b"` is stored as `"a"` and merged with a real `"a"`. Store and intern (bytes, length) pairs instead, with a length-aware comparison.
-- [ ] Escape sequences: add `\0`, remove `\e` (a GNU extension, not standard C).
-- [ ] Whitespace: accept all of space, `\t`, `\n`, `\v`, `\f`, `\r` (CRLF files currently fail on every line). Only `\n` advances the line count.
+- [x] Escape sequences: add `\0`, remove `\e` (a GNU extension, not standard C).
+- [x] Whitespace: accept all of space, `\t`, `\n`, `\v`, `\f`, `\r` (CRLF files currently fail on every line). Only `\n` advances the line count.
 - [ ] Comments: lex and skip `/* ... */` and `// ...` (an unterminated `/*` is an error). Don't confuse `/` the operator with the start of a comment.
 - [ ] Bytes 0x80–0xFF: allowed raw inside literals and comments, *unknown character* error anywhere else.
 - [ ] Integer constant that doesn't fit in `int`: error, instead of silently becoming 0.
@@ -54,7 +54,7 @@ Decisions from the 2026-09-30 quiz, to be written into `SUBSET.md`:
 - [ ] A.1.2 keyword note: rewrite it. "Only signed integers and signed characters" leaves out `void`. `void` covers function return types, `(void)` parameter lists and **`void*`**. Decide the conversion rules `void*` needs (implicit `void*` ↔ `T*`, as in C?).
 - [ ] Notable left-outs: add `sizeof` (out for now), backslash-newline line splicing (out), adjacent string literal concatenation (out for now).
 - [ ] Comments: both `/* */` and `//` are in (translation phase 3; each comment becomes one space).
-- [ ] A.1.5/A.1.6 escape sequences: exactly the 11 simple escapes `\'` `\"` `\?` `\\` `\a` `\b` `\f` `\n` `\r` `\t` `\v`, plus `\0`. No other octal escapes, no hex escapes, no `\e`.
+- [x] A.1.5/A.1.6 escape sequences: exactly the 11 simple escapes `\'` `\"` `\?` `\\` `\a` `\b` `\f` `\n` `\r` `\t` `\v`, plus `\0`. No other octal escapes, no hex escapes, no `\e`.
 - [ ] Unary operators: all six prefix operators `- + ! ~ * &` are in.
 - [ ] Fill in the empty **A.2 Phrase structure grammar**: A.2.1 Expressions, A.2.2 Declarations, A.2.3 Statements, A.2.4 External definitions. Write each as a trimmed-down (E)BNF of what C~~ accepts (see `annex-a-breakdown.md`). This is the parser's spec, so it has to exist before the parser does.
 - [ ] Record pointer − pointer as unsupported (only pointer ± int; see `implementation-defined.md`).
