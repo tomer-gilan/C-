@@ -9,22 +9,26 @@
 #include <stdio.h>
 
 // -------------------- memory allocation -------------------- //
-void* xmalloc(const size_t size) {
+void* utils_xmalloc(const size_t size) {
     void* ptr = malloc(size);
-    if (ptr == NULL)
-        fprintf(stderr, "xmalloc failed.\n");
+    if (ptr == NULL && size != 0) { // why size != 0? Because malloc can legally return NULL when size == 0
+        fputs(stderr, "xmalloc failed.\n");
+        abort();
+    }
     return ptr;
 }
-void* xrealloc(void* ptr, size_t size) {
+void* utils_xrealloc(void* ptr, size_t size) {
     void* new_ptr = realloc(ptr, size);
-    if (new_ptr == NULL)
-        fprintf(stderr, "xrealloc failed.\n");
+    if (new_ptr == NULL) {
+        fputs(stderr, "xrealloc failed.\n");
+        abort();
+    }
     return new_ptr;
 }
 
 // -------------------- string utils -------------------- //
 char* utils_allocate_and_copy_string(const char* const source) {
-    char* copy = xmalloc(sizeof(char) * (strlen(source) + 1));
+    char* copy = utils_xmalloc(sizeof(char) * (strlen(source) + 1));
     strcpy(copy, source);
     return copy;
 }

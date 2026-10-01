@@ -17,7 +17,7 @@ int string_view_list_equals(const void* const first, const void* const second) {
     return string_view_equals(*(StringView*)first, *(StringView*)second) ? 0 : 1;
 }
 void* string_view_list_duplicate(const void* const string_view) {
-    StringView* new = xmalloc(sizeof(StringView));
+    StringView* new = utils_xmalloc(sizeof(StringView));
     *new = *(StringView*)string_view;
     return new;
 }

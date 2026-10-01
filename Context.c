@@ -12,7 +12,7 @@ Context* context_create(const char* source_file_path) {
     SourceFile* const source = source_file_create(source_file_path);
     if (source == NULL)
         return NULL;
-    Context* context = xmalloc(sizeof (Context));
+    Context* context = utils_xmalloc(sizeof (Context));
     *context = (Context){
         .identifiers_table      = list_create(free),
         .string_literals_table  = list_create(free),

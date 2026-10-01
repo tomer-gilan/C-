@@ -21,7 +21,7 @@ struct Lexer {
 Lexer* lexer_create(Context* const context, const int source_file_index) {
     assert(context != NULL && "context is null");
 
-    Lexer* lexer_stream = xmalloc(sizeof(Lexer));
+    Lexer* lexer_stream = utils_xmalloc(sizeof(Lexer));
     *lexer_stream = (Lexer){
         .cursor = {.source_file_index = source_file_index, .offset = 0},
         .context = context,
@@ -334,7 +334,7 @@ static Token lexer_lex_constant_char(Lexer* const this) {
     // NOTE - yes, we return a TOKEN_CONST_INT, because the C standard states that char literals
     // should be interpreted as integer constants.
 
-    char* buffer4096 = xmalloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
+    char* buffer4096 = utils_xmalloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
     int bytes_written;
     const Range range = lexer_lex_literal_to_buffer(this, buffer4096, &bytes_written, '\'');
     char value;
@@ -356,7 +356,7 @@ static Token lexer_lex_constant_char(Lexer* const this) {
     };
 }
 static Token lexer_lex_string_literal(Lexer* const this) {
-    char* buffer4096 = xmalloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
+    char* buffer4096 = utils_xmalloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
     int bytes_written;
     const Range range = lexer_lex_literal_to_buffer(this, buffer4096, &bytes_written, '\"');
     buffer4096[bytes_written] = '\0';
@@ -413,7 +413,7 @@ List* lexer_lex_source_file(Lexer* const this) {
     List* token_list = list_create(free);
     Token* new_token;
     do {
-        new_token = xmalloc(sizeof(Token));
+        new_token = utils_xmalloc(sizeof(Token));
         *new_token = lexer_lex_token(this);
         list_push(token_list, new_token);
     } while (!token_is_EOF(*new_token));

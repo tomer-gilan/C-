@@ -8,8 +8,18 @@
 #include <stddef.h>
 
 // -------------------- memory allocation -------------------- //
-void* xmalloc(size_t size);
-void* xrealloc(void* ptr, size_t size);
+/**
+ * Wrapper of @c malloc.
+ * Only difference is that upon allocation failure, reports to @c stderr and @c abort
+ * @note @c size_t is deliberately used to align with @c malloc
+ */
+void* utils_xmalloc(size_t size);
+/**
+ * Wrapper of @c realloc.
+ * Only difference is that upon allocation failure, reports to @c stderr and @c abort
+ *  * @note @c size_t is deliberately used to align with @c realloc
+ */
+void* utils_xrealloc(void* ptr, size_t size);
 
 // -------------------- string utils -------------------- //
 /**

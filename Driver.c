@@ -17,7 +17,7 @@ Driver* driver_create(const int argc, const char* const* argv) {
     Context* const context = context_create(source_file_path);
     if (context == NULL)
         return NULL;
-    Driver* driver = xmalloc(sizeof (Driver));
+    Driver* driver = utils_xmalloc(sizeof (Driver));
     *driver = (Driver){
         .argc = argc,
         .argv = argv,
