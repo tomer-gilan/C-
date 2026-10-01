@@ -160,12 +160,12 @@ static int lexer_string_view_to_int(const StringView view) {
 }
 static int lexer_escape_character(const int character) {
     switch (character) {
+        case '0':
+            return 0x00;
         case 'a':
             return 0x07;
         case 'b':
             return 0x08;
-        case 'e':
-            return 0x1B;
         case 'f':
             return 0x0C;
         case 'n':
