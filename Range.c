@@ -2,6 +2,8 @@
 // Created by tomer on 27-Sep-26.
 //
 
+#include <assert.h>
+
 #include "Range.h"
 
 StringView range_to_string_view(const Range this, const Context* const context) {

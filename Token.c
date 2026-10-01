@@ -4,6 +4,8 @@
 
 #include "Token.h"
 
+#include <assert.h>
+
 const StringView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT] = {
     // Keywords
     [TOKEN_KW_CHAR]             = string_view_from_literal("char"),
