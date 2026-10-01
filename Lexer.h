@@ -30,6 +30,6 @@ void lexer_destroy(Lexer* this);
  * @param this a handle to the @c Lexer
  * @return a token list based on the lexeme.
  */
-List* lexer_lex_source_file(Lexer* this);
+List* lexer_lex_source_text(Lexer* this);
 
 #endif //C_COMPILER_LEXER_H

@@ -13,8 +13,8 @@
  * It abstracts the line and column number by counting occurrences of @c '\n' .
  */
 typedef struct {
-    int source_file_index;  ///< the @c SourceText index of @c Context 's @c source_file_table.
-    int offset;             ///< offset (in bytes) inside the source file. Can be converted to a @c LineColumn struct.
+    int source_text_index;  ///< the @c SourceText index of @c Context 's @c source_text_table.
+    int offset;             ///< offset (in bytes) inside the source text. Can be converted to a @c LineColumn struct.
 } FilePosition;
 
 typedef struct {
@@ -36,10 +36,10 @@ FileLineColumn file_position_get_file_line_column(FilePosition this, const Conte
  * @note @b context is deliberately non-const, since the @c SourceText which is returned
  * can modify the state of @c Context.
  */
-SourceText* file_position_get_source_file(FilePosition this, Context* context);
+SourceText* file_position_get_source_text(FilePosition this, Context* context);
 /**
- * @c const version of @c file_position_get_source_file
+ * @c const version of @c file_position_get_source_text
  */
-const SourceText* file_position_get_source_file_const(FilePosition this, const Context* context);
+const SourceText* file_position_get_source_text_const(FilePosition this, const Context* context);
 
 #endif //C_COMPILER_FILE_POSITION_H

@@ -163,8 +163,9 @@ The dump is the contract, so it must be:
 Built step by step. Each step ends in a state that works and can be committed.
 
 **Step 0: Prerequisites**
-- [ ] A real `main` that drives the compiler (`main.c` is still a sample program).
-- [ ] A way to create a `SourceFile`/`Context` from an in-memory string.
+- [x] A way to create a `SourceText`/`Context` from an in-memory string (`source_text_create_from_buffer` + `context_create`).
+
+The real `main` was moved from here to step 7: the harness comes first, so bugs show up one function at a time in unit tests, not all at once through `main`.
 
 **Step 1: Library split**
 - [ ] Move everything except `main.c` into a CMake library; `main` links it.
@@ -192,6 +193,7 @@ Built step by step. Each step ends in a state that works and can be committed.
 - [ ] Fix whatever it finds, and add a regression test for each.
 
 **Step 7: Golden-file tests (ADR-003)**
+- [ ] A real `main` that drives the compiler and dumps tokens, ideally behind a flag like `--dump-tokens` (`main.c` is still a sample program).
 - [ ] Settle the token-dump format.
 - [ ] Runner with pass/fail per file and an "update expected" mode; register with CTest.
 - [ ] `.gitattributes` to pin LF line endings for test inputs and expected files.

@@ -19,7 +19,7 @@ FileLineColumn file_position_get_file_line_column(const FilePosition this, const
     assert(context != NULL && "Context was NULL");
     assert(context->source_text_table != NULL && "context->source_file_table was NULL");
 
-    const SourceText* source_file = list_at_const(context->source_text_table, this.source_file_index);
+    const SourceText* source_file = list_at_const(context->source_text_table, this.source_text_index);
     assert(this.offset <= source_file->length && "FilePosition's offset out of bounds (source_file->length)");
 
     FileLineColumn file_line_column = {.file_name = source_file->name, .line = 1, .column = 1};
@@ -27,9 +27,9 @@ FileLineColumn file_position_get_file_line_column(const FilePosition this, const
         file_line_column_advance(&file_line_column, source_file->text[i]);
     return file_line_column;
 }
-SourceText* file_position_get_source_file(const FilePosition this, Context* const context) {
-    return context_source_text_at(context, this.source_file_index);
+SourceText* file_position_get_source_text(const FilePosition this, Context* const context) {
+    return context_source_text_at(context, this.source_text_index);
 }
-const SourceText* file_position_get_source_file_const(FilePosition const this, const Context* context) {
-    return context_source_text_at_const(context, this.source_file_index);
+const SourceText* file_position_get_source_text_const(FilePosition const this, const Context* context) {
+    return context_source_text_at_const(context, this.source_text_index);
 }

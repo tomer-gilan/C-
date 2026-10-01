@@ -22,19 +22,19 @@ struct Lexer {
 };
 
 // C-tor, D-tor:
-Lexer* lexer_create(Context* const context, const int source_file_index) {
+Lexer* lexer_create(Context* const context, const int source_text_index) {
     assert(context != NULL && "context is null");
 
     Lexer* lexer_stream = utils_xmalloc(sizeof(Lexer));
     *lexer_stream = (Lexer){
-        .cursor = {.source_file_index = source_file_index, .offset = 0},
+        .cursor = {.source_text_index = source_text_index, .offset = 0},
         .context = context,
         .token_eof = {
             .kind = TOKEN_EOF,
             .range = {
                 .position = {
-                    .source_file_index = source_file_index,
-                    .offset = context_source_text_at(context, source_file_index)->length
+                    .source_text_index = source_text_index,
+                    .offset = context_source_text_at(context, source_text_index)->length
                 },
                 .length = 0
             }
@@ -54,7 +54,7 @@ void lexer_destroy(Lexer* this) {
  * @return the character as an @c int
  */
 static int lexer_peek_at(const Lexer* this, const int offset) {
-    const SourceText* const source = file_position_get_source_file(this->cursor, this->context);
+    const SourceText* const source = file_position_get_source_text(this->cursor, this->context);
     const int final_offset = this->cursor.offset + offset;
     return source_text_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->text[final_offset]) : LEXER_EOF;
 }
@@ -209,7 +209,7 @@ static int lexer_escape_character(const int character) {
  * not abort the process.
  * 3. other sanity checks to validate internal states and assure data structures not being corrupted etc. still asserts
  * conditions that may result in abortion of the process, but those should always be the result of a compiler bug, not
- * source file having some invalid text, since the compiler should collect diagnostic and report them to the user,
+ * source text having some invalid text, since the compiler should collect diagnostic and report them to the user,
  * not crash upon discovery.
  */
 
@@ -240,7 +240,7 @@ static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int*
             if (c == LEXER_UNKNOWN_ESCAPE_CHARACTER) {
                 /* TODO: issue diagnostic, invalid escape sequence, then CONTINUE MUNCHING!!! notice next we will
                  * store the UNKNOWN_CHARACTER as the character munched, and that's ok since we only need to get the
-                 * literal spelling to continue lexing the source file. Since we issued a diagnostic, the compilation
+                 * literal spelling to continue lexing the source text. Since we issued a diagnostic, the compilation
                  * pipline will not finish by definition, so there's no risk by introducing garbage instead of the
                  * escaped character.
                  */
@@ -418,7 +418,7 @@ static Token lexer_lex_token(Lexer* const this) {
     // TODO: issue diagnostic, unknown character.
     return lexer_get_unknown_token(this);
 }
-List* lexer_lex_source_file(Lexer* const this) {
+List* lexer_lex_source_text(Lexer* const this) {
     List* token_list = list_create(free);
     Token* new_token;
     do {

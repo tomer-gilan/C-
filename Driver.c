@@ -6,6 +6,7 @@
 
 #include "Driver.h"
 
+#include "Lexer.h"
 #include "Utils.h"
 
 Driver* driver_create(const int argc, const char* const* argv) {
@@ -30,4 +31,10 @@ Driver* driver_create(const int argc, const char* const* argv) {
 void driver_destroy(Driver* this) {
     context_destroy(this->context);
     free(this);
+}
+List* driver_compile(Driver* const this, int const source_text_index) {
+    Lexer* lexer = lexer_create(this->context, source_text_index);
+    List* const tokens = lexer_lex_source_text(lexer);
+    lexer_destroy(lexer);
+    return tokens;
 }
