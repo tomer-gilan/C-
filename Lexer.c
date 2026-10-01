@@ -139,7 +139,12 @@ static bool is_char_part_of_punctuator(const int c) {
  * @retval false otherwise
  */
 static bool is_char_whitespace(const int c) {
-    return c == '\t' || c == ' ' || c == '\n';
+    return  c == ' '  ||
+            c == '\t' ||
+            c == '\n' ||
+            c == '\v' ||
+            c == '\f' ||
+            c == '\r';
 }
 
 // Converters
