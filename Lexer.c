@@ -6,6 +6,10 @@
 #include "Token.h"
 #include "Utils.h"
 
+#include <stdlib.h>
+#include <assert.h>
+#include <limits.h>
+
 #define LEXER_MAX_DECODE_LITERAL_LENGTH 4095
 #define LEXER_EOF ((int)(-1))
 #define LEXER_UNKNOWN_ESCAPE_CHARACTER ((int)(-2))

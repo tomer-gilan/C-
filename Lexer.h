@@ -5,11 +5,6 @@
 #ifndef C_COMPILER_LEXER_H
 #define C_COMPILER_LEXER_H
 
-#include <stdlib.h>
-#include <errno.h>
-#include <assert.h>
-#include <limits.h>
-
 #include "Lexer.h"
 #include "Context.h"
 #include "List.h"
