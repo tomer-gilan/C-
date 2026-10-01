@@ -36,7 +36,8 @@ How the C~~ compiler's own source is written. These rules were inferred from the
 
 - **Function-like macros are banned**, except where only a macro can do the job. Each exception must justify itself in its doc comment. Current exceptions:
   - `string_view_from_literal` (StringView.h): needs `sizeof` of a string literal at compile time.
-  - The test harness's `CHECK` (planned, `testing.md`): needs `__FILE__`, `__LINE__` and `#cond`.
+  - The test harness's `CHECK` (`tests/Harness.h`): needs `__FILE__`, `__LINE__` and `#cond`.
+  - The test harness's `RUN_TEST` (`tests/Harness.h`): needs the test function's name as text (`#test`).
 - **Object-like constants** (`#define LEXER_EOF ...`) are tolerated, but `enum` or `static const` is preferred.
 
 ## Errors

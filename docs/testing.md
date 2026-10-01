@@ -168,12 +168,12 @@ Built step by step. Each step ends in a state that works and can be committed.
 The real `main` was moved from here to step 7: the harness comes first, so bugs show up one function at a time in unit tests, not all at once through `main`.
 
 **Step 1: Library split**
-- [ ] Move everything except `main.c` into a CMake library; `main` links it.
-- [ ] The compiler still builds and runs exactly as before.
+- [x] Move everything except `main.c` into a CMake library; `main` links it.
+- [x] The compiler still builds and runs exactly as before.
 
 **Step 2: Hand-rolled harness**
-- [ ] `CHECK` macro(s) and a runner `main` that returns non-zero on any failure.
-- [ ] One trivial test. Watch it fail (break it on purpose), then pass.
+- [x] `CHECK` macro(s) and a runner `main` that returns non-zero on any failure.
+- [x] One trivial test. Watch it fail (break it on purpose), then pass.
 
 **Step 3: CTest + CLion**
 - [ ] `enable_testing()` and `add_test` for the test executable.

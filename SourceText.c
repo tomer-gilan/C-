@@ -42,8 +42,8 @@ SourceText* source_text_create_from_path(const char* const path) {
     rewind(file);                       // back to the start
 
     char* buffer = utils_xmalloc(size + 1);    // +1 for a '\0' terminator
-    long read = (long)fread(buffer, 1, size, file); // trust fread's count, not ftell's
-    if (read != (size_t)size) {         // short read = I/O error or file changed
+    long const read = (long)fread(buffer, 1, size, file); // trust fread's count, not ftell's
+    if (read != (long)size) {         // short read = I/O error or file changed
         free(buffer);
         fclose(file);
         return NULL;                    // (or report a diagnostic)

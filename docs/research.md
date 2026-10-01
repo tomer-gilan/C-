@@ -61,7 +61,8 @@ Compiler instrumentation: the compiler inserts checks into the binary at build t
 - [ ] Which sanitizers can be combined in one build, and which can't (ASan + MSan, ASan + Valgrind).
 - [ ] Reading a sanitizer report: the error type, the access, where the memory was allocated and freed.
 - [ ] Wire a sanitizer build into CMake as a separate build type or CLion profile, so the plain Debug build stays plain. Run the test suite under it.
-- [ ] Also turn on warnings: `-Wall -Wextra` (maybe `-Wpedantic`, `-Wconversion` later).
+- [x] Also turn on warnings: `-Wall -Wextra` (on in `CMakeLists.txt` for both targets).
+- [ ] Maybe later: `-Wpedantic`, `-Wconversion`. What does each add, and how noisy is it on this codebase?
 - [ ] The limit shared by all dynamic tools: they only find bugs on paths that actually *run*, so they're only as good as the test inputs (see "Code coverage").
 
 ---
@@ -100,5 +101,6 @@ Background and decisions are in `testing.md`. Open questions:
 
 - [ ] Compare harnesses after the hand-rolled one works: Unity, µnit, CMocka, Criterion. What does each add (fixtures, mocking, death tests, output format)?
 - [ ] How CTest works: `enable_testing()`, `add_test`, labels, `ctest --output-on-failure`, running a subset with `-R`.
+- [ ] **One CTest entry per test case, not per executable.** With the hand-rolled harness, one executable is one CTest entry, so a failure shows as a single red "lexer" line. Option: the runner takes a test name as an argument (`test_lexer lex_eq_eq_semicolon`) and CMake registers one `add_test` per name. How do you keep the CMake list of names in sync with the test functions without maintaining it by hand twice? How do frameworks (and CMake's `gtest_discover_tests`, for comparison) solve this?
 - [ ] Mocking in C: what it is, and when (if ever) this project would need it.
 - [ ] Testing that an `assert` fires ("death tests"): how frameworks do it with `fork()`, and whether it's worth it here.
