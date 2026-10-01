@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 /**
  * @param c the character to check
@@ -30,7 +31,7 @@ static const char* get_file_name(const char* const path) {
     return &(path[last_delimiter_index + 1]); // returning substring AFTER last occurrence.
 }
 
-SourceText* source_file_create_from_path(const char* const path) {
+SourceText* source_text_create_from_path(const char* const path) {
     FILE* file = fopen(path, "rb");
     if (file == NULL)
         return NULL;
@@ -58,15 +59,25 @@ SourceText* source_file_create_from_path(const char* const path) {
     };
     return source_file;
 }
-void source_file_destroy(SourceText* const this) {
+SourceText * source_text_create_from_buffer(const char* const buffer, const int length) {
+    SourceText* source_text = utils_xmalloc(sizeof (SourceText));
+    *source_text = (SourceText){
+        .name = utils_allocate_and_copy_string("<from string>"),
+        .text = utils_allocate_and_copy_buffer(buffer, length),
+        .length = length
+    };
+    return source_text;
+}
+
+void source_text_destroy(SourceText* const this) {
     free(this->name);
     free(this->text);
     free(this);
 }
-bool source_file_is_index_in_bounds(const SourceText* this, const int index) {
+bool source_text_is_index_in_bounds(const SourceText* this, const int index) {
     return 0 <= index && index < this->length;
 }
 
-void source_file_list_destroy(void* this) {
-    source_file_destroy(this);
+void source_text_list_destroy(void* this) {
+    source_text_destroy(this);
 }

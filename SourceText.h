@@ -19,25 +19,27 @@ typedef struct {
  * @return a @c SourceText handle
  * @retval NULL if @b path is invalid
  */
-SourceText* source_file_create_from_path(const char* path);
+SourceText* source_text_create_from_path(const char* path);
 /**
  * Creates a new @c SourceText from a given @b string.
- * @param string the source string
+ * @attention ownership of @b string REMAINS at the callee, i.e. content of @b string is duplicated.
+ * @param buffer the source data (may include @c '\0')
+ * @param length the length of the @b buffer
  * @return a @c SourceText handle
  * @retval NULL if @b path is invalid
  */
-SourceText* source_file_create_from_string(const char* string);
+SourceText* source_text_create_from_buffer(const char* buffer, int length);
 /**
  * Destroys the @c SourceText .
  * @param this handle to the @c SourceText
  */
-void source_file_destroy(SourceText* this);
+void source_text_destroy(SourceText* this);
 /**
  * checks if the @b index is in the bounds of @c text
  */
-bool source_file_is_index_in_bounds(const SourceText* this, int index);
+bool source_text_is_index_in_bounds(const SourceText* this, int index);
 
 // for list.h
-void source_file_list_destroy(void* this);
+void source_text_list_destroy(void* this);
 
 #endif //C_COMPILER_SOURCE_TEXT_H
