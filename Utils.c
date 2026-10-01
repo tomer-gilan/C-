@@ -12,15 +12,15 @@
 void* utils_xmalloc(const size_t size) {
     void* ptr = malloc(size);
     if (ptr == NULL && size != 0) { // why size != 0? Because malloc can legally return NULL when size == 0
-        fputs(stderr, "xmalloc failed.\n");
+        fputs("xmalloc failed.\n", stderr);
         abort();
     }
     return ptr;
 }
-void* utils_xrealloc(void* ptr, size_t size) {
+void* utils_xrealloc(void* const ptr, const size_t size) {
     void* new_ptr = realloc(ptr, size);
     if (new_ptr == NULL) {
-        fputs(stderr, "xrealloc failed.\n");
+        fputs("xrealloc failed.\n", stderr);
         abort();
     }
     return new_ptr;

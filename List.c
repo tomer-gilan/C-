@@ -24,7 +24,6 @@ static void list_expand(List* this) {
     assert(this != NULL && "list handle was NULL");
     this->capacity *= 2;
     this->elements = utils_xrealloc(this->elements, sizeof(void*) * this->capacity);
-    assert(this->elements != NULL && "xrealloc failed");
 }
 // maybe in the future add collapse..
 // -------- END: List: private functions --------- //

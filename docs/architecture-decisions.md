@@ -235,7 +235,7 @@ Diagnostic instances are **collected in a list in `Context`**, along with an err
 
 ## ADR-013: Allocation failure aborts, via `xmalloc` / `xrealloc`
 
-- **Status:** Accepted (not implemented yet; see `TODO.md`)
+- **Status:** Accepted, implemented 2026-10-01 as `utils_xmalloc` / `utils_xrealloc` in `Utils` (prefixed per `conventions.md`; no `xstrdup`, `utils_allocate_and_copy_string` covers it)
 - **Date:** 2026-09-30
 
 ### Context
