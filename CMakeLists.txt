@@ -17,8 +17,8 @@ add_executable(c_compiler
         Token.h
         FilePosition.c
         FilePosition.h
-        SourceFile.c
-        SourceFile.h
+        SourceText.c
+        SourceText.h
         Context.c
         Context.h
         Driver.c
@@ -26,4 +26,5 @@ add_executable(c_compiler
         Range.c
         Range.h
         StringView.c
-        StringView.h)
+        StringView.h
+        SourceText.h)

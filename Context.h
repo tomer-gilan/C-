@@ -6,12 +6,12 @@
 #define C_COMPILER_CONTEXT_H
 
 #include "List.h"
-#include "SourceFile.h"
+#include "SourceText.h"
 
 typedef struct {
     List* identifiers_table;        ///< @c List of @c StringView
     List* string_literals_table;    ///< @c List of @c char* (@c string)
-    List* source_file_table;        ///< @c List of @c SourceFile
+    List* source_file_table;        ///< @c List of @c SourceText
 } Context;
 
 /**
@@ -28,7 +28,7 @@ Context* context_create(const char* source_file_path);
 void context_destroy(Context* this);
 /**
  * retrieves @c SrouceFile at @b index.
- * @warning ownership of @c SourceFile does not transfer.
+ * @warning ownership of @c SourceText does not transfer.
  */
 SourceText* context_source_file_at(Context* this, int index);
 /**

@@ -9,11 +9,11 @@
 #include "Context.h"
 
 /**
- * A @c FilePosition represents a certain place within a @c SourceFile.
+ * A @c FilePosition represents a certain place within a @c SourceText.
  * It abstracts the line and column number by counting occurrences of @c '\n' .
  */
 typedef struct {
-    int source_file_index;  ///< the @c SourceFile index of @c Context 's @c source_file_table.
+    int source_file_index;  ///< the @c SourceText index of @c Context 's @c source_file_table.
     int offset;             ///< offset (in bytes) inside the source file. Can be converted to a @c LineColumn struct.
 } FilePosition;
 
@@ -28,12 +28,12 @@ typedef struct {
  */
 void file_line_column_advance(FileLineColumn* this, char c);
 /**
- * generates a @c FileLineColumn based on the current offset of the @c SourceFile
+ * generates a @c FileLineColumn based on the current offset of the @c SourceText
  */
 FileLineColumn file_position_get_file_line_column(FilePosition this, const Context* context);
 /**
- * get the @c SourceFile related to @b this @c FilePosition
- * @note @b context is deliberately non-const, since the @c SourceFile which is returned
+ * get the @c SourceText related to @b this @c FilePosition
+ * @note @b context is deliberately non-const, since the @c SourceText which is returned
  * can modify the state of @c Context.
  */
 SourceText* file_position_get_source_file(FilePosition this, Context* context);

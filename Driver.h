@@ -18,7 +18,7 @@ typedef struct {
  * @param argc the same as @c main 's
  * @param argv the same as @c main 's
  * @return a @c Driver handle
- * @retval NULL upon invalid argv (specifically invalid @c SourceFile path)
+ * @retval NULL upon invalid argv (specifically invalid @c SourceText path)
  */
 Driver* driver_create(int argc, const char* const* argv);
 /**

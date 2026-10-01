@@ -77,7 +77,7 @@ typedef enum {
 // Token
 typedef struct {
     TokenKind kind;
-    Range range; ///< the part of the @c SourceFile (lexeme) that is processed as the @c Token.
+    Range range; ///< the part of the @c SourceText (lexeme) that is processed as the @c Token.
     union {
         int id; ///< for identifiers, string literals
         int value; ///< for constants
