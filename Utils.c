@@ -28,14 +28,18 @@ void* utils_xrealloc(void* const ptr, const size_t size) {
 
 // -------------------- string utils -------------------- //
 char* utils_allocate_and_copy_string(const char* const source) {
-    char* copy = utils_xmalloc(sizeof(char) * (strlen(source) + 1));
-    strcpy(copy, source);
-    return copy;
+    return utils_allocate_and_copy_buffer(source, (int)strlen(source) + 1);
 }
-
 int utils_string_list_strcmp(const void* const first, const void* const second) {
     return strcmp(first, second);
 }
 void* utils_string_list_allocate_and_copy(const void* const string) {
     return utils_allocate_and_copy_string(string);
+}
+
+// -------------------- other -------------------- //
+char * utils_allocate_and_copy_buffer(const char* const buffer, const int size) {
+    char* const copy = utils_xmalloc(sizeof(char) * size);
+    memcpy(copy, buffer, size);
+    return copy;
 }
