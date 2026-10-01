@@ -25,15 +25,15 @@ Replace the scattered `// TODO: issue diagnostic` comments with a real reporting
 
 `assert(ptr != NULL)` after an allocation disappears under `NDEBUG`, and most call sites don't check at all.
 
-- [ ] Add `xmalloc` / `xrealloc` (and maybe `xstrdup`) wrappers that abort with a message on failure.
-- [ ] Replace every raw call site:
-  - [ ] `Context.c` (`context_create`)
-  - [ ] `Driver.c` (`driver_create`)
-  - [ ] `Lexer.c` (`lexer_create`, both literal buffers, per-token allocation in `lexer_lex_source_file`)
-  - [ ] `List.c` (`list_create` x2, `list_expand`)
-  - [ ] `SourceFile.c` (text buffer, `SourceFile` struct)
-  - [ ] `StringView.c` (`string_view_list_duplicate`)
-  - [ ] `Utils.c` (`utils_allocate_and_copy_string`)
+- [x] Add `xmalloc` / `xrealloc` (and maybe `xstrdup`) wrappers that abort with a message on failure.
+- [x] Replace every raw call site:
+  - [x] `Context.c` (`context_create`)
+  - [x] `Driver.c` (`driver_create`)
+  - [x] `Lexer.c` (`lexer_create`, both literal buffers, per-token allocation in `lexer_lex_source_file`)
+  - [x] `List.c` (`list_create` x2, `list_expand`)
+  - [x] `SourceFile.c` (text buffer, `SourceFile` struct)
+  - [x] `StringView.c` (`string_view_list_duplicate`)
+  - [x] `Utils.c` (`utils_allocate_and_copy_string`)
 - [ ] Remove the now-redundant `assert(... != NULL && "malloc failed")` lines.
 
 ## Lexer changes from the 2026-09-30 decisions
