@@ -3,6 +3,8 @@
 //
 
 #include "Lexer.h"
+#include "Token.h"
+#include "Utils.h"
 
 #define LEXER_MAX_DECODE_LITERAL_LENGTH 4095
 #define LEXER_EOF ((int)(-1))

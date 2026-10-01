@@ -2,6 +2,9 @@
 // Created by tomer on 27-Sep-26.
 //
 
+#include <assert.h>
+#include <stdlib.h>
+
 #include "FilePosition.h"
 
 void file_line_column_advance(FileLineColumn* const this, const char c) {

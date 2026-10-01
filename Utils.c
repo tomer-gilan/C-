@@ -2,6 +2,10 @@
 // Created by tomer on 23-Sep-26.
 //
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
 #include "Utils.h"
 
 char* utils_allocate_and_copy_string(const char* const source) {

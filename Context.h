@@ -5,8 +5,6 @@
 #ifndef C_COMPILER_CONTEXT_H
 #define C_COMPILER_CONTEXT_H
 
-#include <assert.h>
-
 #include "List.h"
 #include "SourceFile.h"
 

@@ -5,9 +5,7 @@
 #ifndef C_COMPILER_STRING_VIEW_H
 #define C_COMPILER_STRING_VIEW_H
 
-#include <string.h>
 #include <stdbool.h>
-#include <stdlib.h>
 
 typedef struct {
     const char* data;

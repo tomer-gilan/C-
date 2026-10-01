@@ -5,10 +5,6 @@
 #ifndef C_COMPILER_UTILS_H
 #define C_COMPILER_UTILS_H
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
 // -------------------- string utils -------------------- //
 /**
  * Allocated a new string, and copies the content of source to it.

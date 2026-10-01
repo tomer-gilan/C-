@@ -10,7 +10,6 @@
 #include <assert.h>
 #include <limits.h>
 
-#include "Token.h"
 #include "Lexer.h"
 #include "Context.h"
 #include "List.h"

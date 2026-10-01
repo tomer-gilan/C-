@@ -2,6 +2,9 @@
 // Created by tomer on 28-Sep-26.
 //
 
+#include <string.h>
+#include <stdlib.h>
+
 #include "StringView.h"
 
 bool string_view_equals(const StringView first, const StringView second) {

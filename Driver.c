@@ -2,6 +2,8 @@
 // Created by tomer on 27-Sep-26.
 //
 
+#include <stdlib.h>
+
 #include "Driver.h"
 
 Driver* driver_create(const int argc, const char* const* argv) {

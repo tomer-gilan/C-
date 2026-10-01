@@ -2,6 +2,9 @@
 // Created by tomer on 23-Sep-26.
 //
 
+#include <assert.h>
+#include <stdlib.h>
+
 #include "List.h"
 
 struct List {

@@ -5,11 +5,8 @@
 #ifndef C_COMPILER_FILE_POSITION_H
 #define C_COMPILER_FILE_POSITION_H
 
-#include <assert.h>
-#include <stdlib.h>
-
+#include "FilePosition.h"
 #include "Context.h"
-#include "SourceFile.h"
 
 /**
  * A @c FilePosition represents a certain place within a @c SourceFile.

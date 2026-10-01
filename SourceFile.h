@@ -5,15 +5,10 @@
 #ifndef C_COMPILER_SOURCEFILE_H
 #define C_COMPILER_SOURCEFILE_H
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdbool.h>
-#include <assert.h>
-
-#include "Utils.h"
 
 typedef struct {
-    char* name;
+    char* name; ///< the name of the file, i.e. path==full/path/to/file_name.c and name==file_name.c
     char* text;
     int length;
 } SourceFile;

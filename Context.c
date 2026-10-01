@@ -2,6 +2,9 @@
 // Created by tomer on 27-Sep-26.
 //
 
+#include <assert.h>
+#include <stdlib.h>
+
 #include "Context.h"
 
 Context* context_create(const char* source_file_path) {

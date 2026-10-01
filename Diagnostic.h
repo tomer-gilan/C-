@@ -11,7 +11,6 @@
 #include <assert.h>
 
 #include "Range.h"
-#include "Context.h"
 
 typedef enum {
     DIAGNOSTIC_SEVERITY_NOTE,

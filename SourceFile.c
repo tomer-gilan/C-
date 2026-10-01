@@ -2,7 +2,12 @@
 // Created by tomer on 27-Sep-26.
 //
 
+#include "Utils.h"
 #include "SourceFile.h"
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 
 /**
  * @param c the character to check
