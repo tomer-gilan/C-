@@ -5,6 +5,12 @@
 #ifndef C_COMPILER_UTILS_H
 #define C_COMPILER_UTILS_H
 
+#include <stddef.h>
+
+// -------------------- memory allocation -------------------- //
+void* xmalloc(size_t size);
+void* xrealloc(void* ptr, size_t size);
+
 // -------------------- string utils -------------------- //
 /**
  * Allocated a new string, and copies the content of source to it.
@@ -22,5 +28,7 @@ char* utils_allocate_and_copy_string(const char* source);
 int utils_string_list_strcmp(const void* first, const void* second);
 // for list.h
 void* utils_string_list_allocate_and_copy(const void* string);
+
+
 
 #endif //C_COMPILER_UTILS_H
