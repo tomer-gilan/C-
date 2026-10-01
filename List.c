@@ -37,7 +37,6 @@ List* list_create(void (*destroy_element)(void* element))  {
     assert(destroy_element != NULL && "Must provide valid destroy_element callback");
 
     List* list = xmalloc(sizeof(List));
-    assert(list != NULL && "xmalloc failed");
     *list = (List){
         .size = 0,
         .capacity = 1,
