@@ -10,7 +10,7 @@ StringView range_to_string_view(const Range this, const Context* const context) 
     assert(this.length >= 0 && "invalid range length (negative)");
     assert(source_text_is_index_in_bounds(
         file_position_get_source_text_const(this.position, context),
-        this.position.offset + this.length)
+        this.position.offset + this.length - 1)
         && "invalid range (outside of SourceText bounds)");
 
     const SourceText* source = list_at_const(context->source_text_table, this.position.source_text_index);

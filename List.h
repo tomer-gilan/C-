@@ -56,6 +56,7 @@ void* list_pop(List* this);
 void list_pop_destroy(List* this);
 /**
  * Retrieves a value of the @c List at a given @b index .
+ * @attention ownership of return value remains with the @c List
  * @param this a handle to the @c List
  * @param index the index of the element to be retrieved.
  * @return the @b index 'th member of the @c List

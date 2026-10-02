@@ -21,9 +21,9 @@ typedef struct {
  */
 SourceText* source_text_create_from_path(const char* path);
 /**
- * Creates a new @c SourceText from a given @b string.
+ * Creates a new @c SourceText from a given @b buffer.
  * @note adds a '\0' at the end of the copied buffer
- * @attention ownership of @b string REMAINS at the callee, i.e. content of @b string is duplicated.
+ * @attention ownership of @b buffer REMAINS at the callee, i.e. content of @b buffer is duplicated.
  * @param buffer the source data (may include @c '\0')
  * @param length the length of the @b buffer
  * @retval NULL if @b length is 0
@@ -35,7 +35,8 @@ SourceText* source_text_create_from_buffer(const char* buffer, int length);
  */
 void source_text_destroy(SourceText* this);
 /**
- * checks if the @b index is in the bounds of @c text
+ * checks if the @b index is in the bounds of @c text.
+ * @attention index == @b length is considered out-of-bounds, even though its '\0'.
  */
 bool source_text_is_index_in_bounds(const SourceText* this, int index);
 

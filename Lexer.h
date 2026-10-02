@@ -14,6 +14,7 @@ typedef struct Lexer Lexer; // opaque struct
 
 // C-tor and D-tor:
 /**
+ * @attention ownership of @b context remains with the callee, i.e. @b context must outlive @c Lexer.
  * @param context the @c compilation @c Context
  * @param source_file_index @c Context 's @c source_file_table index of the file to be lexed.
  * @return @c Lexer handle

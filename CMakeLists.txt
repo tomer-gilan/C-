@@ -55,3 +55,7 @@ add_test(NAME list COMMAND test_list)
 add_executable(test_string_view tests/test_string_view.c)
 target_link_libraries(test_string_view PRIVATE c_compiler_core test_harness c_compiler_warnings)
 add_test(NAME string_view COMMAND test_string_view)
+
+add_executable(test_lexer tests/test_lexer.c)
+target_link_libraries(test_lexer PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME lexer COMMAND test_lexer)
