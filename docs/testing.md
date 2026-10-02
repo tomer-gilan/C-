@@ -176,13 +176,19 @@ The real `main` was moved from here to step 7: the harness comes first, so bugs 
 - [x] One trivial test. Watch it fail (break it on purpose), then pass.
 
 **Step 3: CTest + CLion**
-- [ ] `enable_testing()` and `add_test` for the test executable.
-- [ ] Tests appear in CLion's test tree; run them from there.
+- [x] `enable_testing()` and `add_test` for the test executable.
+- [x] Tests appear in CLion's test tree; run them from there.
 
-**Step 4: First real unit tests**
-- [ ] `List`: push past capacity, pop from empty, `find_or_push` returns the existing index.
-- [ ] `StringView`: equality, including different lengths with a shared prefix.
-- [ ] Lexer regression tests from bugs already found: `" x"`, `"x\n"`, a file that is just `+`, `==;`, `''`, `'ab'`, `123abc`, 4095- and 4096-char string literals, an empty file, identifier interning (`a b a` → same id for both `a`s).
+**Step 4: First real unit tests**, one sub-step per test executable.
+
+**Step 4a: `List`** (`test_list`)
+- [x] Push past capacity, pop from empty, `find_or_push` returns the existing index.
+
+**Step 4b: `StringView`** (`test_string_view`)
+- [x] Equality, including different lengths with a shared prefix.
+
+**Step 4c: Lexer** (`test_lexer`)
+- [ ] Regression tests from bugs already found: `" x"`, `"x\n"`, a file that is just `+`, `==;`, `''`, `'ab'`, `123abc`, 4095- and 4096-char string literals, an empty file, identifier interning (`a b a` → same id for both `a`s).
 
 **Step 5: Commit check (ADR-002)**
 - [ ] Enable "Run Tests" in CLion's commit dialog with the CTest configuration.
