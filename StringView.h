@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 typedef struct {
-    const char* data;
+    const char* data; ///< Must not be @c NULL
     int length;
 } StringView;
 
