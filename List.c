@@ -98,6 +98,8 @@ int list_index_of(const List* const this, const void* const element, int (*equal
 bool list_contains(const List* const this, const void* const element, int (*equals)(const void*, const void*)) {
     assert(this != NULL && "list handle was NULL");
     assert(equals != NULL && "'equals' was NULL");
+    if (element == NULL)
+        return false;
     return list_index_of(this, element, equals) != -1;
 }
 int list_find_or_push(List* const this, const void* const element, int (*equals)(const void*, const void*), void* (*duplicate)(const void*)) {
