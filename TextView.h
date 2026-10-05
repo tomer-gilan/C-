@@ -13,12 +13,12 @@ typedef struct {
 } TextView;
 
 /**
- * This macro generates an initialization list for a @c StringView, sourced specifically from a string literal.
+ * This macro generates an initialization list for a @c TextView, sourced specifically from a string literal.
  * @warning passing anything other than string literals will cause a compilation error.
  * @note as a general guideline, no macros of this style are welcome in this project.
  * However, a compile-time-calculated expression was needed, and this solution far too simple and elegant to ignore.
- * @param literal a string literal, to be taken as the source for the @c StringView
- * @return a @c StringView
+ * @param literal a string literal, to be taken as the source for the @c TextView
+ * @return a @c TextView
  */
 #define text_view_from_literal(literal) ((TextView){.data = "" literal "", .length = sizeof(literal) - 1})
 
@@ -32,6 +32,6 @@ int text_view_list_compare(const void* first, const void* second);
 /**
  * @attention this is shallow duplication
  */
-void* text_view_list_duplicate(const void* string_view);
+void* text_view_list_duplicate(const void* text_view);
 
 #endif //C_COMPILER_TEXTVIEW_H

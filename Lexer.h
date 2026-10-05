@@ -5,7 +5,6 @@
 #ifndef C_COMPILER_LEXER_H
 #define C_COMPILER_LEXER_H
 
-#include "Lexer.h"
 #include "Context.h"
 #include "List.h"
 
@@ -14,12 +13,12 @@ typedef struct Lexer Lexer; // opaque struct
 
 // C-tor and D-tor:
 /**
- * @attention ownership of @b context remains with the callee, i.e. @b context must outlive @c Lexer.
+ * @attention ownership of @b context remains with the caller, i.e. @b context must outlive @c Lexer.
  * @param context the @c compilation @c Context
- * @param source_file_index @c Context 's @c source_file_table index of the file to be lexed.
+ * @param source_text_index @c Context 's @c source_text_table index of the file to be lexed.
  * @return @c Lexer handle
  */
-Lexer* lexer_create(Context* context, int source_file_index);
+Lexer* lexer_create(Context* context, int source_text_index);
 /**
  * @param this a handle to the @c Lexer
  */

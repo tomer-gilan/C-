@@ -10,7 +10,7 @@
 #include "Range.h"
 #include "TextView.h"
 
-// Token Kinds. WHEN ADDING A NEW ONE, DO NOT FORGOT TO UPDATE THE ALIASES AT THE END!!
+// Token Kinds. WHEN ADDING A NEW ONE, DO NOT FOGET TO UPDATE THE ALIASES AT THE END!!
 typedef enum {
     // First, all spellable token kinds:
     // Keywords
@@ -35,7 +35,7 @@ typedef enum {
     TOKEN_TILDE,                // ~
     TOKEN_EXCLAMATION,          // !
     TOKEN_FORWARD_SLASH,        // /
-    TOKEN_PERCENTAGE,           // %
+    TOKEN_PERCENT,              // %
     TOKEN_CARET,                // ^
     TOKEN_EQUALS,               // =
     TOKEN_LESS_LESS,            // <<
@@ -87,9 +87,12 @@ typedef struct {
 extern const TextView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT];
 
 TextView token_kind_get_spelling(TokenKind kind);
+/**
+ * @retval TOKEN_NON if spelling does not match any token kind.
+ */
 TokenKind token_kind_from_spelling(TextView spelling);
 
-bool token_is_EOF(Token token);
+bool token_is_eof(Token token);
 bool token_kind_is_keyword(TokenKind kind);
 bool token_kind_is_punctuator(TokenKind kind);
 

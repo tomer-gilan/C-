@@ -9,7 +9,7 @@
 #include "TextView.h"
 
 /**
- * a @c Range is similar in nature to physics vector. It has a start (@c Location) and a @c length .
+ * a @c Range is similar in nature to physics vector. It has a start (@c FilePosition) and a @c length .
  * As of today is it mostly used by @c Token to represent its exact spelling.
  */
 typedef struct {
@@ -27,6 +27,11 @@ TextView range_to_string_view(Range this, const Context* context);
  * file and ending in another), and that start does not come after end (can be the same).
  */
 Range range_from_file_positions(FilePosition start, FilePosition end);
+
+/**
+ * @note @b n can be negative, in which case the range shrinks.
+ * @attention asserts that adding @b n does not cause a negative @c Range @c length.
+ */
 void range_extend(Range* this, int n);
 /**
  * predicate, determining if both are equal.

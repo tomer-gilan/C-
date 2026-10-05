@@ -29,7 +29,7 @@ const TextView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT] = {
     [TOKEN_TILDE]               = text_view_from_literal("~"),
     [TOKEN_EXCLAMATION]         = text_view_from_literal("!"),
     [TOKEN_FORWARD_SLASH]       = text_view_from_literal("/"),
-    [TOKEN_PERCENTAGE]          = text_view_from_literal("%"),
+    [TOKEN_PERCENT]          = text_view_from_literal("%"),
     [TOKEN_CARET]               = text_view_from_literal("^"),
     [TOKEN_EQUALS]              = text_view_from_literal("="),
     [TOKEN_LESS_LESS]           = text_view_from_literal("<<"),
@@ -58,7 +58,7 @@ TokenKind token_kind_from_spelling(const TextView spelling) {
     return TOKEN_NONE;
 }
 
-bool token_is_EOF(const Token token) {
+bool token_is_eof(const Token token) {
     return token.kind == TOKEN_EOF;
 }
 bool token_kind_is_keyword(const TokenKind kind) {

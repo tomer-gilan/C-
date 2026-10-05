@@ -31,7 +31,7 @@ void driver_destroy(Driver* this) {
     context_destroy(this->context);
     free(this);
 }
-List* driver_compile(Driver* const this, int const source_text_index) {
+List* driver_compile(Driver* const this, const int source_text_index) {
     Lexer* lexer = lexer_create(this->context, source_text_index);
     List* const tokens = lexer_lex_source_text(lexer);
     lexer_destroy(lexer);

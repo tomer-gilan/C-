@@ -2,13 +2,12 @@
 // Created by tomer on 23-Sep-26.
 //
 
-#include <assert.h>
-#include <stdlib.h>
-
 #include "List.h"
-
 #include "TextView.h"
 #include "Utils.h"
+
+#include <assert.h>
+#include <stdlib.h>
 
 struct List {
     int size;
@@ -89,28 +88,28 @@ const void* list_at_const(const List* this, const int index) {
     assert(list_is_index_in_bounds(this, index) && "list index out of bounds");
     return this->elements[index];
 }
-int list_index_of(const List* const this, const void* const element, int (*equals)(const void*, const void*)) {
+int list_index_of(const List* const this, const void* const element, int (*compare)(const void*, const void*)) {
     assert(this != NULL && "list handle was NULL");
-    assert(equals != NULL && "'equals' was NULL");
+    assert(compare != NULL && "'equals' was NULL");
     for (int i = 0; i < this->size; ++i)
-        if (equals(list_at_const(this, i), element) == 0)
+        if (compare(list_at_const(this, i), element) == 0)
             return i;
     return -1;
 }
-bool list_contains(const List* const this, const void* const element, int (*equals)(const void*, const void*)) {
+bool list_contains(const List* const this, const void* const element, int (*compare)(const void*, const void*)) {
     assert(this != NULL && "list handle was NULL");
-    assert(equals != NULL && "'equals' was NULL");
+    assert(compare != NULL && "'equals' was NULL");
 
     if (element == NULL)
         return false;
-    return list_index_of(this, element, equals) != -1;
+    return list_index_of(this, element, compare) != -1;
 }
-int list_find_or_push(List* const this, const void* const element, int (*equals)(const void*, const void*), void* (*duplicate)(const void*)) {
+int list_find_or_push(List* const this, const void* const element, int (*compare)(const void*, const void*), void* (*duplicate)(const void*)) {
     assert(this != NULL && "list handle was NULL");
     assert(duplicate != NULL && "must provide a 'duplicate' function when calling 'list_find_or_push'.");
-    assert(equals != NULL && "must provide an 'equals' function when calling 'list_find_or_push'.");
+    assert(compare != NULL && "must provide an 'equals' function when calling 'list_find_or_push'.");
 
-    int index_of_element = list_index_of(this, element, equals);
+    int index_of_element = list_index_of(this, element, compare);
     if (index_of_element == -1)
         index_of_element = list_push(this, duplicate(element));
     return index_of_element;

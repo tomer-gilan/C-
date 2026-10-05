@@ -17,9 +17,9 @@
 
 /**
  * returns the @c Token @c List which was lexed from @b buffer.
- * @attention ownership of @b buffer remains with the callee.
+ * @attention ownership of @b buffer remains with the caller.
  */
-static List* test_lexer_lex_buffer(const char* const buffer, int const length) {
+static List* test_lexer_lex_buffer(const char* const buffer, const int length) {
     Context* context = context_create(source_text_create(text_create_from_buffer(buffer, length), "<source>"));
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
@@ -36,7 +36,7 @@ static bool are_tokens_equal(const Token* first, const Token* second, const Cont
                                                                // only checks the position offset and length, and this is what we
                                                                // want to find out.
         return false;
-    if (token_is_EOF(*first) && token_is_EOF(*second))
+    if (token_is_eof(*first) && token_is_eof(*second))
         return true;
     if (first->kind != second->kind)
         return false;
@@ -85,7 +85,7 @@ static void test_lexer_empty_buffer(void) {
     List* tokens = test_lexer_lex_buffer("", 0);
 
     CHECK(list_get_size(tokens) == 1);
-    CHECK(token_is_EOF(*(Token*)list_at(tokens, 0)));
+    CHECK(token_is_eof(*(Token*)list_at(tokens, 0)));
 
     list_destroy(tokens);
 }
@@ -98,7 +98,7 @@ static void test_lexer_single_punctuator(void) {
         const Token* const first = list_at(tokens, 0);
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == kind);
-        CHECK(token_is_EOF(*second));
+        CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
     }
@@ -112,7 +112,7 @@ static void test_lexer_single_keyword(void) {
         const Token* const first = list_at(tokens, 0);
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == kind);
-        CHECK(token_is_EOF(*second));
+        CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
     }
@@ -150,7 +150,7 @@ static void test_lexer_single_numeric(void) {
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == TOKEN_CONST_INT);
         CHECK(first->as.value == test.number);
-        CHECK(token_is_EOF(*second));
+        CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
     }
@@ -189,7 +189,7 @@ static void test_lexer_single_char(void) {
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == TOKEN_CONST_INT);
         CHECK(first->as.value == test.number);
-        CHECK(token_is_EOF(*second));
+        CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
     }
@@ -228,7 +228,7 @@ static void test_lexer_single_string(void) {
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == TOKEN_STRING_LITERAL);
         CHECK(0 == strcmp(list_at(context->string_literals_table, first->as.id), test.literal)); // TODO: replace strcmp with memcmp once string literals are saved as StringView.
-        CHECK(token_is_EOF(*second));
+        CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
         lexer_destroy(lexer);
@@ -266,7 +266,7 @@ static void test_lexer_single_identifier(void) {
 
         const TextView token_identifier_spelling = *(TextView*)list_at(context->identifiers_table, first->as.id);
         CHECK(text_view_equals(test.identifier, token_identifier_spelling));
-        CHECK(token_is_EOF(*second));
+        CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
         lexer_destroy(lexer);

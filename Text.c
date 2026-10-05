@@ -2,21 +2,21 @@
 // Created by tomer on 05-Oct-26.
 //
 
+#include "Text.h"
+#include "Utils.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include "Text.h"
-#include "Utils.h"
-
 Text* text_create_from_buffer(const char* buffer, const int length) {
-    Text* const string_view = utils_xmalloc(sizeof(Text));
-    *string_view = (Text){
+    Text* const text_view = utils_xmalloc(sizeof(Text));
+    *text_view = (Text){
         .data = utils_allocate_and_copy_buffer(buffer, length),
         .length = length
     };
-    return string_view;
+    return text_view;
 }
 Text* text_create_from_path(const char* const path) {
     FILE* file = fopen(path, "rb");
@@ -58,9 +58,6 @@ int text_compare(const Text* const first, const Text* const second) {
         return -1; // -1 as in not 0, i.e. not equal.
     const int length = first->length;
     return memcmp(first->data, second->data, length);
-}
-int text_list_equals(const void* first, const void* second) {
-    return text_equals(first, second);
 }
 int text_list_compare(const void* first, const void* second) {
     return text_compare(first, second);

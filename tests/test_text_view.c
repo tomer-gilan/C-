@@ -19,10 +19,10 @@ void* duplicate_int(const void* first) {
 }
 // end helpers
 
-static void test_string_view_(void) {
+static void test_text_view_(void) {
 }
 
-static void test_string_view_equals(void) {
+static void test_text_view_equals(void) {
     TextView sv_literal[] = {
         text_view_from_literal(""),
         text_view_from_literal("a"),
@@ -96,7 +96,7 @@ static void test_string_view_equals(void) {
         CHECK(text_view_equals(sv1, sv2));
     }
 }
-static void test_string_view_list_duplicate(void) {
+static void test_text_view_list_duplicate(void) {
     {
         TextView sv1 = {.data = "", .length = 0};
         TextView* sv_ptr = text_view_list_duplicate(&sv1);
@@ -146,7 +146,7 @@ static void test_string_view_list_duplicate(void) {
 }
 
 int main(void) {
-    RUN_TEST(test_string_view_equals);
-    RUN_TEST(test_string_view_list_duplicate);
+    RUN_TEST(test_text_view_equals);
+    RUN_TEST(test_text_view_list_duplicate);
     return harness_finish();
 }

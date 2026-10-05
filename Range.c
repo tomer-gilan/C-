@@ -2,9 +2,9 @@
 // Created by tomer on 27-Sep-26.
 //
 
-#include <assert.h>
-
 #include "Range.h"
+
+#include <assert.h>
 
 TextView range_to_string_view(const Range this, const Context* const context) {
     assert(this.length >= 0 && "invalid range length (negative)");
@@ -25,6 +25,7 @@ Range range_from_file_positions(const FilePosition start, const FilePosition end
     return (Range){.position = start, .length = end.offset - start.offset};
 }
 void range_extend(Range* const this, const int n) {
+    assert(this->length + n >= 0);
     this->length += n;
 }
 bool range_equals(const Range first, const Range second) {

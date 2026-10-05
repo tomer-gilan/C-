@@ -11,7 +11,7 @@
 #include "TextView.h"
 
 typedef struct {
-    List* identifiers_table;        ///< @c List of @c StringView
+    List* identifiers_table;        ///< @c List of @c TextView
     List* string_literals_table;    ///< @c List of @c char* (@c string)
     List* source_text_table;        ///< @c List of @c SourceText
 } Context;
@@ -29,7 +29,7 @@ Context* context_create(SourceText* source);
  */
 void context_destroy(Context* this);
 /**
- * retrieves @c SrouceText at @b index.
+ * retrieves @c SourceText at @b index.
  * @warning ownership of @c SourceText does not transfer.
  */
 SourceText* context_source_text_at(Context* this, int index);

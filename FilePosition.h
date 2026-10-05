@@ -5,7 +5,6 @@
 #ifndef C_COMPILER_FILE_POSITION_H
 #define C_COMPILER_FILE_POSITION_H
 
-#include "FilePosition.h"
 #include "Context.h"
 
 /**
@@ -14,7 +13,7 @@
  */
 typedef struct {
     int source_text_index;  ///< the @c SourceText index of @c Context 's @c source_text_table.
-    int offset;             ///< offset (in bytes) inside the source text. Can be converted to a @c LineColumn struct.
+    int offset;             ///< offset (in bytes) inside the source text. Can be converted to a @c FileLineColumn struct.
 } FilePosition;
 
 typedef struct {

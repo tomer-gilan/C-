@@ -25,8 +25,8 @@ struct Lexer {
 Lexer* lexer_create(Context* const context, const int source_text_index) {
     assert(context != NULL && "context is null");
 
-    Lexer* lexer_stream = utils_xmalloc(sizeof(Lexer));
-    *lexer_stream = (Lexer){
+    Lexer* lexer = utils_xmalloc(sizeof(Lexer));
+    *lexer = (Lexer){
         .cursor = {.source_text_index = source_text_index, .offset = 0},
         .context = context,
         .token_eof = {
@@ -40,7 +40,7 @@ Lexer* lexer_create(Context* const context, const int source_text_index) {
             }
         }
     };
-    return lexer_stream;
+    return lexer;
 }
 void lexer_destroy(Lexer* this) {
     free(this);
@@ -49,27 +49,28 @@ void lexer_destroy(Lexer* this) {
 // Peeking, Popping:
 /**
  * Peeks at a character, relative to the @c cursor.
- * @param this a handle to the lexer stream
+ * @param this a handle to the lexer
  * @param offset the relative distance from the @c cursor
  * @return the character as an @c int
+ * @retval LEXER_EOF if the relative @b offset is positioned out-of-bounds.
  */
 static int lexer_peek_at(const Lexer* this, const int offset) {
-    const SourceText* const source = file_position_get_source_text(this->cursor, this->context);
+    const SourceText* const source = file_position_get_source_text_const(this->cursor, this->context);
     const int final_offset = this->cursor.offset + offset;
     return source_text_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->data->data[final_offset]) : LEXER_EOF;
 }
 /**
  * Peeks the character the @c cursor points at.
- * @param this a handle to the lexer stream
+ * @param this a handle to the lexer
  * @return the character as an @c int.
- * @retval LEXER_EOF if the relative @b offset is positioned out-of-bounds.
+ * @retval LEXER_EOF if no more tokens are left.
  */
 static int lexer_peek(const Lexer* this) {
     return lexer_peek_at(this, 0);
 }
 /**
  * Pops the current character the @c cursor points at.
- * @param this a handle to the lexer stream
+ * @param this a handle to the lexer
  * @return the character as an @c int
  */
 static int lexer_pop(Lexer* this) {
@@ -80,7 +81,7 @@ static int lexer_pop(Lexer* this) {
 }
 /**
  * Pops characters until @b predicate is @c false.
- * @param this a handle to the lexer stream
+ * @param this a handle to the lexer
  * @param predicate @c cursor of @c Lexer advances as long as @b predicate is true
  * @return the skipped @c Range
  */
@@ -93,7 +94,7 @@ static Range lexer_skip_while(Lexer* const this, bool (*predicate)(int character
 
 // Predicates
 /**
- * @param c character as an @c int
+ * @param c a character as an @c int
  * @retval true if @b character is a letter
  * @retval false otherwise
  */
@@ -102,7 +103,7 @@ static bool is_char_alpha(const int c) {
             ('a' <= c && c <= 'z');
 }
 /**
- * @param c character as an @c int
+ * @param c a character as an @c int
  * @retval true if @b character is a digit
  * @retval false otherwise
  */
@@ -110,7 +111,7 @@ static bool is_char_numeric(const int c) {
     return '0' <= c && c <= '9';
 }
 /**
- * @param c character as an @c int
+ * @param c a character as an @c int
  * @retval true if @b character is a word character
  * @retval false otherwise
  */
@@ -120,7 +121,7 @@ static bool is_char_word_character(const int c) {
             c == '_';
 }
 /**
- * @param c character as an @c int
+ * @param c a character as an @c int
  * @retval true if @b character is a part of a punctuator's spelling.
  * @retval false otherwise
  */
@@ -134,7 +135,7 @@ static bool is_char_part_of_punctuator(const int c) {
     return false;
 }
 /**
- * @param c character as an @c int
+ * @param c a character as an @c int
  * @retval true if @b character is considered whitespace
  * @retval false otherwise
  */
@@ -259,8 +260,10 @@ static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int*
         else if (c == delimiter) { // i.e. if we encounter a non-escaped delimiter
             return range_from_file_positions(start, this->cursor);
         }
-        else if (*bytes_written < LEXER_MAX_DECODE_LITERAL_LENGTH) // finally, the trivial case of a regular non escaped character.
-                buff4096[(*bytes_written)++] = (char)c;
+        else if (*bytes_written < LEXER_MAX_DECODE_LITERAL_LENGTH) {
+            // finally, the trivial case of a regular non escaped character.
+            buff4096[(*bytes_written)++] = (char)c;
+        }
     }
     // if we got here something went wrong.
     // sanity check:
@@ -393,7 +396,7 @@ static Token lexer_get_unknown_token(Lexer* const this) {
 
 /**
  * extract the next token based on the lexeme.
- * @param this a handle to the lexer stream
+ * @param this a handle to the lexer
  * @return the next token based on the lexeme.
  */
 static Token lexer_lex_token(Lexer* const this) {
@@ -425,6 +428,6 @@ List* lexer_lex_source_text(Lexer* const this) {
         new_token = utils_xmalloc(sizeof(Token));
         *new_token = lexer_lex_token(this);
         list_push(token_list, new_token);
-    } while (!token_is_EOF(*new_token));
+    } while (!token_is_eof(*new_token));
     return token_list;
 }

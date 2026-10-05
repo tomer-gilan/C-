@@ -13,9 +13,9 @@ typedef struct {
 } Text;
 
 /**
- * @param buffer callee owned buffer, to be duplicated.
+ * @param buffer caller owned buffer, to be duplicated.
  * @param length length of @b buffer
- * @return handle to @c String
+ * @return handle to @c Text
  */
 Text* text_create_from_buffer(const char* buffer, int length);
 /**
@@ -23,7 +23,7 @@ Text* text_create_from_buffer(const char* buffer, int length);
  */
 Text* text_create_from_path(const char* path);
 /**
- * destroys the @c String struct.
+ * destroys the @c Text struct.
  */
 void text_destroy(Text* this);
 /**
@@ -33,7 +33,6 @@ bool text_equals(const Text* first, const Text* second);
 int text_compare(const Text* first, const Text* second);
 
 // for list.h usage
-int text_list_equals(const void* first, const void* second);
 int text_list_compare(const void* first, const void* second);
 /**
  * @attention this is DEEP duplication
