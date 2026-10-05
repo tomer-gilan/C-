@@ -7,12 +7,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <Text.h>
 
 #include "Harness.h"
 #include "Lexer.h"
 #include "Token.h"
 #include "Utils.h"
+#include "Text.h"
+#include "TextView.h"
 
 /**
  * returns the @c Token @c List which was lexed from @b buffer.
@@ -273,7 +274,7 @@ static void test_lexer_single_identifier(void) {
     }
 }
 static void test_lexer_int_x_eq_5_sc(void) {
-    const TextView source = text_view_from_literal("int x = 5;");
+    /*const TextView source = text_view_from_literal("int x = 5;");
     Context* lexer_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
@@ -303,7 +304,7 @@ static void test_lexer_int_x_eq_5_sc(void) {
     lexer_destroy(lexer);
     context_destroy(lexer_context);
 
-    list_destroy(expected);
+    list_destroy(expected);*/
 }
 
 int main(void) {

@@ -2,12 +2,11 @@
 // Created by tomer on 27-Sep-26.
 //
 
-#include "Utils.h"
 #include "SourceText.h"
+#include "Utils.h"
 #include "Text.h"
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 #include <string.h>
 

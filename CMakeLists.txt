@@ -32,8 +32,8 @@ add_library(c_compiler_core STATIC
         Driver.h
         Range.c
         Range.h
-        StringView.c
-        StringView.h)
+        TextView.c
+        TextView.h)
 target_include_directories(c_compiler_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings)
 
@@ -56,9 +56,9 @@ add_executable(test_list tests/test_list.c)
 target_link_libraries(test_list PRIVATE c_compiler_core test_harness c_compiler_warnings)
 add_test(NAME list COMMAND test_list)
 
-add_executable(test_string_view tests/test_string_view.c)
-target_link_libraries(test_string_view PRIVATE c_compiler_core test_harness c_compiler_warnings)
-add_test(NAME string_view COMMAND test_string_view)
+add_executable(test_text_view tests/test_text_view.c)
+target_link_libraries(test_text_view PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME text_view COMMAND test_text_view)
 
 add_executable(test_lexer tests/test_lexer.c)
 target_link_libraries(test_lexer PRIVATE c_compiler_core test_harness c_compiler_warnings)
