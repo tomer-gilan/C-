@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <Text.h>
 
 /**
  * @param c the character to check
@@ -19,70 +20,38 @@ static bool is_file_path_delimiter(const char c) {
     return c == '\\' || c == '/';
 }
 /**
- * @warning the return value is a shallow reference to @b path.
+ * @warning ownership of return value is transferred to the caller.
  * @param path path to a file
  * @return the substring of @b path containing the file name (anything after the last @c /).
  */
-static const char* get_file_name(const char* const path) {
+static char* get_file_name(const char* const path) {
     int last_delimiter_index = -1;
     for (int i = 0; path[i] != '\0'; ++i)
         if (is_file_path_delimiter(path[i]))
             last_delimiter_index = i;
-    return &(path[last_delimiter_index + 1]); // returning substring AFTER last occurrence.
+    return utils_allocate_and_copy_string(path + last_delimiter_index + 1);
 }
 
-SourceText* source_text_create_from_path(const char* const path) {
-    FILE* file = fopen(path, "rb");
-    if (file == NULL)
+SourceText* source_text_create(Text* const text, const char* const name) {
+    if (text == NULL || name == NULL)
         return NULL;
-
-    fseek(file, 0, SEEK_END); // jump to the end...
-    const long size = ftell(file);      // ...position = file size in bytes
-    assert(size != -1 && "Problem with file");
-    rewind(file);                       // back to the start
-
-    char* buffer = utils_xmalloc(size + 1);    // +1 for a '\0' terminator
-    long const read = (long)fread(buffer, 1, size, file); // trust fread's count, not ftell's
-    if (read != (long)size) {         // short read = I/O error or file changed
-        free(buffer);
-        fclose(file);
-        return NULL;                    // (or report a diagnostic)
-    }
-    buffer[read] = '\0';                // handy for debugging/printing
-    fclose(file);
-
-    SourceText* source_file = utils_xmalloc(sizeof (SourceText));
-    *source_file = (SourceText){
-        .name = utils_allocate_and_copy_string(get_file_name(path)),
-        .text = buffer,
-        .length = (int)read
-    };
-    return source_file;
-}
-SourceText* source_text_create_from_buffer(const char* const buffer, const int length) {
-    assert(length >= 0 && "invalid length");
-
-    char* new_buffer = utils_xmalloc((length + 1) * (int)sizeof(char)); // this also deals with edge case where length==0
-    memcpy(new_buffer, buffer, length);
-    new_buffer[length] = '\0';
-
     SourceText* source_text = utils_xmalloc(sizeof (SourceText));
     *source_text = (SourceText){
-        .name = utils_allocate_and_copy_string("<from string>"),
-        .text = new_buffer,
-        .length = length
+        .name = utils_allocate_and_copy_string(name),
+        .data = text
     };
-
     return source_text;
 }
-
+SourceText* source_text_create_from_path(const char* const path) {
+    return source_text_create(text_create_from_path(path), get_file_name(path));
+}
 void source_text_destroy(SourceText* const this) {
+    text_destroy(this->data);
     free(this->name);
-    free(this->text);
     free(this);
 }
 bool source_text_is_index_in_bounds(const SourceText* this, const int index) {
-    return 0 <= index && index < this->length;
+    return 0 <= index && index < this->data->length;
 }
 
 void source_text_list_destroy(void* this) {
