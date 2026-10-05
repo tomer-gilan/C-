@@ -41,5 +41,10 @@ SourceText* file_position_get_source_text(FilePosition this, Context* context);
  * @c const version of @c file_position_get_source_text
  */
 const SourceText* file_position_get_source_text_const(FilePosition this, const Context* context);
+/**
+ * predicate, checks if both are equal.
+ * @attention assumes both @c FilePosition have the same underling @c Context.
+ */
+bool file_position_equals(FilePosition first, FilePosition second);
 
 #endif //C_COMPILER_FILE_POSITION_H

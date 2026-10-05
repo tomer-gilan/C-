@@ -4,6 +4,7 @@
 
 #ifndef C_COMPILER_TEXT_H
 #define C_COMPILER_TEXT_H
+
 #include <stdbool.h>
 
 typedef struct {
@@ -17,7 +18,10 @@ typedef struct {
  * @return handle to @c String
  */
 Text* text_create_from_buffer(const char* buffer, int length);
-Text* text_create_from_file(const char* path);
+/**
+ * @retval NULL if path is invalid
+ */
+Text* text_create_from_path(const char* path);
 /**
  * destroys the @c String struct.
  */

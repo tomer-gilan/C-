@@ -6,7 +6,7 @@
 #define C_COMPILER_RANGE_H
 
 #include "FilePosition.h"
-#include "StringView.h"
+#include "TextView.h"
 
 /**
  * a @c Range is similar in nature to physics vector. It has a start (@c Location) and a @c length .
@@ -20,7 +20,7 @@ typedef struct {
 /**
  * returns a @c StringView based on the @c Range @b range given
  */
-StringView range_to_string_view(Range this, const Context* context);
+TextView range_to_string_view(Range this, const Context* context);
 /**
  * generates a @c Range based on two @c FilePosition.
  * @warning asserts both are sourced at the same file (since it's meaningless to talk about a range starting at one
@@ -28,5 +28,10 @@ StringView range_to_string_view(Range this, const Context* context);
  */
 Range range_from_file_positions(FilePosition start, FilePosition end);
 void range_extend(Range* this, int n);
+/**
+ * predicate, determining if both are equal.
+ * @attention assumes both have the same underling @c Context
+ */
+bool range_equals(Range first, Range second);
 
 #endif //C_COMPILER_RANGE_H

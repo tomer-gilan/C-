@@ -37,7 +37,11 @@ add_library(c_compiler_core STATIC
 target_include_directories(c_compiler_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings)
 
-add_executable(c_compiler main.c)
+add_executable(c_compiler main.c
+        Text.c
+        Text.h
+        TextView.c
+        TextView.h)
 target_link_libraries(c_compiler PRIVATE c_compiler_core c_compiler_warnings)
 
 # -------- Tests -------- #

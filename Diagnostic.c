@@ -4,6 +4,9 @@
 
 #include "Diagnostic.h"
 
+#include <assert.h>
+#include <stdio.h>
+
 struct DiagnosticDescriptor {
     DiagnosticSeverity severity;
     const char* info;  // the problematic lexeme/token/etc, as a string.

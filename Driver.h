@@ -28,7 +28,7 @@ Driver* driver_create(int argc, const char* const* argv);
 void driver_destroy(Driver* this);
 /**
  * compiles the source code
- * @warning ownership of return value transfers to callee.
+ * @warning ownership of return value transfers to caller.
  * @return TODO: change from List* to other types along with compiler building
  */
 List* driver_compile(Driver* this, int source_text_index);

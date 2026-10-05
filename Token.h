@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 #include "Range.h"
-#include "StringView.h"
+#include "TextView.h"
 
 // Token Kinds. WHEN ADDING A NEW ONE, DO NOT FORGOT TO UPDATE THE ALIASES AT THE END!!
 typedef enum {
@@ -84,10 +84,10 @@ typedef struct {
     } as; ///< a tagged @c union, encapsulating the different @c TokenKind 's fields.
 } Token; ///< tagged union
 
-extern const StringView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT];
+extern const TextView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT];
 
-StringView token_kind_get_spelling(TokenKind kind);
-TokenKind token_kind_from_spelling(StringView spelling);
+TextView token_kind_get_spelling(TokenKind kind);
+TokenKind token_kind_from_spelling(TextView spelling);
 
 bool token_is_EOF(Token token);
 bool token_kind_is_keyword(TokenKind kind);

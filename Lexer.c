@@ -34,7 +34,7 @@ Lexer* lexer_create(Context* const context, const int source_text_index) {
             .range = {
                 .position = {
                     .source_text_index = source_text_index,
-                    .offset = context_source_text_at(context, source_text_index)->length
+                    .offset = context_source_text_at(context, source_text_index)->data->length
                 },
                 .length = 0
             }
@@ -56,7 +56,7 @@ void lexer_destroy(Lexer* this) {
 static int lexer_peek_at(const Lexer* this, const int offset) {
     const SourceText* const source = file_position_get_source_text(this->cursor, this->context);
     const int final_offset = this->cursor.offset + offset;
-    return source_text_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->text[final_offset]) : LEXER_EOF;
+    return source_text_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->data->data[final_offset]) : LEXER_EOF;
 }
 /**
  * Peeks the character the @c cursor points at.
@@ -126,7 +126,7 @@ static bool is_char_word_character(const int c) {
  */
 static bool is_char_part_of_punctuator(const int c) {
     for (TokenKind kind = TOKEN__PUNC_FIRST; kind <= TOKEN__PUNC_LAST; ++kind) {
-        const StringView spelling = token_kind_spelling_table[kind];
+        const TextView spelling = token_kind_spelling_table[kind];
         for (int i = 0; i < spelling.length; ++i)
             if (spelling.data[i] == c)
                 return true;
@@ -152,7 +152,7 @@ static bool is_char_whitespace(const int c) {
  * Converts @c StringView @b view to its integer form.
  * @attention asserts @c view contains numerics only. Does NOT check for a leading 0.
  */
-static int lexer_string_view_to_int(const StringView view) {
+static int lexer_string_view_to_int(const TextView view) {
     int number = 0;
     for (int i = 0; i < view.length; ++i) {
         const int c = (unsigned char)view.data[i];
@@ -203,7 +203,7 @@ static int lexer_escape_character(const int character) {
  * general note about the lexing functions.
  * The function checks for many invalid spellings and character sequences.
  * The general directive is:
- * 1. upon entering a lexing function, it asserts conditions on the first character. Since the callee should
+ * 1. upon entering a lexing function, it asserts conditions on the first character. Since the caller should
  * (for example) call a character literal lexing if and only if a sequence beginning with '\'', it asserts this condition.
  * 2. any subsequent invalid states (like 123abc456 in an integer constant lexing) will be issued a diagnostic but will
  * not abort the process.
@@ -216,7 +216,7 @@ static int lexer_escape_character(const int character) {
 /**
  * @internal to be used only by other lexing functions.
  * @param this a handle to the @c Lexer
- * @param buff4096 callee allocated buffer of 4096 bytes.
+ * @param buff4096 caller allocated buffer of 4096 bytes.
  * @param bytes_written the number of bytes written to @b buffer4096
  * @param delimiter ' or "
  * @return the @c Range of the literal
@@ -281,7 +281,7 @@ static Token lexer_lex_word(Lexer* const this) { // TOKEN_KW and TOKEN_IDENT
     assert(is_char_word_character(lexer_peek(this))); // otherwise it's invalid by definition.
 
     const Range range = lexer_skip_while(this, is_char_word_character);
-    const StringView spelling = range_to_string_view(range, this->context);
+    const TextView spelling = range_to_string_view(range, this->context);
     TokenKind kind = token_kind_from_spelling(spelling);
 
     assert(!token_kind_is_punctuator(kind) && "Somehow got a word spelling which is a punctuator.");
@@ -292,8 +292,8 @@ static Token lexer_lex_word(Lexer* const this) { // TOKEN_KW and TOKEN_IDENT
     kind = TOKEN_IDENT;
     const int id = list_find_or_push(
         this->context->identifiers_table,
-        &spelling, string_view_list_equals,
-        string_view_list_duplicate);
+        &spelling, text_view_list_compare,
+        text_view_list_duplicate);
     return (Token){.kind = kind, .range = range, .as.id = id};
 }
 static Token lexer_lex_punctuator(Lexer* const this) {
@@ -375,7 +375,7 @@ static Token lexer_lex_string_literal(Lexer* const this) {
         .as.id = list_find_or_push(
             this->context->string_literals_table,
             buffer4096,
-            utils_string_list_strcmp,
+            utils_string_list_compare,
             utils_string_list_allocate_and_copy)
     };
     free(buffer4096);

@@ -7,6 +7,8 @@
 
 #include "List.h"
 #include "SourceText.h"
+#include "Text.h"
+#include "TextView.h"
 
 typedef struct {
     List* identifiers_table;        ///< @c List of @c StringView
@@ -35,5 +37,17 @@ SourceText* context_source_text_at(Context* this, int index);
  * @c const version of @c context_source_text_at
  */
 const SourceText* context_source_text_at_const(const Context* this, int index);
+/**
+ * caches the identifier spelling.
+ * @return the id of the cached spelling.
+ * @note if the spelling is already cached, the existing id is returned.
+ */
+int context_intern_identifier(Context* this, TextView spelling);
+/**
+ * caches the string literal spelling.
+ * @return the id of the cached spelling.
+ * @note if the spelling is already cached, the existing id is returned.
+ */
+int context_intern_string_literal(Context* this, Text* spelling);
 
 #endif //C_COMPILER_CONTEXT_H

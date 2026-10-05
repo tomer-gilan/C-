@@ -4,9 +4,9 @@
 
 #include "Utils.h"
 
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 // -------------------- memory allocation -------------------- //
 void* utils_xmalloc(const size_t size) {
@@ -30,7 +30,7 @@ void* utils_xrealloc(void* const ptr, const size_t size) {
 char* utils_allocate_and_copy_string(const char* const source) {
     return utils_allocate_and_copy_buffer(source, (int)strlen(source) + 1);
 }
-int utils_string_list_strcmp(const void* const first, const void* const second) {
+int utils_string_list_compare(const void* const first, const void* const second) {
     return strcmp(first, second);
 }
 void* utils_string_list_allocate_and_copy(const void* const string) {

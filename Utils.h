@@ -26,7 +26,7 @@ void* utils_xrealloc(void* ptr, size_t size);
 // -------------------- string utils -------------------- //
 /**
  * Allocated a new string, and copies the content of source to it.
- * @warning ownership of the returned string transfers to the callee.
+ * @warning ownership of the returned string transfers to the caller.
  * @param source the string which is copied
  * @return the copy of the source
  */
@@ -38,14 +38,14 @@ char* utils_allocate_and_copy_string(const char* source);
  * @param second the second string
  * @return the same as strcmp
  */
-int utils_string_list_strcmp(const void* first, const void* second);
+int utils_string_list_compare(const void* first, const void* second);
 // for list.h
 void* utils_string_list_allocate_and_copy(const void* string);
 
 // -------------------- other -------------------- //
 /**
  * returns a newly allocated copy of @b buffer
- * @warning ownership of the returned buffer transfers to the callee.
+ * @warning ownership of the returned buffer transfers to the caller.
  */
 char* utils_allocate_and_copy_buffer(const char* buffer, int size);
 

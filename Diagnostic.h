@@ -2,13 +2,8 @@
 // Created by tomer on 23-Sep-26.
 //
 
-#ifndef C_COMPILER_ERROR_H
-#define C_COMPILER_ERROR_H
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#ifndef C_COMPILER_DIAGNOSTIC_H
+#define C_COMPILER_DIAGNOSTIC_H
 
 #include "Range.h"
 
@@ -43,4 +38,4 @@ void diagnostic_issue_string(Diagnostic handle, const char* message);
 void diagnostic_issue_char(Diagnostic handle, char message);
 void diagnostic_issue_int(Diagnostic handle, int message);
 
-#endif //C_COMPILER_ERROR_H
+#endif //C_COMPILER_DIAGNOSTIC_H

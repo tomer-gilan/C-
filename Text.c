@@ -5,11 +5,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "Text.h"
-
 #include <stdio.h>
 
+#include "Text.h"
 #include "Utils.h"
 
 Text* text_create_from_buffer(const char* buffer, const int length) {
@@ -20,7 +18,7 @@ Text* text_create_from_buffer(const char* buffer, const int length) {
     };
     return string_view;
 }
-Text* text_create_from_file(const char* const path) {
+Text* text_create_from_path(const char* const path) {
     FILE* file = fopen(path, "rb");
     if (file == NULL)
         return NULL;

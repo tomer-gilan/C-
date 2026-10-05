@@ -6,54 +6,54 @@
 
 #include <assert.h>
 
-const StringView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT] = {
+const TextView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT] = {
     // Keywords
-    [TOKEN_KW_CHAR]             = string_view_from_literal("char"),
-    [TOKEN_KW_INT]              = string_view_from_literal("int"),
-    [TOKEN_KW_VOID]             = string_view_from_literal("void"),
-    [TOKEN_KW_WHILE]            = string_view_from_literal("while"),
-    [TOKEN_KW_IF]               = string_view_from_literal("if"),
-    [TOKEN_KW_ELSE]             = string_view_from_literal("else"),
-    [TOKEN_KW_RETURN]           = string_view_from_literal("return"),
+    [TOKEN_KW_CHAR]             = text_view_from_literal("char"),
+    [TOKEN_KW_INT]              = text_view_from_literal("int"),
+    [TOKEN_KW_VOID]             = text_view_from_literal("void"),
+    [TOKEN_KW_WHILE]            = text_view_from_literal("while"),
+    [TOKEN_KW_IF]               = text_view_from_literal("if"),
+    [TOKEN_KW_ELSE]             = text_view_from_literal("else"),
+    [TOKEN_KW_RETURN]           = text_view_from_literal("return"),
     // Punctuators
-    [TOKEN_BRACKET_LEFT]        = string_view_from_literal("["),
-    [TOKEN_BRACKET_RIGHT]       = string_view_from_literal("]"),
-    [TOKEN_PARENTHESES_LEFT]    = string_view_from_literal("("),
-    [TOKEN_PARENTHESES_RIGHT]   = string_view_from_literal(")"),
-    [TOKEN_BRACE_LEFT]          = string_view_from_literal("{"),
-    [TOKEN_BRACE_RIGHT]         = string_view_from_literal("}"),
-    [TOKEN_COMMA]               = string_view_from_literal(","),
-    [TOKEN_STAR]                = string_view_from_literal("*"),
-    [TOKEN_PLUS]                = string_view_from_literal("+"),
-    [TOKEN_MINUS]               = string_view_from_literal("-"),
-    [TOKEN_TILDE]               = string_view_from_literal("~"),
-    [TOKEN_EXCLAMATION]         = string_view_from_literal("!"),
-    [TOKEN_FORWARD_SLASH]       = string_view_from_literal("/"),
-    [TOKEN_PERCENTAGE]          = string_view_from_literal("%"),
-    [TOKEN_CARET]               = string_view_from_literal("^"),
-    [TOKEN_EQUALS]              = string_view_from_literal("="),
-    [TOKEN_LESS_LESS]           = string_view_from_literal("<<"),
-    [TOKEN_GREATER_GREATER]     = string_view_from_literal(">>"),
-    [TOKEN_GREATER]             = string_view_from_literal(">"),
-    [TOKEN_LESS]                = string_view_from_literal("<"),
-    [TOKEN_GREATER_EQUALS]      = string_view_from_literal(">="),
-    [TOKEN_LESS_EQUALS]         = string_view_from_literal("<="),
-    [TOKEN_EQUALS_EQUALS]       = string_view_from_literal("=="),
-    [TOKEN_EXCLAMATION_EQUALS]  = string_view_from_literal("!="),
-    [TOKEN_BAR]                 = string_view_from_literal("|"),
-    [TOKEN_AMPERSAND]           = string_view_from_literal("&"),
-    [TOKEN_AMPERSAND_AMPERSAND] = string_view_from_literal("&&"),
-    [TOKEN_BAR_BAR]             = string_view_from_literal("||"),
-    [TOKEN_SEMICOLON]           = string_view_from_literal(";")
+    [TOKEN_BRACKET_LEFT]        = text_view_from_literal("["),
+    [TOKEN_BRACKET_RIGHT]       = text_view_from_literal("]"),
+    [TOKEN_PARENTHESES_LEFT]    = text_view_from_literal("("),
+    [TOKEN_PARENTHESES_RIGHT]   = text_view_from_literal(")"),
+    [TOKEN_BRACE_LEFT]          = text_view_from_literal("{"),
+    [TOKEN_BRACE_RIGHT]         = text_view_from_literal("}"),
+    [TOKEN_COMMA]               = text_view_from_literal(","),
+    [TOKEN_STAR]                = text_view_from_literal("*"),
+    [TOKEN_PLUS]                = text_view_from_literal("+"),
+    [TOKEN_MINUS]               = text_view_from_literal("-"),
+    [TOKEN_TILDE]               = text_view_from_literal("~"),
+    [TOKEN_EXCLAMATION]         = text_view_from_literal("!"),
+    [TOKEN_FORWARD_SLASH]       = text_view_from_literal("/"),
+    [TOKEN_PERCENTAGE]          = text_view_from_literal("%"),
+    [TOKEN_CARET]               = text_view_from_literal("^"),
+    [TOKEN_EQUALS]              = text_view_from_literal("="),
+    [TOKEN_LESS_LESS]           = text_view_from_literal("<<"),
+    [TOKEN_GREATER_GREATER]     = text_view_from_literal(">>"),
+    [TOKEN_GREATER]             = text_view_from_literal(">"),
+    [TOKEN_LESS]                = text_view_from_literal("<"),
+    [TOKEN_GREATER_EQUALS]      = text_view_from_literal(">="),
+    [TOKEN_LESS_EQUALS]         = text_view_from_literal("<="),
+    [TOKEN_EQUALS_EQUALS]       = text_view_from_literal("=="),
+    [TOKEN_EXCLAMATION_EQUALS]  = text_view_from_literal("!="),
+    [TOKEN_BAR]                 = text_view_from_literal("|"),
+    [TOKEN_AMPERSAND]           = text_view_from_literal("&"),
+    [TOKEN_AMPERSAND_AMPERSAND] = text_view_from_literal("&&"),
+    [TOKEN_BAR_BAR]             = text_view_from_literal("||"),
+    [TOKEN_SEMICOLON]           = text_view_from_literal(";")
 };
 
-StringView token_kind_get_spelling(const TokenKind kind) {
+TextView token_kind_get_spelling(const TokenKind kind) {
     assert(0 <= kind && kind < TOKEN__SPELLABLE_COUNT);
     return token_kind_spelling_table[kind];
 }
-TokenKind token_kind_from_spelling(const StringView spelling) {
+TokenKind token_kind_from_spelling(const TextView spelling) {
     for (TokenKind kind = TOKEN__SPELLABLE_FIRST; kind <= TOKEN__SPELLABLE_LAST; ++kind)
-        if (string_view_equals(spelling, token_kind_spelling_table[kind]))
+        if (text_view_equals(spelling, token_kind_spelling_table[kind]))
             return kind;
     return TOKEN_NONE;
 }

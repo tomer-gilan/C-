@@ -6,6 +6,8 @@
 #include <stdlib.h>
 
 #include "List.h"
+
+#include "TextView.h"
 #include "Utils.h"
 
 struct List {
@@ -98,6 +100,7 @@ int list_index_of(const List* const this, const void* const element, int (*equal
 bool list_contains(const List* const this, const void* const element, int (*equals)(const void*, const void*)) {
     assert(this != NULL && "list handle was NULL");
     assert(equals != NULL && "'equals' was NULL");
+
     if (element == NULL)
         return false;
     return list_index_of(this, element, equals) != -1;
