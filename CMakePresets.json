@@ -1,0 +1,27 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "coverage",
+      "displayName": "Debug + coverage",
+      "description": "Unoptimized build with gcov counters (testing-roadmap.md, Step 9); tests/coverage.sh uses the same directory. Sanitizers off, so the counts are the program's own.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/cmake-build-coverage",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ENABLE_COVERAGE": "ON",
+        "ENABLE_SANITIZERS": "OFF"
+      },
+      "vendor": {
+        "jetbrains.com/clion": {
+          "toolchain": "WSL"
+        }
+      }
+    }
+  ]
+}

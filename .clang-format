@@ -1,0 +1,22 @@
+# Written by Claude on 10-Oct-26.
+# Describes the style the code already has (4 spaces, K&R braces with `else` on its own line, indented `case`
+# labels), plus the pointer style: `int* p`, the star belongs to the type.
+# CLion uses this file instead of its own code style when ClangFormat is enabled.
+# Written without a clang-format binary at hand, so it is unverified: run it on one file first and read the diff.
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+PointerAlignment: Left
+IndentCaseLabels: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  BeforeElse: true
+ColumnLimit: 0              # never re-wrap lines; the code has long lines on purpose (Doxygen, test tables)
+SortIncludes: Never         # include order is deliberate (system headers, then project headers)
+ReflowComments: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+MaxEmptyLinesToKeep: 2

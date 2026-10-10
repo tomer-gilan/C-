@@ -99,3 +99,13 @@ if (ENABLE_SANITIZERS)
     # ASan and LeakSanitizer already print a stack trace; UBSan only does on request.
     set_tests_properties(list text_view lexer source_text PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
 endif ()
+
+# Coverage as part of the suite: tests/coverage.sh makes its own instrumented build (in a subdirectory of this build
+# tree, so this build stays as it is), runs the tests in it, and fails if a line of Lexer.c never ran. Not registered
+# in that instrumented build itself (ENABLE_COVERAGE), where it would start itself again. Needs a POSIX shell.
+if (UNIX AND NOT ENABLE_COVERAGE)
+    add_test(NAME coverage
+            COMMAND ${CMAKE_COMMAND} -E env BUILD_DIR=${CMAKE_BINARY_DIR}/coverage-build
+            sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh --fail-on-uncovered-lines Lexer.c)
+    set_tests_properties(coverage PROPERTIES TIMEOUT 300)
+endif ()
