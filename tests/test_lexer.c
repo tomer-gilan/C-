@@ -368,7 +368,7 @@ static void test_lexer_int_x_eq_5_sc(void) {
         list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 3, TOKEN_KW_INT)));
         list_push(expected_tokens,
                   test_token_create_ptr(
-                      test_token_ident_create(0, 4, 1, expected_context, text_view_from_literal("1x"))));
+                      test_token_ident_create(0, 4, 1, expected_context, text_view_from_literal("x"))));
         list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 6, 1, TOKEN_EQUALS)));
         list_push(expected_tokens, test_token_create_ptr(test_token_const_int_create(   0, 8, 1, 5)));
         list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 9, 1, TOKEN_SEMICOLON)));

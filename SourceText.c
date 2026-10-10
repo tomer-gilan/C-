@@ -42,7 +42,10 @@ SourceText* source_text_create(Text* const text, const char* const name) {
     return source_text;
 }
 SourceText* source_text_create_from_path(const char* const path) {
-    return source_text_create(text_create_from_path(path), get_file_name(path));
+    char* const file_name = get_file_name(path);
+    SourceText* const to_return = source_text_create(text_create_from_path(path), file_name);
+    free(file_name);
+    return to_return;
 }
 void source_text_destroy(SourceText* const this) {
     text_destroy(this->data);

@@ -10,9 +10,15 @@ enable_testing()
 add_library(c_compiler_warnings INTERFACE)
 target_compile_options(c_compiler_warnings INTERFACE -Wall -Wextra)
 
-# Instrumented builds, off by default (testing-roadmap.md, steps 6 and 9). In CLion, add a CMake profile with the
-# option in "CMake options", e.g. -DENABLE_SANITIZERS=ON, so the normal Debug build stays fast and unchanged.
-option(ENABLE_SANITIZERS "Build with AddressSanitizer, LeakSanitizer and UndefinedBehaviorSanitizer" OFF)
+# Instrumented builds (testing-roadmap.md, steps 6 and 9). The sanitizers are on by default in Debug builds, so every
+# test run checks memory and undefined behavior; -DENABLE_SANITIZERS=OFF turns them off (Release never has them unless
+# asked). Coverage is off by default.
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(sanitizers_default ON)
+else ()
+    set(sanitizers_default OFF)
+endif ()
+option(ENABLE_SANITIZERS "Build with AddressSanitizer, LeakSanitizer and UndefinedBehaviorSanitizer" ${sanitizers_default})
 option(ENABLE_COVERAGE "Build unoptimized with gcov coverage counters (see tests/coverage.sh)" OFF)
 
 # Compile and link flags for the options above, shared like the warnings. Linked PUBLIC by the library so that every
