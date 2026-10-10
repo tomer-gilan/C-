@@ -157,6 +157,30 @@ The dump is the contract, so it must be:
 
 ---
 
+## Sanitizer and coverage builds
+
+Two CMake options, both off by default, so the normal Debug build stays fast and unchanged. They apply to the library,
+the harness and every test, and run in the Linux (WSL/Ubuntu) toolchain.
+
+| Option                   | What it does                                                                                                                                                                                                           | How to use it                                                                                                                                                                                                                                                         |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-DENABLE_SANITIZERS=ON` | Builds with ASan + LeakSanitizer + UBSan. An out-of-bounds access, a use-after-free, a leak or undefined behavior (signed overflow, a bad shift, a misaligned access) stops the test and fails it, with a stack trace. | In CLion, add a CMake profile (Settings → Build → CMake) with this in "CMake options", then run "All CTest" under that profile. By hand: `cmake -B build-asan -DENABLE_SANITIZERS=ON && cmake --build build-asan && ctest --test-dir build-asan --output-on-failure`. |
+| `-DENABLE_COVERAGE=ON`   | Builds with `-O0 --coverage`, so each run writes line and branch counters (`.gcda`).                                                                                                                                   | `tests/coverage.sh [file ...]` builds, runs the suite and prints the lines that never ran and the branches never taken (default file: `Lexer.c`). Needs `gcov`; no `lcov`/`gcovr`.                                                                                    |
+
+Reading the output:
+
+- **A leak report** (`LeakSanitizer: detected memory leaks`) is printed when the process exits, so it fails the test it
+  ran in, but doesn't say which *test function* leaked. The stack trace names the allocation. Run one test at a time
+  with the name filter (`./test_x name`) to narrow it down.
+- **An uncovered line** is code no test reached; **an uncovered branch** is an `if`/`&&`/`||`/`case` outcome no test
+  produced. Not every one is a missing test, so sort them: a case worth testing, a feature not built yet (a `TODO`), or
+  code that can't be reached through the public interface (e.g. a defensive check). `tests/coverage.sh` skips the
+  never-taken failure branch of `assert`.
+- **Don't chase 100%.** Coverage shows what *didn't* run, not that what ran was *checked*. A test with no `CHECK` on the
+  result still covers the line.
+
+---
+
 ## Tips and gotchas
 
 - **Run the tests under sanitizers.** A test that passes while overflowing a buffer passes by luck. Add an ASan/UBSan build configuration and run the same suite in it; `ctest -T memcheck` runs it under Valgrind (see `research.md`).

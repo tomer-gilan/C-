@@ -366,7 +366,9 @@ static void test_lexer_int_x_eq_5_sc(void) {
     List* expected_tokens = list_create(free);
     { // builds the list
         list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 3, TOKEN_KW_INT)));
-        list_push(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 4, 1, expected_context, text_view_from_literal("x"))));
+        list_push(expected_tokens,
+                  test_token_create_ptr(
+                      test_token_ident_create(0, 4, 1, expected_context, text_view_from_literal("1x"))));
         list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 6, 1, TOKEN_EQUALS)));
         list_push(expected_tokens, test_token_create_ptr(test_token_const_int_create(   0, 8, 1, 5)));
         list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 9, 1, TOKEN_SEMICOLON)));
@@ -815,6 +817,327 @@ static void test_lexer_string_interning_with_nul(void) {
     context_destroy(context);
 }
 
+// Step 9 coverage tests: each one covers lines or branches of Lexer.c that tests/coverage.sh reported as never run.
+
+/**
+ * Coverage: every whitespace character separates two tokens, so "a<w>b" is IDENT, IDENT, EOF with b at offset 2.
+ * Before this, '\t', '\v', '\f' and '\r' were never lexed.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_whitespace_characters(void) {
+    const char whitespace[] = {' ', '\t', '\n', '\v', '\f', '\r'};
+    for (int i = 0; i < (int) sizeof whitespace; ++i) {
+        const char source[] = {'a', whitespace[i], 'b'};
+        List* tokens = test_lexer_lex_buffer(source, 3);
+
+        if (CHECK(list_get_size(tokens) == 3)) {
+            const Token* const first = list_at(tokens, 0);
+            const Token* const second = list_at(tokens, 1);
+            CHECK(first->kind == TOKEN_IDENT && first->range.position.offset == 0 && first->range.length == 1);
+            CHECK(second->kind == TOKEN_IDENT && second->range.position.offset == 2 && second->range.length == 1);
+            CHECK(token_is_eof(*(Token*)list_at(tokens, 2)));
+        }
+
+        list_destroy(tokens);
+    }
+}
+
+/**
+ * Coverage: a word ends at the first non-word character, whatever its ASCII value: below 'A', between 'Z' and 'a'
+ * ('[' '\\' ']' '^' '`') and above 'z' ('{' '|' '}' '~'). "a<c>" is IDENT, then one token for c (a punctuator or
+ * UNKNOWN), then EOF.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_word_ends_at_non_word_character(void) {
+    const char followers[] = {'@', '[', '\\', ']', '^', '`', '{', '|', '}', '~'};
+    for (int i = 0; i < (int) sizeof followers; ++i) {
+        const char source[] = {'a', followers[i]};
+        List* tokens = test_lexer_lex_buffer(source, 2);
+
+        if (CHECK(list_get_size(tokens) == 3)) {
+            const Token* const first = list_at(tokens, 0);
+            const Token* const second = list_at(tokens, 1);
+            CHECK(first->kind == TOKEN_IDENT && first->range.position.offset == 0 && first->range.length == 1);
+            CHECK(second->kind != TOKEN_IDENT && second->range.position.offset == 1 && second->range.length == 1);
+            CHECK(token_is_eof(*(Token*)list_at(tokens, 2)));
+        }
+
+        list_destroy(tokens);
+    }
+}
+
+/**
+ * Coverage: every escape sequence in SUBSET.md, in one string literal. The expected bytes are the values from the C
+ * standard (ASCII), written as numbers on purpose, not as C escapes.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_string_all_escapes(void) {
+    // the source text:  "\0\a\b\f\n\r\t\v\\\'\"\?"
+    const TextView source = text_view_from_literal("\"\\0\\a\\b\\f\\n\\r\\t\\v\\\\\\'\\\"\\?\"");
+    const char expected[] = {0x00, 0x07, 0x08, 0x0C, 0x0A, 0x0D, 0x09, 0x0B, 0x5C, 0x27, 0x22, 0x3F};
+    Context* const context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(context, 0);
+    List* tokens = lexer_lex_source_text(lexer);
+
+    if (CHECK(list_get_size(tokens) == 2)) {
+        const Token* const first = list_at(tokens, 0);
+        CHECK(first->kind == TOKEN_STRING_LITERAL);
+        CHECK(first->range.position.offset == 0 && first->range.length == source.length);
+        const Text* const literal = list_at_const(context->string_literals_table, first->as.id);
+        if (CHECK(literal->length == (int)sizeof expected))
+            CHECK(memcmp(literal->data, expected, sizeof expected) == 0);
+        CHECK(token_is_eof(*(Token*)list_at(tokens, 1)));
+    }
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
+    context_destroy(context);
+}
+
+/**
+ * Coverage: the escape sequences that the character-constant tests did not use ('\b', '\v', '\\', '\'', '\"', '\?'),
+ * each one a CONST_INT token with the standard's (ASCII) value.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_char_escapes(void) {
+    const struct {
+        const char* source;
+        int value;
+    } cases[] = {
+        {"'\\b'", 0x08},
+        {"'\\v'", 0x0B},
+        {"'\\\\'", 0x5C},
+        {"'\\''", 0x27},
+        {"'\\\"'", 0x22},
+        {"'\\?'", 0x3F}
+    };
+    for (int i = 0; i < (int) (sizeof cases / sizeof cases[0]); ++i) {
+        const int length = (int) strlen(cases[i].source);
+        List* tokens = test_lexer_lex_buffer(cases[i].source, length);
+
+        if (CHECK(list_get_size(tokens) == 2)) {
+            const Token* const first = list_at(tokens, 0);
+            CHECK(first->kind == TOKEN_CONST_INT);
+            CHECK(first->range.position.offset == 0 && first->range.length == length);
+            CHECK(first->as.value == cases[i].value);
+            CHECK(token_is_eof(*(Token*)list_at(tokens, 1)));
+        }
+
+        list_destroy(tokens);
+    }
+}
+
+/**
+ * Coverage: an unknown escape sequence ("\q") keeps the literal one token long, and lexing continues after it. What
+ * byte the sequence turns into is not checked (it is a placeholder until the diagnostic exists, Step 8).
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_string_unknown_escape(void) {
+    const TextView source = text_view_from_literal("\"a\\qb\" x");
+    Context* const context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(context, 0);
+    List* tokens = lexer_lex_source_text(lexer);
+
+    if (CHECK(list_get_size(tokens) == 3)) {
+        const Token* const first = list_at(tokens, 0);
+        const Token* const second = list_at(tokens, 1);
+        CHECK(first->kind == TOKEN_STRING_LITERAL);
+        CHECK(first->range.position.offset == 0 && first->range.length == 6);
+        const Text* const literal = list_at_const(context->string_literals_table, first->as.id);
+        if (CHECK(literal->length == 3)) {
+            CHECK(literal->data[0] == 'a');
+            CHECK(literal->data[2] == 'b');
+        }
+        CHECK(second->kind == TOKEN_IDENT && second->range.position.offset == 7);
+        CHECK(token_is_eof(*(Token*)list_at(tokens, 2)));
+    }
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
+    context_destroy(context);
+}
+
+/**
+ * Coverage: a literal that hits the end of the file before its closing quote still ends in one token, which holds
+ * what was read, followed by EOF. A lone backslash at the very end ("abc\) is the same. The diagnostic (unexpected
+ * EOF) is checked in Step 8.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_unterminated_literal_at_eof(void) {
+    const struct {
+        const char* source;
+        TokenKind kind;
+        const char* content; ///< the string's bytes; ignored for a character constant
+        int value; ///< the character constant's value; ignored for a string
+    } cases[] = {
+        {"\"abc", TOKEN_STRING_LITERAL, "abc", 0},
+        {"\"abc\\", TOKEN_STRING_LITERAL, "abc", 0},
+        {"\"", TOKEN_STRING_LITERAL, "", 0},
+        {"'a", TOKEN_CONST_INT, NULL, 'a'}
+    };
+    for (int i = 0; i < (int) (sizeof cases / sizeof cases[0]); ++i) {
+        const int length = (int) strlen(cases[i].source);
+        Context* const context = context_create(
+            source_text_create(text_create_from_buffer(cases[i].source, length), "<source>"));
+        Lexer* lexer = lexer_create(context, 0);
+        List* tokens = lexer_lex_source_text(lexer);
+
+        if (CHECK(list_get_size(tokens) == 2)) {
+            const Token* const first = list_at(tokens, 0);
+            const Token* const second = list_at(tokens, 1);
+            CHECK(first->kind == cases[i].kind);
+            CHECK(first->range.position.offset == 0 && first->range.length == length);
+            if (cases[i].kind == TOKEN_STRING_LITERAL) {
+                const Text* const literal = list_at_const(context->string_literals_table, first->as.id);
+                const int content_length = (int) strlen(cases[i].content);
+                if (CHECK(literal->length == content_length))
+                    CHECK(memcmp(literal->data, cases[i].content, content_length) == 0);
+            } else
+                CHECK(first->as.value == cases[i].value);
+            CHECK(token_is_eof(*second) && second->range.position.offset == length);
+        }
+
+        list_destroy(tokens);
+        lexer_destroy(lexer);
+        context_destroy(context);
+    }
+}
+
+/**
+ * Coverage: a literal cannot continue past a newline. In "abc<newline>x the string ends at the newline and x is an
+ * identifier again (and the same for 'a<newline>x). The diagnostic (missing delimiter) is checked in Step 8.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_unterminated_literal_at_newline(void) {
+    const TextView string_source = text_view_from_literal("\"abc\nx");
+    Context* const context = context_create(
+        source_text_create(text_create_from_buffer(string_source.data, string_source.length), "<source>"));
+    Lexer* lexer = lexer_create(context, 0);
+    List* tokens = lexer_lex_source_text(lexer);
+
+    if (CHECK(list_get_size(tokens) == 3)) {
+        const Token* const first = list_at(tokens, 0);
+        const Token* const second = list_at(tokens, 1);
+        CHECK(first->kind == TOKEN_STRING_LITERAL && first->range.position.offset == 0);
+        const Text* const literal = list_at_const(context->string_literals_table, first->as.id);
+        if (CHECK(literal->length == 3))
+            CHECK(memcmp(literal->data, "abc", 3) == 0);
+        CHECK(second->kind == TOKEN_IDENT && second->range.position.offset == 5 && second->range.length == 1);
+        CHECK(token_is_eof(*(Token*)list_at(tokens, 2)));
+    }
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
+    context_destroy(context);
+
+    const TextView char_source = text_view_from_literal("'a\nx");
+    tokens = test_lexer_lex_buffer(char_source.data, char_source.length);
+    if (CHECK(list_get_size(tokens) == 3)) {
+        const Token* const first = list_at(tokens, 0);
+        const Token* const second = list_at(tokens, 1);
+        CHECK(first->kind == TOKEN_CONST_INT && first->as.value == 'a' && first->range.position.offset == 0);
+        CHECK(second->kind == TOKEN_IDENT && second->range.position.offset == 3 && second->range.length == 1);
+        CHECK(token_is_eof(*(Token*)list_at(tokens, 2)));
+    }
+    list_destroy(tokens);
+}
+
+/**
+ * Coverage: a decimal constant with a leading zero ("0123", "00") is octal, which is not supported: one CONST_INT
+ * token spanning all its digits, and lexing continues after it. Its value is not checked (a placeholder until the
+ * diagnostic exists, Step 8).
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_leading_zero_constant(void) {
+    const char* const sources[] = {"0123 x", "00 x"};
+    const int lengths[] = {4, 2}; // of the constant
+    for (int i = 0; i < 2; ++i) {
+        List* tokens = test_lexer_lex_buffer(sources[i], (int) strlen(sources[i]));
+
+        if (CHECK(list_get_size(tokens) == 3)) {
+            const Token* const first = list_at(tokens, 0);
+            const Token* const second = list_at(tokens, 1);
+            CHECK(first->kind == TOKEN_CONST_INT);
+            CHECK(first->range.position.offset == 0 && first->range.length == lengths[i]);
+            CHECK(second->kind == TOKEN_IDENT && second->range.position.offset == lengths[i] + 1);
+            CHECK(token_is_eof(*(Token*)list_at(tokens, 2)));
+        }
+
+        list_destroy(tokens);
+    }
+}
+
+/**
+ * Coverage: the largest int (2147483647) has its exact value. One more, and far more, is still one CONST_INT token
+ * over all its digits, with no crash or signed overflow (UBSan would catch one). The value of those is not checked: it
+ * is a placeholder until the "too big" diagnostic exists (Step 8).
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_int_constant_limits(void) {
+    const char* const sources[] = {"2147483647", "2147483648", "99999999999999999999"};
+    for (int i = 0; i < 3; ++i) {
+        const int length = (int) strlen(sources[i]);
+        List* tokens = test_lexer_lex_buffer(sources[i], length);
+
+        if (CHECK(list_get_size(tokens) == 2)) {
+            const Token* const first = list_at(tokens, 0);
+            CHECK(first->kind == TOKEN_CONST_INT);
+            CHECK(first->range.position.offset == 0 && first->range.length == length);
+            if (i == 0)
+                CHECK(first->as.value == INT_MAX);
+            CHECK(token_is_eof(*(Token*)list_at(tokens, 1)));
+        }
+
+        list_destroy(tokens);
+    }
+}
+
+/**
+ * Coverage: a character that starts no token ('@', '$', '`', '\') is a one-character UNKNOWN token, and lexing
+ * continues after it: "a<c>b" is IDENT, UNKNOWN, IDENT, EOF. The diagnostic (unknown character) is checked in Step 8.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_unknown_character(void) {
+    const char unknown[] = {'@', '$', '`', '\\'};
+    for (int i = 0; i < (int) sizeof unknown; ++i) {
+        const char source[] = {'a', unknown[i], 'b'};
+        List* tokens = test_lexer_lex_buffer(source, 3);
+
+        if (CHECK(list_get_size(tokens) == 4)) {
+            const Token* const first = list_at(tokens, 0);
+            const Token* const second = list_at(tokens, 1);
+            const Token* const third = list_at(tokens, 2);
+            CHECK(first->kind == TOKEN_IDENT && first->range.position.offset == 0);
+            CHECK(second->kind == TOKEN_UNKNOWN && second->range.position.offset == 1 && second->range.length == 1);
+            CHECK(third->kind == TOKEN_IDENT && third->range.position.offset == 2);
+            CHECK(token_is_eof(*(Token*)list_at(tokens, 3)));
+        }
+
+        list_destroy(tokens);
+    }
+}
+
+/**
+ * Coverage: the ends of every character class an identifier is made of ('A'..'Z', 'a'..'z', '_', '0'..'9') belong to
+ * it: "AZaz_09" is one IDENT spanning all 7 characters. No test had an uppercase identifier before.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_identifier_character_class_ends(void) {
+    const TextView source = text_view_from_literal("AZaz_09");
+    List* tokens = test_lexer_lex_buffer(source.data, source.length);
+
+    if (CHECK(list_get_size(tokens) == 2)) {
+        const Token* const first = list_at(tokens, 0);
+        CHECK(first->kind == TOKEN_IDENT);
+        CHECK(first->range.position.offset == 0 && first->range.length == source.length);
+        CHECK(token_is_eof(*(Token*)list_at(tokens, 1)));
+    }
+
+    list_destroy(tokens);
+}
+
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
     RUN_TEST(test_lexer_empty_buffer);
@@ -838,5 +1161,17 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_lexer_string_4096);
     RUN_TEST(test_lexer_identifier_interning_a_b_a);
     RUN_TEST(test_lexer_string_interning_with_nul);
+    // Step 9 coverage tests (written by Claude)
+    RUN_TEST(test_lexer_whitespace_characters);
+    RUN_TEST(test_lexer_word_ends_at_non_word_character);
+    RUN_TEST(test_lexer_string_all_escapes);
+    RUN_TEST(test_lexer_char_escapes);
+    RUN_TEST(test_lexer_string_unknown_escape);
+    RUN_TEST(test_lexer_unterminated_literal_at_eof);
+    RUN_TEST(test_lexer_unterminated_literal_at_newline);
+    RUN_TEST(test_lexer_leading_zero_constant);
+    RUN_TEST(test_lexer_int_constant_limits);
+    RUN_TEST(test_lexer_unknown_character);
+    RUN_TEST(test_lexer_identifier_character_class_ends);
     return harness_finish();
 }
