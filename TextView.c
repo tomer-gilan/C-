@@ -4,9 +4,6 @@
 
 
 #include "TextView.h"
-
-#include <assert.h>
-
 #include "Utils.h"
 
 #include <string.h>

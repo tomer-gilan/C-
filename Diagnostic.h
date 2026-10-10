@@ -5,6 +5,7 @@
 #ifndef C_COMPILER_DIAGNOSTIC_H
 #define C_COMPILER_DIAGNOSTIC_H
 
+typedef struct Context Context; // forward declaration
 #include "Range.h"
 
 typedef enum {

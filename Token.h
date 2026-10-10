@@ -10,7 +10,7 @@
 #include "Range.h"
 #include "TextView.h"
 
-// Token Kinds. WHEN ADDING A NEW ONE, DO NOT FOGET TO UPDATE THE ALIASES AT THE END!!
+// Token Kinds. WHEN ADDING A NEW ONE, DO NOT FORGET TO UPDATE THE ALIASES AT THE END!!
 typedef enum {
     // First, all spellable token kinds:
     // Keywords

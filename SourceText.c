@@ -4,11 +4,8 @@
 
 #include "SourceText.h"
 #include "Utils.h"
-#include "Text.h"
 
 #include <stdlib.h>
-#include <assert.h>
-#include <string.h>
 
 /**
  * @param c the character to check

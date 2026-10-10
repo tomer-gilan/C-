@@ -2,11 +2,11 @@
 // Created by tomer on 27-Sep-26.
 //
 
-#include <assert.h>
-#include <stdlib.h>
-
 #include "Context.h"
 #include "Utils.h"
+
+#include <assert.h>
+#include <stdlib.h>
 
 Context* context_create(SourceText* const source) {
     assert(source != NULL && "Invalid source!");
@@ -45,6 +45,18 @@ SourceText* context_source_text_at(Context* const this, const int index) {
 }
 const SourceText* context_source_text_at_const(const Context* const this, const int index) {
     return list_at(this->source_text_table, index);
+}
+TextView context_range_to_text_view(const Context* const this, const Range range) {
+    assert(range.length >= 0 && "invalid range length (negative)");
+    const SourceText* const source_text = context_source_text_at_const(this, range.position.source_text_index);
+    assert(source_text != NULL);
+    assert(source_text_is_index_in_bounds(source_text, range.position.offset + range.length - 1)
+        && "invalid range (outside of SourceText bounds)");
+    return (TextView)
+    {
+        .data = source_text->data->data + range.position.offset,
+        .length = range.length
+    };
 }
 
 void context_report_diagnostic(Context * const this, const Diagnostic report) {

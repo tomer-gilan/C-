@@ -5,9 +5,9 @@
 #ifndef C_COMPILER_SOURCE_TEXT_H
 #define C_COMPILER_SOURCE_TEXT_H
 
-#include <stdbool.h>
-
 #include "Text.h"
+
+#include <stdbool.h>
 
 typedef struct {
     char* name; ///< the name of the file, i.e. path==full/path/to/file_name.c and name==file_name.c

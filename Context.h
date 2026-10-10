@@ -11,7 +11,7 @@
 #include "TextView.h"
 #include "Diagnostic.h"
 
-typedef struct {
+typedef struct Context {
     List* identifiers_table;        ///< @c List of @c TextView
     List* string_literals_table;    ///< @c List of @c Text
     List* source_text_table;        ///< @c List of @c SourceText
@@ -39,6 +39,10 @@ SourceText* context_source_text_at(Context* this, int index);
  * @c const version of @c context_source_text_at
  */
 const SourceText* context_source_text_at_const(const Context* this, int index);
+/**
+ * returns a @c TextView based on the given @c Range
+ */
+TextView context_range_to_text_view(const Context * this, Range range);
 /**
  * caches the identifier spelling.
  * @return the id of the cached spelling.

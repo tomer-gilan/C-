@@ -6,7 +6,6 @@
 #define C_COMPILER_RANGE_H
 
 #include "FilePosition.h"
-#include "TextView.h"
 
 /**
  * a @c Range is similar in nature to physics vector. It has a start (@c FilePosition) and a @c length .
@@ -17,10 +16,6 @@ typedef struct {
     int length;
 } Range;
 
-/**
- * returns a @c TextView based on the @c Range @b range given
- */
-TextView range_to_text_view(Range this, const Context* context);
 /**
  * generates a @c Range based on two @c FilePosition.
  * @warning asserts both are sourced at the same file (since it's meaningless to talk about a range starting at one

@@ -2,11 +2,12 @@
 // Created by tomer on 27-Sep-26.
 //
 
-#include <stdlib.h>
-
 #include "Driver.h"
+#include "Context.h"
 #include "Lexer.h"
 #include "Utils.h"
+
+#include <stdlib.h>
 
 Driver* driver_create(const int argc, const char* const* argv) {
     if (argc <= 1) {

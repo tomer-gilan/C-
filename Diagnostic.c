@@ -3,11 +3,10 @@
 //
 
 #include "Diagnostic.h"
+#include "Utils.h"
 
 #include <assert.h>
 #include <stdio.h>
-
-#include "Utils.h"
 
 struct DiagnosticDescriptor {
     DiagnosticSeverity severity;
@@ -50,11 +49,11 @@ static bool diagnostic_is_valid_code(const DiagnosticCode code) {
 void diagnostic_issue(const Diagnostic report, const Context* const context) {
     assert(diagnostic_is_valid_code(report.code) && "Unknown diagnostic code!");
 
-    const FileLineColumn file_line_column = file_position_get_file_line_column(report.range.position, context);
-    fprintf(stderr,"%s:%d:%d: [%s] %s:",
-            file_line_column.file_name, file_line_column.line, file_line_column.column,
-            diagnostic_severity_table[diagnostics_table[report.code].severity],
-            diagnostics_table[report.code].info);
+    //const FileLineColumn file_line_column = file_position_get_file_line_column(report.range.position, context);
+    //fprintf(stderr,"%s:%d:%d: [%s] %s:",
+    //        file_line_column.file_name, file_line_column.line, file_line_column.column,
+    //        diagnostic_severity_table[diagnostics_table[report.code].severity],
+    //        diagnostics_table[report.code].info);
 }
 void diagnostic_issue_string(const Diagnostic report, const Context* const context, const char* const message) {
     diagnostic_issue(report, context);

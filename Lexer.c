@@ -5,12 +5,12 @@
 #include "Lexer.h"
 #include "Token.h"
 #include "Utils.h"
+#include "Diagnostic.h"
 
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
 
-#include "Diagnostic.h"
 
 #define LEXER_EOF ((int)(-1))
 #define LEXER_UNKNOWN_ESCAPE_CHARACTER ((int)(-2))
@@ -56,7 +56,7 @@ void lexer_destroy(Lexer* this) {
  * @retval LEXER_EOF if the relative @b offset is positioned out-of-bounds.
  */
 static int lexer_peek_at(const Lexer* this, const int offset) {
-    const SourceText* const source = file_position_get_source_text_const(this->cursor, this->context);
+    const SourceText* const source = context_source_text_at(this->context, this->cursor.source_text_index);
     const int final_offset = this->cursor.offset + offset;
     return source_text_is_index_in_bounds(source, final_offset) ? (unsigned char)(source->data->data[final_offset]) : LEXER_EOF;
 }
@@ -278,7 +278,7 @@ static Token lexer_lex_word(Lexer* const this) { // TOKEN_KW and TOKEN_IDENT
     assert(is_char_word_character(lexer_peek(this))); // otherwise it's invalid by definition.
 
     const Range range = lexer_skip_while(this, is_char_word_character);
-    const TextView spelling = range_to_text_view(range, this->context);
+    const TextView spelling = context_range_to_text_view(this->context, range);
     TokenKind kind = token_kind_from_spelling(spelling);
 
     assert(!token_kind_is_punctuator(kind) && "Somehow got a word spelling which is a punctuator.");
@@ -307,13 +307,16 @@ static Token lexer_lex_punctuator(Lexer* const this) {
     while (is_char_part_of_punctuator(lexer_peek(this))) {
         range_extend(&range, 1);  // to include the current peeked punctuator (without actually popping it yet,
                                     // since the overall punctuator sequence may not be valid
-        if (!token_kind_is_punctuator(token_kind_from_spelling(range_to_text_view(range, this->context)))) {
+        if (!token_kind_is_punctuator(token_kind_from_spelling(context_range_to_text_view(this->context, range)))) {
             range_extend(&range, -1); // excluding the last invalid punctuator.
             break; // invalid sequence, so we keep the maximal-munched sequence without the new punctuator.
         }
         lexer_pop(this); // the overall sequence WAS valid, so we maximal-munch this character as well.
     }
-    return (Token){.kind = token_kind_from_spelling(range_to_text_view(range, this->context)), .range = range};
+    return (Token)
+    {
+        .kind = token_kind_from_spelling(context_range_to_text_view(this->context, range)), .range = range
+    };
 }
 static Token lexer_lex_constant_int(Lexer* const this) {
     assert(is_char_numeric(lexer_peek(this))); // otherwise it's invalid by definition.
@@ -342,7 +345,7 @@ static Token lexer_lex_constant_int(Lexer* const this) {
     // integer parsing:
     int value = 0;
     if (should_calculate_value) {
-        const TextView spelling = range_to_text_view(range, this->context);
+        const TextView spelling = context_range_to_text_view(this->context, range);
         for (int i = 0; i < range.length; ++i) {
             const int c = (unsigned char) spelling.data[i];
             assert(is_char_numeric(c) && "non-numeric char");
