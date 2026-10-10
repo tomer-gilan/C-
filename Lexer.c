@@ -279,20 +279,14 @@ static Token lexer_lex_word(Lexer* const this) { // TOKEN_KW and TOKEN_IDENT
 
     const Range range = lexer_skip_while(this, is_char_word_character);
     const TextView spelling = context_range_to_text_view(this->context, range);
-    TokenKind kind = token_kind_from_spelling(spelling);
+    const TokenKind kind = token_kind_from_spelling(spelling);
 
     assert(!token_kind_is_punctuator(kind) && "Somehow got a word spelling which is a punctuator.");
 
     if (token_kind_is_keyword(kind))
         return (Token){.kind = kind, .range = range};
     // Then it is an identifier.
-    kind = TOKEN_IDENT;
-    const int id = list_find_or_push(
-        this->context->identifiers_table,
-        &spelling,
-        text_view_list_compare,
-        text_view_list_duplicate);
-    return (Token){.kind = kind, .range = range, .as.id = id};
+    return (Token){.kind = TOKEN_IDENT, .range = range, .as.id = context_intern_identifier(this->context, spelling)};
 }
 static Token lexer_lex_punctuator(Lexer* const this) {
     assert(is_char_part_of_punctuator(lexer_peek(this))); // otherwise it's invalid by definition.
@@ -313,9 +307,9 @@ static Token lexer_lex_punctuator(Lexer* const this) {
         }
         lexer_pop(this); // the overall sequence WAS valid, so we maximal-munch this character as well.
     }
-    return (Token)
-    {
-        .kind = token_kind_from_spelling(context_range_to_text_view(this->context, range)), .range = range
+    return (Token){
+        .kind = token_kind_from_spelling(context_range_to_text_view(this->context, range)),
+        .range = range
     };
 }
 static Token lexer_lex_constant_int(Lexer* const this) {
@@ -413,11 +407,7 @@ static Token lexer_lex_string_literal(Lexer* const this) {
     const Token to_return = {
         .kind = TOKEN_STRING_LITERAL,
         .range = range,
-        .as.id = list_find_or_push(
-            this->context->string_literals_table,
-            text,
-            text_list_compare,
-            text_list_duplicate)
+        .as.id = context_intern_string_literal(this->context, text)
     };
     text_destroy(text);
     return to_return;

@@ -22,6 +22,8 @@ Context* context_create(SourceText* const source) {
     return context;
 }
 void context_destroy(Context* const this) {
+    assert(this != NULL);
+
     assert(this->identifiers_table != NULL && "table is NULL");
     list_destroy(this->identifiers_table);
     this->identifiers_table = NULL;
@@ -44,9 +46,11 @@ SourceText* context_source_text_at(Context* const this, const int index) {
     return list_at(this->source_text_table, index);
 }
 const SourceText* context_source_text_at_const(const Context* const this, const int index) {
+    assert(this != NULL);
     return list_at(this->source_text_table, index);
 }
 TextView context_range_to_text_view(const Context* const this, const Range range) {
+    assert(this != NULL);
     assert(range.length >= 0 && "invalid range length (negative)");
     const SourceText* const source_text = context_source_text_at_const(this, range.position.source_text_index);
     assert(source_text != NULL);
@@ -57,6 +61,23 @@ TextView context_range_to_text_view(const Context* const this, const Range range
         .data = source_text->data->data + range.position.offset,
         .length = range.length
     };
+}
+
+int context_intern_identifier(Context* const this, const TextView spelling) {
+    assert(this != NULL);
+    return list_find_or_push(
+        this->identifiers_table,
+        &spelling,
+        text_view_list_compare,
+        text_view_list_duplicate);
+}
+
+int context_intern_string_literal(Context* const this, const Text* const text) {
+    return list_find_or_push(
+        this->string_literals_table,
+        text,
+        text_list_compare,
+        text_list_duplicate);
 }
 
 void context_report_diagnostic(Context * const this, const Diagnostic report) {

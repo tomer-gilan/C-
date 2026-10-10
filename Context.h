@@ -53,8 +53,9 @@ int context_intern_identifier(Context* this, TextView spelling);
  * caches the string literal spelling.
  * @return the id of the cached spelling.
  * @note if the spelling is already cached, the existing id is returned.
+ * @attention ownership of @b text remains with the caller
  */
-int context_intern_string_literal(Context* this, Text* spelling);
+int context_intern_string_literal(Context * this, const Text * text);
 /**
  * caches the diagnostic.
  */
