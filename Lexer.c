@@ -10,7 +10,6 @@
 #include <assert.h>
 #include <limits.h>
 
-#define LEXER_MAX_DECODE_LITERAL_LENGTH 4095
 #define LEXER_EOF ((int)(-1))
 #define LEXER_UNKNOWN_ESCAPE_CHARACTER ((int)(-2))
 
@@ -153,7 +152,7 @@ static bool is_char_whitespace(const int c) {
  * Converts @c StringView @b view to its integer form.
  * @attention asserts @c view contains numerics only. Does NOT check for a leading 0.
  */
-static int lexer_string_view_to_int(const TextView view) {
+static int lexer_text_view_to_int(const TextView view) {
     int number = 0;
     for (int i = 0; i < view.length; ++i) {
         const int c = (unsigned char)view.data[i];
@@ -216,23 +215,21 @@ static int lexer_escape_character(const int character) {
 
 /**
  * @internal to be used only by other lexing functions.
+ * @warning ownership of return value is transferred to the caller.
  * @param this a handle to the @c Lexer
- * @param buff4096 caller allocated buffer of 4096 bytes.
- * @param bytes_written the number of bytes written to @b buffer4096
  * @param delimiter ' or "
- * @return the @c Range of the literal
+ * @return the @c Text of the literal
  */
-static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int* const bytes_written, const char delimiter) {
-    // otherwise it's invalid by definition:
-    assert(buff4096 != NULL && "invalid buffer4096");
+static Text* lexer_lex_literal_to_buffer(Lexer* const this, const char delimiter) {
+    // if one of these is false, it's invalid by definition:
     assert((delimiter == '\'' || delimiter == '\"') && "Invalid delimiter");
     assert(lexer_peek(this) == delimiter && "First character of a char literal was not a delimiter.");
 
     const FilePosition start = this->cursor;
     lexer_pop(this); // pops the delimiter.
 
+    Text* literal_text = text_create_empty();
     bool should_escape_character = false;
-    *bytes_written = 0;
     while (lexer_peek(this) != LEXER_EOF) {
         int c = lexer_pop(this);
 
@@ -246,8 +243,7 @@ static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int*
                  * escaped character.
                  */
             }
-            if (*bytes_written < LEXER_MAX_DECODE_LITERAL_LENGTH)
-                buff4096[(*bytes_written)++] = (char)c;
+            text_push(literal_text, (char)c);
             should_escape_character = false;
         }
         else if (c == '\\') { // i.e. if we encounter a non-escaped backslash, the next character SHOULD be escaped.
@@ -255,24 +251,21 @@ static Range lexer_lex_literal_to_buffer(Lexer* const this, char* buff4096, int*
         }
         else if (c == '\n') {
             // TODO: issue a diagnostic, missing delimiter.
-            return range_from_file_positions(start, this->cursor);
+            return literal_text;
         }
         else if (c == delimiter) { // i.e. if we encounter a non-escaped delimiter
-            return range_from_file_positions(start, this->cursor);
+            return literal_text;
         }
-        else if (*bytes_written < LEXER_MAX_DECODE_LITERAL_LENGTH) {
-            // finally, the trivial case of a regular non escaped character.
-            buff4096[(*bytes_written)++] = (char)c;
-        }
+        else
+            text_push(literal_text, (char)c);
     }
     // if we got here something went wrong.
     // sanity check:
     assert(lexer_peek(this) == LEXER_EOF && "expected EOF");
 
     // TODO: issue diagnostic, unexpected EOF
-    return range_from_file_positions(start, this->cursor);
+    return literal_text;
 }
-
 /**
  * @note This function might have side effects such as updating the @c string_literal_table of @c Context,
  * and advancing the @c cursor of @c Lexer
@@ -284,7 +277,7 @@ static Token lexer_lex_word(Lexer* const this) { // TOKEN_KW and TOKEN_IDENT
     assert(is_char_word_character(lexer_peek(this))); // otherwise it's invalid by definition.
 
     const Range range = lexer_skip_while(this, is_char_word_character);
-    const TextView spelling = range_to_string_view(range, this->context);
+    const TextView spelling = range_to_text_view(range, this->context);
     TokenKind kind = token_kind_from_spelling(spelling);
 
     assert(!token_kind_is_punctuator(kind) && "Somehow got a word spelling which is a punctuator.");
@@ -295,7 +288,8 @@ static Token lexer_lex_word(Lexer* const this) { // TOKEN_KW and TOKEN_IDENT
     kind = TOKEN_IDENT;
     const int id = list_find_or_push(
         this->context->identifiers_table,
-        &spelling, text_view_list_compare,
+        &spelling,
+        text_view_list_compare,
         text_view_list_duplicate);
     return (Token){.kind = kind, .range = range, .as.id = id};
 }
@@ -312,13 +306,13 @@ static Token lexer_lex_punctuator(Lexer* const this) {
     while (is_char_part_of_punctuator(lexer_peek(this))) {
         range_extend(&range, 1);  // to include the current peeked punctuator (without actually popping it yet,
                                     // since the overall punctuator sequence may not be valid
-        if (!token_kind_is_punctuator(token_kind_from_spelling(range_to_string_view(range, this->context)))) {
+        if (!token_kind_is_punctuator(token_kind_from_spelling(range_to_text_view(range, this->context)))) {
             range_extend(&range, -1); // excluding the last invalid punctuator.
             break; // invalid sequence, so we keep the maximal-munched sequence without the new punctuator.
         }
         lexer_pop(this); // the overall sequence WAS valid, so we maximal-munch this character as well.
     }
-    return (Token){.kind = token_kind_from_spelling(range_to_string_view(range, this->context)), .range = range};
+    return (Token){.kind = token_kind_from_spelling(range_to_text_view(range, this->context)), .range = range};
 }
 static Token lexer_lex_constant_int(Lexer* const this) {
     assert(is_char_numeric(lexer_peek(this))); // otherwise it's invalid by definition.
@@ -339,28 +333,30 @@ static Token lexer_lex_constant_int(Lexer* const this) {
     return (Token){
         .kind = TOKEN_CONST_INT,
         .range = range,
-        .as.value = calculate_value ? lexer_string_view_to_int(range_to_string_view(range, this->context)) : 0
+        .as.value = calculate_value ? lexer_text_view_to_int(range_to_text_view(range, this->context)) : 0
     };
 }
 static Token lexer_lex_constant_char(Lexer* const this) {
     // NOTE - yes, we return a TOKEN_CONST_INT, because the C standard states that char literals
     // should be interpreted as integer constants.
 
-    char* buffer4096 = utils_xmalloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
-    int bytes_written;
-    const Range range = lexer_lex_literal_to_buffer(this, buffer4096, &bytes_written, '\'');
+    const FilePosition start = this->cursor;
+    Text* const text = lexer_lex_literal_to_buffer(this, '\'');
+    const Range range = range_from_file_positions(start, this->cursor);
+
     char value;
-    if (bytes_written == 0) {
+    if (text_is_empty(text)) {
         value = 0;
         // TODO: issue diagnostic, "expected expression", set value of token to 0 and return. do not forget to free the buffer!!! or better yet, use the code already written and just have the value be the first character... probably better.
     }
     else {
-        value = buffer4096[0];
-        if (bytes_written > 1) {
+        value = text->data[0]; // data is not empty, so a first value is guaranteed.
+        if (text->length > 1) {
             // TODO: issue diagnostic, multi-character literal, set value of token to 0 and return. do not forget to free the buffer!!! or better yet, use the code already written and just have the value be the first character... probably better.
         }
     }
-    free(buffer4096);
+
+    text_destroy(text);
     return (Token){
         .kind = TOKEN_CONST_INT,
         .range = range,
@@ -368,23 +364,25 @@ static Token lexer_lex_constant_char(Lexer* const this) {
     };
 }
 static Token lexer_lex_string_literal(Lexer* const this) {
-    char* buffer4096 = utils_xmalloc(sizeof(char) * (LEXER_MAX_DECODE_LITERAL_LENGTH + 1));
-    int bytes_written;
-    const Range range = lexer_lex_literal_to_buffer(this, buffer4096, &bytes_written, '\"');
-    buffer4096[bytes_written] = '\0';
+    const FilePosition start = this->cursor;
+    Text* const text = lexer_lex_literal_to_buffer(this, '\"');
+    const Range range = range_from_file_positions(start, this->cursor);
+
     const Token to_return = {
         .kind = TOKEN_STRING_LITERAL,
         .range = range,
         .as.id = list_find_or_push(
             this->context->string_literals_table,
-            buffer4096,
-            utils_string_list_compare,
-            utils_string_list_allocate_and_copy)
+            text,
+            text_list_compare,
+            text_list_duplicate)
     };
-    free(buffer4096);
+    text_destroy(text);
     return to_return;
 }
-
+/**
+ * an unknown token represents a single unknown character, encountered when parsing.
+ */
 static Token lexer_get_unknown_token(Lexer* const this) {
     const FilePosition start = this->cursor;
     lexer_pop(this);
@@ -393,7 +391,6 @@ static Token lexer_get_unknown_token(Lexer* const this) {
         .range = range_from_file_positions(start, this->cursor)
     };
 }
-
 /**
  * extract the next token based on the lexeme.
  * @param this a handle to the lexer

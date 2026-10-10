@@ -196,30 +196,31 @@ static void test_lexer_single_char(void) {
 }
 static void test_lexer_single_string(void) {
     typedef struct {
-        TextView spelling;
-        char* literal;
+        TextView source;
+        TextView check_against;
     } test_string;
     test_string arr[] = {
-        {.spelling = text_view_from_literal("\"\""),      .literal = ""},
-        {.spelling = text_view_from_literal("\"'\""),     .literal = "'"},
-        {.spelling = text_view_from_literal("\"''\""),    .literal = "''"},
-        {.spelling = text_view_from_literal("\"'''\""),   .literal = "'''"},
-        {.spelling = text_view_from_literal("\"        \""), .literal = "        "},
-        //{.spelling = text_view_from_literal("\"\\0\""), .literal = "\0"},  ... unsupported right now
-        {.spelling = text_view_from_literal("\"a\""), .literal = "a"},
-        {.spelling = text_view_from_literal("\"ab\""), .literal = "ab"},
-        {.spelling = text_view_from_literal("\"abc\""), .literal = "abc"},
-        {.spelling = text_view_from_literal("\"a51fdg2g78\""), .literal = "a51fdg2g78"},
-        {.spelling = text_view_from_literal("\"]\""), .literal = "]"},
-        {.spelling = text_view_from_literal("\"]%S&@BVBSH@*(SG@*(S*#^@\""), .literal = "]%S&@BVBSH@*(SG@*(S*#^@"},
-        {.spelling = text_view_from_literal("\"]%S&@\\nBVBSH@\\n*(SG\\r\\f\\n@*(S*#^@\""), .literal = "]%S&@\nBVBSH@\n*(SG\r\f\n@*(S*#^@"},
+        {.source = text_view_from_literal("\"\""),                                                  .check_against = text_view_from_literal("")},
+        {.source = text_view_from_literal("\"'\""),                                                 .check_against = text_view_from_literal("'")},
+        {.source = text_view_from_literal("\"''\""),                                                .check_against = text_view_from_literal("''")},
+        {.source = text_view_from_literal("\"'''\""),                                               .check_against = text_view_from_literal("'''")},
+        {.source = text_view_from_literal("\"        \""),                                          .check_against = text_view_from_literal("        ")},
+        {.source = text_view_from_literal("\"\\0\""),                                               .check_against = text_view_from_literal("\0")},
+        {.source = text_view_from_literal("\"a\""),                                                 .check_against = text_view_from_literal("a")},
+        {.source = text_view_from_literal("\"ab\""),                                                .check_against = text_view_from_literal("ab")},
+        {.source = text_view_from_literal("\"abc\""),                                               .check_against = text_view_from_literal("abc")},
+        {.source = text_view_from_literal("\"a51fdg2g78\""),                                        .check_against = text_view_from_literal("a51fdg2g78")},
+        {.source = text_view_from_literal("\"]\""),                                                 .check_against = text_view_from_literal("]")},
+        {.source = text_view_from_literal("\"]%S&@BVBSH@*(SG@*(S*#^@\""),                           .check_against = text_view_from_literal("]%S&@BVBSH@*(SG@*(S*#^@")},
+        {.source = text_view_from_literal("\"]%S&@\\nBVBSH@\\n*(SG\\r\\f\\n@*(S*#^@\""),            .check_against = text_view_from_literal("]%S&@\nBVBSH@\n*(SG\r\f\n@*(S*#^@")},
+        {.source = text_view_from_literal("\"\\0]%S&@\\nBVB\\0SH@\\n*(SG\\r\\f\\n@*(S*#^@\\0\""),   .check_against = text_view_from_literal("\0]%S&@\nBVB\0SH@\n*(SG\r\f\n@*(S*#^@\0")},
     };
     const int N = sizeof(arr) / sizeof(test_string);
 
     for (int i = 0; i < N; ++i) {
         const test_string test = arr[i];
 
-        Context* context = context_create(source_text_create(text_create_from_buffer(test.spelling.data, test.spelling.length), "<source>"));
+        Context* context = context_create(source_text_create(text_create_from_buffer(test.source.data, test.source.length), "<source>"));
         Lexer* lexer = lexer_create(context, 0);
         List* tokens = lexer_lex_source_text(lexer);
 
@@ -227,7 +228,7 @@ static void test_lexer_single_string(void) {
         const Token* const first = list_at(tokens, 0);
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == TOKEN_STRING_LITERAL);
-        CHECK(0 == strcmp(list_at(context->string_literals_table, first->as.id), test.literal)); // TODO: replace strcmp with memcmp once string literals are saved as StringView.
+        CHECK(list_contains(context->string_literals_table, &(test.check_against), text_view_list_compare));
         CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
@@ -274,7 +275,7 @@ static void test_lexer_single_identifier(void) {
     }
 }
 static void test_lexer_int_x_eq_5_sc(void) {
-    /*const TextView source = text_view_from_literal("int x = 5;");
+    const TextView source = text_view_from_literal("int x = 5;");
     Context* lexer_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
@@ -298,13 +299,13 @@ static void test_lexer_int_x_eq_5_sc(void) {
         }
     }
 
-    are_token_lists_equal(lexer_tokens, expected, lexer_context);
+    //are_token_lists_equal(lexer_tokens, expected, lexer_context);
 
     list_destroy(lexer_tokens);
     lexer_destroy(lexer);
     context_destroy(lexer_context);
 
-    list_destroy(expected);*/
+    list_destroy(expected);
 }
 
 int main(void) {

@@ -10,11 +10,29 @@
 #include <string.h>
 #include <stdio.h>
 
+// -------- private ----------- //
+static bool text_has_met_capacity(const Text* this) {
+    assert(this != NULL && "list handle was NULL");
+    return this->length == this->capacity;
+}
+static void text_expand(Text* this) {
+    assert(this != NULL && "list handle was NULL");
+    if (this->capacity == 0)
+        this->capacity = 1;
+    else
+        this->capacity *= 2;
+    this->data = utils_xrealloc(this->data, sizeof(char) * this->capacity);
+}
+
+Text* text_create_empty() {
+    return text_create_from_buffer("", 0);
+}
 Text* text_create_from_buffer(const char* buffer, const int length) {
     Text* const text_view = utils_xmalloc(sizeof(Text));
     *text_view = (Text){
         .data = utils_allocate_and_copy_buffer(buffer, length),
-        .length = length
+        .length = length,
+        .capacity = length
     };
     return text_view;
 }
@@ -46,19 +64,37 @@ Text* text_create_from_path(const char* const path) {
     return text;
 }
 void text_destroy(Text* const this){
+    assert(this != NULL);
+
     free(this->data);
     free(this);
+}
+bool text_is_empty(const Text* this) {
+    assert(this != NULL);
+    return this->length == 0;
 }
 bool text_equals(const Text* const first, const Text* const second) {
     assert(first != NULL && second != NULL);
     return text_compare(first, second) == 0;
 }
 int text_compare(const Text* const first, const Text* const second) {
+    assert(first != NULL && second != NULL);
     if (first->length != second->length)
         return -1; // -1 as in not 0, i.e. not equal.
     const int length = first->length;
     return memcmp(first->data, second->data, length);
 }
+void text_push(Text* const this, const char c) {
+    assert(this != NULL);
+    if (text_has_met_capacity(this))
+        text_expand(this);
+    this->data[this->length++] = c;
+}
+TextView text_as_view(const Text* const this) {
+    return text_view_create(this->length, this->data);
+}
+
+// wrappers for List.h
 int text_list_compare(const void* first, const void* second) {
     return text_compare(first, second);
 }
@@ -67,4 +103,7 @@ void* text_list_duplicate(const void* text) {
         ((Text*)text)->data,
         ((Text*)text)->length
         );
+}
+void text_list_destroy(void* this) {
+    text_destroy(this);
 }

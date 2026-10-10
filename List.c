@@ -17,7 +17,7 @@ struct List {
 } ;
 
 // -------- List: private functions --------- //
-static bool list_is_at_full_capacity(const List* this) {
+static bool list_has_met_capacity(const List* this) {
     assert(this != NULL && "list handle was NULL");
     return this->size == this->capacity;
 }
@@ -62,7 +62,7 @@ bool list_is_empty(const List* this) {
 }
 int list_push(List* this, void* value) {
     assert(this != NULL && "list handle was NULL");
-    if (list_is_at_full_capacity(this))
+    if (list_has_met_capacity(this))
         list_expand(this);
     this->elements[this->size++] = value;
     return this->size - 1;

@@ -6,7 +6,7 @@
 
 #include <assert.h>
 
-TextView range_to_string_view(const Range this, const Context* const context) {
+TextView range_to_text_view(const Range this, const Context* const context) {
     assert(this.length >= 0 && "invalid range length (negative)");
     assert(source_text_is_index_in_bounds(
         file_position_get_source_text_const(this.position, context),

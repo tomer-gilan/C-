@@ -21,7 +21,10 @@ typedef struct {
  * @return a @c TextView
  */
 #define text_view_from_literal(literal) ((TextView){.data = "" literal "", .length = sizeof(literal) - 1})
-
+/**
+ * @attention @b data must outlive the return value, since the returned @c TextView points to @b data.
+ */
+TextView text_view_create(int length, const char* data);
 /**
  * predicate, checks if both are equal
  */

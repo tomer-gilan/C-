@@ -26,6 +26,18 @@ How the C~~ compiler's own source is written. These rules were inferred from the
   - `-1` works as the "not found" sentinel (`list_index_of`).
   - It stays inside the C~~ subset (no `unsigned`, no `size_t`), keeping self-hosting possible (ADR-004).
 
+## Characters and bytes
+
+Plain `char` is signed on the host (GCC, x86-64), so a byte ≥ 0x80 reads back **negative** (`0x88` → −120). These rules keep that from mattering:
+
+- **Store bytes as `char`** (`Text`, `TextView`, buffers). String literals and libc use `char*`, and `memcpy`/`memcmp` preserve and compare the bits regardless.
+- **Never treat a stored `char` as a number directly**: no arithmetic, array indexing, `<ctype.h>` calls, shifts, or comparisons against values > 127 on `data[i]`.
+- **Read numeric values through one choke point** that returns `(unsigned char)` widened to `int`, giving 0..255 (or a negative sentinel like `LEXER_EOF`). Today that's `lexer_peek_at` (`Lexer.c`). New readers, e.g. ADR-010's escape decoder, either use it or follow the same pattern.
+- **Pass byte values between functions as `int`** in 0..255, like `getc` and `isalpha`, never as `char` parameters.
+- **Storing a value back** (`data[i] = (char)c` with `c` in 0..255) is implementation-defined, not UB. GCC keeps the low 8 bits, so the stored byte is exact. Keep the explicit cast to show the narrowing is deliberate.
+
+Comparing a stored `char` with a character literal below 128 (`c == '\n'`) is always safe.
+
 ## `const`
 
 - **Deep const:** a pointer parameter is `const` only if calling the function can't change the observable state of the object, *including state reached through its fields*. Example: `file_position_get_source_file` takes a non-`const Context*`, because the `SourceFile*` it returns can be used to modify the context's state.

@@ -12,7 +12,7 @@
 
 typedef struct {
     List* identifiers_table;        ///< @c List of @c TextView
-    List* string_literals_table;    ///< @c List of @c char* (@c string)
+    List* string_literals_table;    ///< @c List of @c Text
     List* source_text_table;        ///< @c List of @c SourceText
 } Context;
 

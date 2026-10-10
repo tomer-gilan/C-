@@ -7,11 +7,15 @@
 
 #include <stdbool.h>
 
+#include "TextView.h"
+
 typedef struct {
     int length;
+    int capacity;
     char* data;
 } Text;
 
+Text* text_create_empty();
 /**
  * @param buffer caller owned buffer, to be duplicated.
  * @param length length of @b buffer
@@ -29,8 +33,18 @@ void text_destroy(Text* this);
 /**
  * predicate, checks if both are equal
  */
+bool text_is_empty(const Text* this);
 bool text_equals(const Text* first, const Text* second);
 int text_compare(const Text* first, const Text* second);
+/**
+ * pushes @c c into @c data, possibly extending its capacity.
+ */
+void text_push(Text* this, char c);
+/**
+ * @attention @b this must outlive the return value, since it points to @b this
+ * returns a @c TextView of @b this
+ */
+TextView text_as_view(const Text* this);
 
 // for list.h usage
 int text_list_compare(const void* first, const void* second);
@@ -38,5 +52,6 @@ int text_list_compare(const void* first, const void* second);
  * @attention this is DEEP duplication
  */
 void* text_list_duplicate(const void* text);
+void text_list_destroy(void* this);
 
 #endif //C_COMPILER_TEXT_H
