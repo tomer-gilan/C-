@@ -88,9 +88,9 @@ tests, not all at once through `main`.
   100% of lines and 92.0% of branches (11 tests added to `test_lexer.c`, written by Claude). What remains is `lexer_pop`
   's `peek != LEXER_EOF` check (`Lexer.c:77`): every caller peeks first, so it can't be reached through the public
   interface.
-- [x] Coverage runs with the rest of the suite: the CTest test `coverage` (so also in "All CTest" and the commit check)
-  fails if a line of `Lexer.c` never ran. When it fails, the report in the test output lists the lines; add a test for
-  them (or, for a new feature, the test comes with it).
+- [x] Coverage is automatic but never blocks a commit: the CMake target `coverage` prints the report on demand, and
+  `-DENABLE_COVERAGE_CHECK=ON` adds a CTest test `coverage` that fails if a line of `Lexer.c` never ran. Both are off
+  the normal path ("All CTest" and the commit check don't run them); the failing check is for CI (see "Later").
 - [ ] After the lexer changes (comments, diagnostics), look at the never-taken branches in the report and cover the new
   ones.
 

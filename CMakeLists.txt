@@ -100,12 +100,25 @@ if (ENABLE_SANITIZERS)
     set_tests_properties(list text_view lexer source_text PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
 endif ()
 
-# Coverage as part of the suite: tests/coverage.sh makes its own instrumented build (in a subdirectory of this build
-# tree, so this build stays as it is), runs the tests in it, and fails if a line of Lexer.c never ran. Not registered
-# in that instrumented build itself (ENABLE_COVERAGE), where it would start itself again. Needs a POSIX shell.
+# Coverage without blocking anything. tests/coverage.sh makes its own instrumented build (in a subdirectory of this
+# build tree, so this build stays as it is), runs the tests in it and reports the lines and branches no test reached.
+# Neither is part of the normal build or of "All CTest", so the commit check stays fast and can't fail on coverage.
+# Not defined in the instrumented build itself (ENABLE_COVERAGE), where they would start themselves again. Needs a
+# POSIX shell.
 if (UNIX AND NOT ENABLE_COVERAGE)
-    add_test(NAME coverage
+    # The report, on demand (report only, never fails): cmake --build <build dir> --target coverage
+    add_custom_target(coverage
             COMMAND ${CMAKE_COMMAND} -E env BUILD_DIR=${CMAKE_BINARY_DIR}/coverage-build
-            sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh --fail-on-uncovered-lines Lexer.c)
-    set_tests_properties(coverage PROPERTIES TIMEOUT 300)
+            sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh Lexer.c
+            USES_TERMINAL VERBATIM)
+
+    # The gate, for CI: the CTest test `coverage` fails if a line of Lexer.c never ran. Off by default, because it is
+    # slow (a second build) and would turn "I haven't written the test yet" into a blocked commit.
+    option(ENABLE_COVERAGE_CHECK "Register the CTest test 'coverage' (fails if a line of Lexer.c never ran)" OFF)
+    if (ENABLE_COVERAGE_CHECK)
+        add_test(NAME coverage
+                COMMAND ${CMAKE_COMMAND} -E env BUILD_DIR=${CMAKE_BINARY_DIR}/coverage-build
+                sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh --fail-on-uncovered-lines Lexer.c)
+        set_tests_properties(coverage PROPERTIES TIMEOUT 300)
+    endif ()
 endif ()

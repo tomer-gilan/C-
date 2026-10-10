@@ -6,8 +6,9 @@
 #
 # Usage: tests/coverage.sh [--fail-on-uncovered-lines] [source-file ...]
 #          source-file: relative to the project root (default: Lexer.c)
-#          --fail-on-uncovered-lines: exit 1 if any line of those files never ran (CTest uses this; never-taken
-#          branches are only reported, since some can't be reached, e.g. defensive checks)
+#          --fail-on-uncovered-lines: exit 1 if any line of those files never ran (the CTest test `coverage` uses
+#          this when ENABLE_COVERAGE_CHECK is on; never-taken branches are only reported, since some can't be
+#          reached, e.g. defensive checks). Without it the script only reports.
 # Env:   BUILD_DIR   the build directory (default: cmake-build-coverage, which .gitignore already covers)
 #
 # Needs gcc, cmake and gcov. Run it where the tests run (the WSL/Ubuntu side).
