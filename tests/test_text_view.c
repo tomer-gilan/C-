@@ -145,7 +145,8 @@ static void test_text_view_list_duplicate(void) {
     }
 }
 
-int main(void) {
+int main(const int argc, char** const argv) {
+    harness_init(argc, argv);
     RUN_TEST(test_text_view_equals);
     RUN_TEST(test_text_view_list_duplicate);
     return harness_finish();

@@ -124,7 +124,9 @@ C~~ has **no preprocessor**. The input is a single, already-complete translation
 - **Date:** 2026-09-30 (recorded; decision predates this log)
 
 ### Context
-Several pieces of state outlive a single stage: the source files, the identifier table, the string-literal table, and (soon) the diagnostics. They could be globals or live in an object that's passed around.
+
+Several pieces of state outlive a single stage: the source texts, the identifier table, the string-literal table, and
+(soon) the diagnostics. They could be globals or live in an object that's passed around.
 
 ### Decision
 They live in one **`Context`**, passed explicitly to every stage and to any function that needs them. There's no global mutable state.
@@ -145,14 +147,15 @@ They live in one **`Context`**, passed explicitly to every stage and to any func
 Diagnostics in every stage need to point at source locations, mostly at *valid* tokens (e.g. an undeclared identifier). Storing line and column everywhere is redundant and has to be kept correct during lexing.
 
 ### Decision
-- A `FilePosition` is a (source-file index into the `Context`, byte offset) pair.
+
+- A `FilePosition` is a (source-text index into the `Context`, byte offset) pair.
 - Line and column are **computed on demand**, 1-based, by counting `'\n'` (`file_position_get_file_line_column`).
 - Every token carries a **`Range`** (start position + length), so its spelling is a slice of the source text rather than a copy.
 
 ### Consequences
 - `{0, 0}` is never a real line/column, so it can serve as a "no position" value.
 - Computing line/column is O(offset). That's fine for printing diagnostics; cache it if it ever matters.
-- The source text must outlive all tokens and `StringView`s into it (it's owned by `Context`).
+- The source text must outlive all tokens and `TextView`s into it (it's owned by `Context`).
 
 ---
 
@@ -165,7 +168,9 @@ Diagnostics in every stage need to point at source locations, mostly at *valid* 
 A lexer can hand tokens to the parser on demand (`next_token()`), or produce the complete token list first.
 
 ### Decision
-`lexer_lex_source_file` produces the **complete token list up front**, which always ends with exactly one end-of-file token. The parser consumes that list.
+
+`lexer_lex_source_text` produces the **complete token list up front**, which always ends with exactly one end-of-file
+token. The parser consumes that list.
 
 ### Consequences
 - The parser can peek any distance ahead for free.
@@ -178,7 +183,7 @@ A lexer can hand tokens to the parser on demand (`next_token()`), or produce the
 
 ## ADR-010: String literals are interned as bytes + length
 
-- **Status:** Accepted (not implemented yet; see `TODO.md`)
+- **Status:** Accepted, implemented (literals are `Text`, compared with `text_list_compare`)
 - **Date:** 2026-09-30
 
 ### Context
@@ -191,6 +196,8 @@ Decoded string literals are stored and interned as **(bytes, length)** pairs and
 - Embedded NUL bytes work.
 - Codegen emits each literal from its byte array, not as a C string, e.g. with `.byte` directives, or with `.ascii` plus explicit escapes.
 - Interning and lookup need a length-aware comparison function.
+- The decoded bytes live in a growable `Text`, so literals have no length limit (the old fixed 4096-byte decode buffer
+  is gone).
 
 ---
 
@@ -220,7 +227,9 @@ Something can go wrong for three different reasons: a bug in the compiler, a cal
 - **Date:** 2026-09-30
 
 ### Context
-Diagnostics can be printed at the moment they're issued or collected and reported later. Tests need to check which diagnostics were produced, and where (`testing.md`, step 8).
+
+Diagnostics can be printed at the moment they're issued or collected and reported later. Tests need to check which
+diagnostics were produced, and where (`roadmaps/testing-roadmap.md`, step 8).
 
 ### Decision
 Diagnostic instances are **collected in a list in `Context`**, along with an error count. The driver prints them at the end of each stage, sorted by position, and stops the pipeline if the stage produced any errors. The output format is defined in `implementation-defined.md`.
@@ -267,7 +276,8 @@ Keep the one-character-at-a-time munch, and treat "the punctuator set is prefix-
 
 ### Consequences
 - Adding a punctuator whose prefixes aren't all punctuators breaks the lexer:
-  - A missing **one-character** prefix (e.g. keeping `||` but dropping `|`) makes `lexer_lex_punctuator` return a **zero-length token without advancing**, so `lexer_lex_source_file` **loops forever**, even on valid input.
+    - A missing **one-character** prefix (e.g. keeping `||` but dropping `|`) makes `lexer_lex_punctuator` return a
+      **zero-length token without advancing**, so `lexer_lex_source_text` **loops forever**, even on valid input.
   - A missing **longer** prefix (e.g. standard C's `...` without `..`) produces **wrong tokens**: `...` lexes as three `.` tokens.
 - So any change to the punctuator set in `SUBSET.md` or `Token.h` must re-check this invariant, or change the munching algorithm.
 - Possible guards, when wanted: a unit test that checks every prefix of every punctuator spelling is in the table, and/or an assert that every non-EOF token has length > 0 (a progress guarantee that covers every lexing path). See `reviews/2026-09-30-code-review.md`, M5.

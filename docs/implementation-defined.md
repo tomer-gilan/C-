@@ -49,16 +49,16 @@ Gotcha: a UTF-8 character such as `é` is **two bytes**, so `'é'` is a multi-ch
 
 ## Constants and literals
 
-| Behavior | C~~ choice | Status |
-|---|---|---|
-| Decimal constant that doesn't fit in `int` (e.g. `2147483648`) | **Error** (`NUMERIC_CONSTANT_OUT_OF_BOUNDS`). There's no `long` to fall back on. | 🔧 (today: silently 0) |
-| Multi-character constant, e.g. `'ab'` (J.3.4) | **Error.** The token's value is the first character, so lexing continues. | 🔧 |
-| Empty character constant `''` | Error (it isn't valid C anyway). | 🔧 |
-| Escape sequences | The 11 simple escapes `\' \" \? \\ \a \b \f \n \r \t \v`, plus `\0`. No other octal escapes, no hex escapes, no `\e`. | 🔧 (today: has `\e`, lacks `\0`) |
-| Unknown escape, e.g. `\q` | Error. | 🔧 |
-| Maximum string literal length | **4095 bytes** after escape processing (a documented implementation limit), with an error when it's exceeded. Never silently truncated. See `research.md`, "Source slices", about removing the limit. | 🔧 (today: silently truncated) |
-| String literal storage | Read-only data (`.rodata`). Identical literals share one copy. Writing to a literal is UB, and in practice crashes with SIGSEGV. | ⏳ |
-| Embedded `\0` in string literals | Supported: literals are stored as bytes + length (ADR-010). | 🔧 (today: a bug, see `TODO.md`) |
+| Behavior                                                       | C~~ choice                                                                                                                                                       | Status                 |
+|----------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| Decimal constant that doesn't fit in `int` (e.g. `2147483648`) | **Error** (`NUMERIC_CONSTANT_OUT_OF_BOUNDS`). There's no `long` to fall back on.                                                                                 | 🔧 (today: silently 0) |
+| Multi-character constant, e.g. `'ab'` (J.3.4)                  | **Error.** The token's value is the first character, so lexing continues.                                                                                        | 🔧                     |
+| Empty character constant `''`                                  | Error (it isn't valid C anyway).                                                                                                                                 | 🔧                     |
+| Escape sequences                                               | The 11 simple escapes `\' \" \? \\ \a \b \f \n \r \t \v`, plus `\0`. No other octal escapes, no hex escapes, no `\e`.                                            | ✅                     |
+| Unknown escape, e.g. `\q`                                      | Error.                                                                                                                                                           | 🔧                     |
+| Maximum string literal length                                  | **None.** The decoded literal grows as needed (`Text`), so there is no limit besides available memory. (The C standard only requires 4095 characters, §5.2.4.1.) | ✅                     |
+| String literal storage                                         | Read-only data (`.rodata`). Identical literals share one copy. Writing to a literal is UB, and in practice crashes with SIGSEGV.                                 | ⏳                     |
+| Embedded `\0` in string literals                               | Supported: literals are stored as bytes + length (ADR-010).                                                                                                      | ✅                     |
 
 Gotcha: `-2147483648` is unary minus applied to the constant `2147483648`, which doesn't fit, so it's an error. Write `INT_MIN` as `-2147483647 - 1`.
 

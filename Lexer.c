@@ -149,8 +149,8 @@ static bool is_char_whitespace(const int c) {
 
 // Converters
 /**
- * Converts @c StringView @b view to its integer form.
- * @attention asserts @c view contains numerics only. Does NOT check for a leading 0.
+ * Converts @c TextView @b view to its integer form.
+ * @attention asserts @b view contains numerics only. Does NOT check for a leading 0.
  */
 static int lexer_text_view_to_int(const TextView view) {
     int number = 0;

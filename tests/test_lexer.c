@@ -355,6 +355,7 @@ static void test_lexer_single_identifier(void) {
         context_destroy(context);
     }
 }
+// full lexer tests:
 static void test_lexer_int_x_eq_5_sc(void) {
     const TextView source = text_view_from_literal("int x = 5;");
     Context* const lexer_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
@@ -379,6 +380,7 @@ static void test_lexer_int_x_eq_5_sc(void) {
     context_destroy(lexer_context);
 
     list_destroy(expected_tokens);
+    context_destroy(expected_context);
 }
 static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
     const TextView source = text_view_from_literal("if (num_int == 1234) printf(\"hello\");");
@@ -422,11 +424,399 @@ static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
     context_destroy(lexer_context);
 
     list_destroy(expected_tokens);
+    context_destroy(expected_context);
 }
 
-int main(void) {
-    RUN_TEST(test_lexer_if_num_int_eq_eq_1234_printf_hello_sc);
-    return harness_finish();
+// ---------------- Step 4c regression tests ---------------- //
+// One test per input from the regression list in roadmaps/testing-roadmap.md, Step 4c.
+// The error cases (empty and multi-character constants, 123abc) only check the tokens and that lexing recovers.
+// Checking their diagnostics is Step 8.
+
+/**
+ * Regression: leading whitespace before the first token (" x").
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_space_x(void) {
+    const TextView source = text_view_from_literal(" x");
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens,
+                  test_token_create_ptr(
+                      test_token_ident_create(0, 1, 1, expected_context, text_view_from_literal("x"))));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 2}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+}
+
+/**
+ * Regression: trailing whitespace after the last token ("x\n"). EOF sits after the newline.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_x_newline(void) {
+    const TextView source = text_view_from_literal("x\n");
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens,
+                  test_token_create_ptr(
+                      test_token_ident_create(0, 0, 1, expected_context, text_view_from_literal("x"))));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 2}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+}
+
+/**
+ * Regression: a file that is just "+", i.e. a punctuator that could grow (++ isn't in C~~, but the lexer peeks
+ * past it) ending exactly at EOF.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_plus(void) {
+    const TextView source = text_view_from_literal("+");
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 1, TOKEN_PLUS)));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 1}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+}
+
+/**
+ * Regression: "==;" must split as == then ;, since "==;" isn't a punctuator (maximal munch, ADR-014).
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_eq_eq_sc(void) {
+    const TextView source = text_view_from_literal("==;");
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 2, TOKEN_EQUALS_EQUALS)));
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 2, 1, TOKEN_SEMICOLON)));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 3}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+}
+
+/**
+ * Regression: an empty character constant ('') is one CONST_INT token with value 0, and lexing continues after it.
+ * The diagnostic (empty character constant) is checked in Step 8.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_empty_char(void) {
+    const TextView source = text_view_from_literal("'' x");
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens, test_token_create_ptr(test_token_const_int_create(0, 0, 2, 0)));
+        list_push(expected_tokens,
+                  test_token_create_ptr(
+                      test_token_ident_create(0, 3, 1, expected_context, text_view_from_literal("x"))));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 4}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+}
+
+/**
+ * Regression: a multi-character constant ('ab') is one CONST_INT token, valued as its first character, and lexing
+ * continues after it. The diagnostic (multi-character constant) is checked in Step 8.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_multi_char(void) {
+    const TextView source = text_view_from_literal("'ab' x");
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens, test_token_create_ptr(test_token_const_int_create(0, 0, 4, 'a')));
+        list_push(expected_tokens,
+                  test_token_create_ptr(
+                      test_token_ident_create(0, 5, 1, expected_context, text_view_from_literal("x"))));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 6}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+}
+
+/**
+ * Regression: "123abc" is ONE invalid CONST_INT token (value 0), not 123 followed by the identifier abc, and lexing
+ * continues after it. The diagnostic (invalid numerical sequence) is checked in Step 8.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_123abc(void) {
+    const TextView source = text_view_from_literal("123abc;");
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens, test_token_create_ptr(test_token_const_int_create(0, 0, 6, 0)));
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 6, 1, TOKEN_SEMICOLON)));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 7}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+}
+
+/**
+ * Regression: a 4095-byte string literal (the old fixed decode buffer's limit, now gone) is one token holding all
+ * 4095 bytes, not truncated.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_string_4095(void) {
+    enum { CONTENT_LENGTH = 4095, SOURCE_LENGTH = CONTENT_LENGTH + 2 }; // + 2 for the quotes
+    char* const buffer = utils_xmalloc(SOURCE_LENGTH);
+    buffer[0] = '\"';
+    memset(buffer + 1, 'a', CONTENT_LENGTH);
+    buffer[SOURCE_LENGTH - 1] = '\"';
+
+    Context* const lexer_context = context_create(
+        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(
+        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<expected>"));
+    List* expected_tokens = list_create(free);
+    {
+        // builds the list
+        list_push(expected_tokens,
+                  test_token_create_ptr(test_token_string_literal_create(
+                      0, 0, SOURCE_LENGTH, expected_context, text_view_create(CONTENT_LENGTH, buffer + 1))));
+        list_push(expected_tokens, test_token_create_ptr((Token)
+        {
+            .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = SOURCE_LENGTH}, .length = 0}
+        }));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
+    context_destroy(expected_context);
+    free(buffer);
+}
+
+/**
+ * Regression: a 4096-byte string literal (one byte past the old fixed decode buffer's limit, now gone) is still
+ * exactly one token holding all 4096 bytes, and lexing continues after it. There is no length limit
+ * (implementation-defined.md), so this is not an error case.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_string_4096(void) {
+    enum { CONTENT_LENGTH = 4096, SOURCE_LENGTH = CONTENT_LENGTH + 3 }; // + 2 for the quotes, + 1 for a trailing ';'
+    char* const buffer = utils_xmalloc(SOURCE_LENGTH);
+    buffer[0] = '\"';
+    memset(buffer + 1, 'a', CONTENT_LENGTH);
+    buffer[SOURCE_LENGTH - 2] = '\"';
+    buffer[SOURCE_LENGTH - 1] = ';';
+
+    Context* const context = context_create(
+        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<source>"));
+    Lexer* lexer = lexer_create(context, 0);
+    List* tokens = lexer_lex_source_text(lexer);
+
+    if (CHECK(list_get_size(tokens) == 3)) {
+        const Token* const first = list_at(tokens, 0);
+        const Token* const second = list_at(tokens, 1);
+        const Token* const third = list_at(tokens, 2);
+        CHECK(first->kind == TOKEN_STRING_LITERAL);
+        CHECK(first->range.position.offset == 0 && first->range.length == SOURCE_LENGTH - 1);
+        const Text* const literal = list_at_const(context->string_literals_table, first->as.id);
+        CHECK(literal->length == CONTENT_LENGTH);
+        CHECK(memcmp(literal->data, buffer + 1, CONTENT_LENGTH) == 0);
+        CHECK(second->kind == TOKEN_SEMICOLON);
+        CHECK(second->range.position.offset == SOURCE_LENGTH - 1);
+        CHECK(token_is_eof(*third));
+    }
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
+    context_destroy(context);
+    free(buffer);
+}
+
+/**
+ * Regression: identifier interning. In "a b a", both a-s get the same id, b gets a different one, and the table
+ * holds exactly two identifiers.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_identifier_interning_a_b_a(void) {
+    const TextView source = text_view_from_literal("a b a");
+    Context* const context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(context, 0);
+    List* tokens = lexer_lex_source_text(lexer);
+
+    if (CHECK(list_get_size(tokens) == 4)) {
+        const Token* const first = list_at(tokens, 0);
+        const Token* const second = list_at(tokens, 1);
+        const Token* const third = list_at(tokens, 2);
+        CHECK(first->kind == TOKEN_IDENT && second->kind == TOKEN_IDENT && third->kind == TOKEN_IDENT);
+        CHECK(first->as.id == third->as.id);
+        CHECK(first->as.id != second->as.id);
+        CHECK(list_get_size(context->identifiers_table) == 2);
+    }
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
+    context_destroy(context);
+}
+
+/**
+ * Regression (ADR-010): string literals are interned as bytes + length, so "a\0b" and "a" are different literals,
+ * while two "a"-s share one id.
+ * @note Written by Claude on 10-Oct-26, not by Tomer.
+ */
+static void test_lexer_string_interning_with_nul(void) {
+    const TextView source = text_view_from_literal("\"a\\0b\" \"a\" \"a\"");
+    Context* const context = context_create(
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(context, 0);
+    List* tokens = lexer_lex_source_text(lexer);
+
+    if (CHECK(list_get_size(tokens) == 4)) {
+        const Token* const first = list_at(tokens, 0);
+        const Token* const second = list_at(tokens, 1);
+        const Token* const third = list_at(tokens, 2);
+        CHECK(first->kind == TOKEN_STRING_LITERAL && second->kind == TOKEN_STRING_LITERAL && third->kind ==
+              TOKEN_STRING_LITERAL);
+        CHECK(first->as.id != second->as.id);
+        CHECK(second->as.id == third->as.id);
+        CHECK(list_get_size(context->string_literals_table) == 2);
+    }
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
+    context_destroy(context);
+}
+
+int main(const int argc, char** const argv) {
+    harness_init(argc, argv);
     RUN_TEST(test_lexer_empty_buffer);
     RUN_TEST(test_lexer_single_punctuator);
     RUN_TEST(test_lexer_single_keyword);
@@ -435,4 +825,18 @@ int main(void) {
     RUN_TEST(test_lexer_single_string);
     RUN_TEST(test_lexer_single_identifier);
     RUN_TEST(test_lexer_int_x_eq_5_sc);
+    RUN_TEST(test_lexer_if_num_int_eq_eq_1234_printf_hello_sc);
+    // Step 4c regression tests (written by Claude)
+    RUN_TEST(test_lexer_space_x);
+    RUN_TEST(test_lexer_x_newline);
+    RUN_TEST(test_lexer_plus);
+    RUN_TEST(test_lexer_eq_eq_sc);
+    RUN_TEST(test_lexer_empty_char);
+    RUN_TEST(test_lexer_multi_char);
+    RUN_TEST(test_lexer_123abc);
+    RUN_TEST(test_lexer_string_4095);
+    RUN_TEST(test_lexer_string_4096);
+    RUN_TEST(test_lexer_identifier_interning_a_b_a);
+    RUN_TEST(test_lexer_string_interning_with_nul);
+    return harness_finish();
 }

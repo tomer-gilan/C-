@@ -22,9 +22,14 @@ The standard defines the "stages of compilation" as **8 translation phases** (no
 
 ---
 
-## Source slices (removing the 4095-byte literal limit)
+## Source slices (done: the literal limit is gone; this is background for lazy decoding)
 
-Background: a *slice* (or *view*) is a (pointer or offset, length) pair that refers to text that already exists somewhere, instead of copying it. Your `Range` and `StringView` are slices, and identifiers already work this way: the token's `Range` points into the source text, and the identifier table stores `StringView`s into it. String and character literals don't. The lexer decodes them into a fixed 4096-byte `malloc`'d buffer, which is where the 4095-byte limit (`implementation-defined.md`) and the old silent truncation come from.
+Background: a *slice* (or *view*) is a (pointer or offset, length) pair that refers to text that already exists
+somewhere, instead of copying it. Your `Range` and `TextView` are slices, and identifiers already work this way: the
+token's `Range` points into the source text, and the identifier table stores `TextView`s into it. String and character
+literals don't: the lexer decodes them into a growable `Text` (this replaced the old fixed 4096-byte buffer, and with it
+the 4095-byte limit and the silent truncation). The questions below are now only about whether decoding eagerly is the
+best design.
 
 - [ ] Why can't a string literal's *contents* just be a slice of the source, the way an identifier's can? (Hint: what do escape sequences do to the length?)
 - [ ] What are the options for decoding without a fixed-size buffer?
@@ -33,7 +38,6 @@ Background: a *slice* (or *view*) is a (pointer or offset, length) pair that ref
   - Keep only the `Range` on the token and decode lazily, when the string table (or codegen) needs the bytes.
 - [ ] Note that the decoded length is never *longer* than the spelling (every escape is ≥ 2 characters that decode to 1 byte). How could that give a simple exact-or-larger allocation?
 - [ ] Which of these fits ADR-010 (literals interned as bytes + length) best?
-- [ ] Once it's unbounded: remove the limit from `implementation-defined.md`, with a new ADR or an update to the existing entry.
 
 ---
 

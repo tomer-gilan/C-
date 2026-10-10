@@ -272,7 +272,8 @@ static void test_list_find_or_push(void) {
     list_destroy(list);
 }
 
-int main(void) {
+int main(const int argc, char** const argv) {
+    harness_init(argc, argv);
     RUN_TEST(test_list_create_is_empty);
     RUN_TEST(test_list_push_pop_indexes);
     RUN_TEST(test_list_pop);

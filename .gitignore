@@ -31,5 +31,7 @@ core.*
 # ---- Docs tooling ----
 # Obsidian vault config and layout: personal, not project
 docs/.obsidian/
+# Obsidian "Bases" views (e.g. docs/Untitled.base)
+*.base
 # Office lock files (e.g. docs/~$UML.pptx)
 ~$*

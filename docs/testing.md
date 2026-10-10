@@ -1,6 +1,6 @@
 # Testing
 
-How the C~~ test suite is structured, why, and the roadmap for building it.
+How the C~~ test suite is structured, and why. The roadmap for building it is in `roadmaps/testing-roadmap.md`.
 End-to-end compiler tests (compile a `.c` file, run it, check the exit code) are also covered in `educational/followup-setup-testing-expectations.md`. This document focuses on unit tests and the overall setup.
 
 Decisions: ADR-002 (commit-time test check) and ADR-003 (golden-file tests) in `architecture-decisions.md`.
@@ -45,7 +45,9 @@ A good test is:
 
 ## Choosing test cases
 
-- **Boundaries** are where bugs live: empty input, one element, exactly the maximum, the maximum plus one. The early lexer bugs were all boundary bugs: EOF, the 4095th byte, list capacity 0→1, a lone `+` at the end of the file.
+- **Boundaries** are where bugs live: empty input, one element, exactly the maximum, the maximum plus one. The early
+  lexer bugs were all boundary bugs: EOF, the old 4095th-byte buffer limit, list capacity 0→1, a lone `+` at the end of
+  the file.
 - **One test per rule in SUBSET.md:** every punctuator, every keyword, every escape sequence.
 - **Error cases:** `123abc`, `''`, an unterminated string. Check that the right diagnostic is produced and that the lexer recovers.
 - **Every bug gets a regression test**, written *before* the fix, so it can never come back unnoticed.
@@ -71,12 +73,18 @@ Then `enable_testing()` plus one `add_test(NAME lexer COMMAND test_lexer)` per t
 
 ### 2. Test through the public interface
 
-`static` functions like `lexer_lex_punctuator` can't be called from a test file, and that's fine. **Test behavior, not internals:** call `lexer_lex_source_file` on `"==;"` and check the tokens. Such tests survive refactoring; tests that reach into private functions break on every reorganization. (Don't `#include "Lexer.c"` into a test.)
+`static` functions like `lexer_lex_punctuator` can't be called from a test file, and that's fine. **Test behavior, not
+internals:** call `lexer_lex_source_text` on `"==;"` and check the tokens. Such tests survive refactoring; tests that
+reach into private functions break on every reorganization. (Don't `#include "Lexer.c"` into a test.)
 
 ### 3. Testability shapes the design
 
 Two changes the tests will require, both improvements anyway:
-- **Lexing from a string.** A `SourceFile` can currently only come from a file path. Tests want `lex("==;")` with no files on disk, so there needs to be a way to build a `SourceFile`/`Context` from an in-memory buffer. Decide deliberately whether that buffer gets a `'\0'` sentinel after the text.
+
+- **Lexing from a string.** A `SourceText` used to come only from a file path. Tests want `lex("==;")` with no files on
+  disk, so there has to be a way to build a `SourceText`/`Context` from an in-memory buffer (done:
+  `text_create_from_buffer` + `source_text_create`). Decide deliberately whether that buffer gets a `'\0'` sentinel
+  after the text.
 - **Diagnostics that can be inspected.** If diagnostics only go to `stderr`, a test can't check "`123abc` produced `INVALID_NUMERICAL_SEQUENCE` at 1:1". If they're *collected* (e.g. in `Context`), the test can inspect the list.
 
 Code that is hard to test is usually badly structured. Writing tests shows where.
@@ -84,6 +92,9 @@ Code that is hard to test is usually badly structured. Writing tests shows where
 ### 4. The harness
 
 - **Hand-rolled first.** A `CHECK(cond)` macro that, on failure, prints `__FILE__:__LINE__` and the expression text, increments a failure counter, and **does not abort**. A `main` that calls every test function and returns non-zero if anything failed. About 30 lines, and afterwards it's clear what every framework does. This is a legitimate exception to the project's "no macros" guideline: only a macro can capture `__FILE__`, `__LINE__` and the expression text (`#cond`).
+- **Running one test:** `./test_lexer interning` runs only the tests whose name contains `interning` (`harness_init`
+  reads the filter). A filter that matches nothing fails, so a typo can't look like a pass. Use this instead of editing
+  `main`; an early `return` there silently skips every later test.
 - **Frameworks later:** Unity, µnit, CMocka, Criterion (see `research.md`). All work with CTest.
 
 **Don't use `assert()` for test checks.** It stops at the first failure, so each run shows only one problem, and under `NDEBUG` it disappears and every test "passes".
@@ -160,58 +171,4 @@ The dump is the contract, so it must be:
 
 ## Roadmap
 
-Built step by step. Each step ends in a state that works and can be committed.
-
-**Step 0: Prerequisites**
-- [x] A way to create a `SourceText`/`Context` from an in-memory string (`source_text_create_from_buffer` + `context_create`).
-
-The real `main` was moved from here to step 7: the harness comes first, so bugs show up one function at a time in unit tests, not all at once through `main`.
-
-**Step 1: Library split**
-- [x] Move everything except `main.c` into a CMake library; `main` links it.
-- [x] The compiler still builds and runs exactly as before.
-
-**Step 2: Hand-rolled harness**
-- [x] `CHECK` macro(s) and a runner `main` that returns non-zero on any failure.
-- [x] One trivial test. Watch it fail (break it on purpose), then pass.
-
-**Step 3: CTest + CLion**
-- [x] `enable_testing()` and `add_test` for the test executable.
-- [x] Tests appear in CLion's test tree; run them from there.
-
-**Step 4: First real unit tests**, one sub-step per test executable.
-
-**Step 4a: `List`** (`test_list`)
-- [x] Push past capacity, pop from empty, `find_or_push` returns the existing index.
-
-**Step 4b: `StringView`** (`test_string_view`)
-- [x] Equality, including different lengths with a shared prefix.
-
-**Step 4c: Lexer** (`test_lexer`)
-- [ ] Regression tests from bugs already found: `" x"`, `"x\n"`, a file that is just `+`, `==;`, `''`, `'ab'`, `123abc`, 4095- and 4096-char string literals, an empty file, identifier interning (`a b a` → same id for both `a`s).
-
-**Step 5: Commit check (ADR-002)**
-- [ ] Enable "Run Tests" in CLion's commit dialog with the CTest configuration.
-- [ ] Verify: break a test, try to commit, confirm it's caught.
-
-**Step 6: Sanitizer build**
-- [ ] ASan + UBSan build configuration; run the whole suite under it.
-- [ ] Fix whatever it finds, and add a regression test for each.
-
-**Step 7: Golden-file tests (ADR-003)**
-- [ ] A real `main` that drives the compiler and dumps tokens, ideally behind a flag like `--dump-tokens` (`main.c` is still a sample program).
-- [ ] Settle the token-dump format.
-- [ ] Runner with pass/fail per file and an "update expected" mode; register with CTest.
-- [ ] `.gitattributes` to pin LF line endings for test inputs and expected files.
-- [ ] First golden files: every punctuator, every keyword, a small realistic program.
-
-**Step 8: Diagnostics in tests**
-- [ ] Once diagnostics are collected (see `TODO.md`), test the error cases: which code, at which position, and that lexing continues after it.
-
-**Step 9: Coverage**
-- [ ] Coverage build configuration; find the uncovered lexer branches and test them.
-
-**Later**
-- [ ] Parser unit tests and AST golden files.
-- [ ] End-to-end tests (compile, link, run, check exit code/stdout), per `educational/followup-setup-testing-expectations.md`.
-- [ ] CI (GitHub Actions) as a second safety net.
+The step-by-step plan for building the suite is in [`roadmaps/testing-roadmap.md`](roadmaps/testing-roadmap.md).

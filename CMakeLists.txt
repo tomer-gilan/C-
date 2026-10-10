@@ -36,7 +36,10 @@ add_library(c_compiler_core STATIC
         Text.h
         TextView.c
         TextView.h)
-target_include_directories(c_compiler_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
+# only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
+# never hide the system one from #include <x.h>. Propagates to every target that links the library.
+target_compile_options(c_compiler_core PUBLIC "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings)
 
 add_executable(c_compiler main.c)

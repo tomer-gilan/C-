@@ -18,7 +18,7 @@ typedef struct {
 } Range;
 
 /**
- * returns a @c StringView based on the @c Range @b range given
+ * returns a @c TextView based on the @c Range @b range given
  */
 TextView range_to_text_view(Range this, const Context* context);
 /**

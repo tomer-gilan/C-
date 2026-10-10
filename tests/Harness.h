@@ -19,14 +19,24 @@
 bool harness_check(bool passed, const char* expression, const char* file, int line);
 /**
  * Runs one test function, and prints its name and whether it passed.
+ * If a name filter was given to @c harness_init , skips the test unless its name contains the filter.
  * @attention use through @c RUN_TEST , not directly.
  * @param test the test function
  * @param name the name of @b test
  */
 void harness_run(void (*test)(void), const char* name);
 /**
- * Prints a summary of every check so far.
- * @return @c EXIT_SUCCESS if every check passed, @c EXIT_FAILURE otherwise. Meant to be returned from @c main .
+ * Reads the optional name filter from the command line: @c ./test_x [name-filter] runs only the tests whose name
+ * contains @b name-filter , so a single test can be run without editing @c main .
+ * @attention call it first in @c main , before any @c RUN_TEST . Exits with a usage message on more than one argument.
+ * @param argc the argument count of @c main
+ * @param argv the arguments of @c main
+ */
+void harness_init(int argc, char** argv);
+
+/**
+ * Prints a summary of the tests and checks so far.
+ * @return @c EXIT_SUCCESS if every check passed, @c EXIT_FAILURE otherwise (also when a filter matched no test). Meant to be returned from @c main .
  */
 int harness_finish(void);
 

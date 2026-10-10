@@ -9,17 +9,19 @@ Replace the scattered `// TODO: issue diagnostic` comments with a real reporting
 - [ ] Track an error count, so the driver can stop after a stage that reported errors (don't run the parser on a broken token stream).
 - [x] Decide on emit-immediately vs. collect-then-print: collect (ADR-012).
 - [x] Fix `diagnostic_is_valid_code` in `Diagnostic.c`: `0 < code` rejects code `0` (`DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER`).
-- [ ] Add missing codes: empty character constant, multi-character constant, unterminated literal (at EOF), string literal too long.
+- [ ] Add missing codes: empty character constant, multi-character constant, unterminated literal (at EOF).
 - [ ] Wire up every lexer call site:
-  - [ ] `lexer_string_view_to_int`: constant out of bounds
+    - [ ] `lexer_text_view_to_int`: constant out of bounds
   - [ ] `lexer_lex_literal_to_buffer`: invalid escape sequence
   - [ ] `lexer_lex_literal_to_buffer`: unexpected EOF (unterminated literal)
-  - [ ] `lexer_lex_literal_to_buffer`: literal longer than `LEXER_LITERAL_MAX_DIFFARANTIABLE_LENGTH` (currently truncated silently). 4095 bytes is now a documented limit with an error (`implementation-defined.md`).
+    - [x] `lexer_lex_literal_to_buffer`: literal longer than the old fixed buffer. Gone: literals are growable `Text`
+      and have no length limit (`implementation-defined.md`).
   - [ ] `lexer_lex_constant_int`: invalid numerical sequence (`123abc`)
   - [ ] `lexer_lex_constant_char`: empty character constant (`''`)
   - [ ] `lexer_lex_constant_char`: multi-character constant (`'ab'`)
   - [ ] `lexer_lex_token`: unknown character
-- [ ] Audit asserts that fire on *user/environment* errors rather than compiler bugs (e.g. `argc > 1` in `driver_create`, `ftell` failure in `source_file_create`) and turn them into diagnostics.
+- [ ] Audit asserts that fire on *user/environment* errors rather than compiler bugs (e.g. `argc > 1` in
+  `driver_create`, `ftell` failure in `text_create_from_path`) and turn them into diagnostics.
 
 ## Allocation: `xmalloc` / `xrealloc`
 
@@ -29,10 +31,10 @@ Replace the scattered `// TODO: issue diagnostic` comments with a real reporting
 - [x] Replace every raw call site:
   - [x] `Context.c` (`context_create`)
   - [x] `Driver.c` (`driver_create`)
-  - [x] `Lexer.c` (`lexer_create`, both literal buffers, per-token allocation in `lexer_lex_source_file`)
+  - [x] `Lexer.c` (`lexer_create`, both literal buffers, per-token allocation in `lexer_lex_source_text`)
   - [x] `List.c` (`list_create` x2, `list_expand`)
-  - [x] `SourceFile.c` (text buffer, `SourceFile` struct)
-  - [x] `StringView.c` (`string_view_list_duplicate`)
+  - [x] `SourceText.c` (text buffer, `SourceText` struct)
+  - [x] `TextView.c` (`text_view_list_duplicate`)
   - [x] `Utils.c` (`utils_allocate_and_copy_string`)
 - [x] Remove the now-redundant `assert(... != NULL && "malloc failed")` lines.
 
@@ -40,7 +42,8 @@ Replace the scattered `// TODO: issue diagnostic` comments with a real reporting
 
 Decided in `implementation-defined.md`, `SUBSET.md` (pending, see below) and the ADRs; the lexer doesn't do these yet.
 
-- [ ] **Bug: string literals can't hold `\0`** (ADR-010). They're interned as NUL-terminated C strings via `utils_string_list_strcmp`, so `"a\0b"` is stored as `"a"` and merged with a real `"a"`. Store and intern (bytes, length) pairs instead, with a length-aware comparison.
+- [x] **Bug: string literals can't hold `\0`** (ADR-010). Fixed: literals are now `Text` (bytes + length), interned with
+  the length-aware `text_list_compare`. Regression test: `test_lexer_string_interning_with_nul`.
 - [x] Escape sequences: add `\0`, remove `\e` (a GNU extension, not standard C).
 - [x] Whitespace: accept all of space, `\t`, `\n`, `\v`, `\f`, `\r` (CRLF files currently fail on every line). Only `\n` advances the line count.
 - [ ] Comments: lex and skip `/* ... */` and `// ...` (an unterminated `/*` is an error). Don't confuse `/` the operator with the start of a comment.
@@ -67,7 +70,8 @@ Decisions from the 2026-09-30 quiz, to be written into `SUBSET.md`:
 
 ## Research
 
-See `research.md` (translation phases, Valgrind, sanitizers, code coverage, unit testing) and `testing.md` (test suite roadmap).
+See `research.md` (translation phases, Valgrind, sanitizers, code coverage, unit testing), `testing.md` (test suite
+structure), and `roadmaps/` (the testing and parser roadmaps).
 
 ## Other
 
