@@ -27,7 +27,6 @@ TextView range_to_text_view(Range this, const Context* context);
  * file and ending in another), and that start does not come after end (can be the same).
  */
 Range range_from_file_positions(FilePosition start, FilePosition end);
-
 /**
  * @note @b n can be negative, in which case the range shrinks.
  * @attention asserts that adding @b n does not cause a negative @c Range @c length.

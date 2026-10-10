@@ -9,11 +9,13 @@
 #include "SourceText.h"
 #include "Text.h"
 #include "TextView.h"
+#include "Diagnostic.h"
 
 typedef struct {
     List* identifiers_table;        ///< @c List of @c TextView
     List* string_literals_table;    ///< @c List of @c Text
     List* source_text_table;        ///< @c List of @c SourceText
+    List* diagnostic_report_table; ///< @c List of @c DiagnosticReport
 } Context;
 
 /**
@@ -49,5 +51,10 @@ int context_intern_identifier(Context* this, TextView spelling);
  * @note if the spelling is already cached, the existing id is returned.
  */
 int context_intern_string_literal(Context* this, Text* spelling);
+/**
+ * caches the diagnostic.
+ */
+void context_report_diagnostic(Context * this, Diagnostic report);
+
 
 #endif //C_COMPILER_CONTEXT_H

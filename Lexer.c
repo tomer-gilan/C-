@@ -10,6 +10,8 @@
 #include <assert.h>
 #include <limits.h>
 
+#include "Diagnostic.h"
+
 #define LEXER_EOF ((int)(-1))
 #define LEXER_UNKNOWN_ESCAPE_CHARACTER ((int)(-2))
 
@@ -148,25 +150,6 @@ static bool is_char_whitespace(const int c) {
 }
 
 // Converters
-/**
- * Converts @c TextView @b view to its integer form.
- * @attention asserts @b view contains numerics only. Does NOT check for a leading 0.
- */
-static int lexer_text_view_to_int(const TextView view) {
-    int number = 0;
-    for (int i = 0; i < view.length; ++i) {
-        const int c = (unsigned char)view.data[i];
-        assert(is_char_numeric(c) && "non-numeric char");
-        const int digit = c - '0';
-        if (number > (INT_MAX - digit) / 10) { // checks for overflow before it happens, so no UB by definition.
-            // TODO: issue diagnostic, too long numerical sequence
-            return 0;
-        }
-        number *= 10;
-        number += digit;
-    }
-    return number;
-}
 static int lexer_escape_character(const int character) {
     switch (character) {
         case '0':
@@ -220,7 +203,7 @@ static int lexer_escape_character(const int character) {
  * @param delimiter ' or "
  * @return the @c Text of the literal
  */
-static Text* lexer_lex_literal_to_buffer(Lexer* const this, const char delimiter) {
+static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter) {
     // if one of these is false, it's invalid by definition:
     assert((delimiter == '\'' || delimiter == '\"') && "Invalid delimiter");
     assert(lexer_peek(this) == delimiter && "First character of a char literal was not a delimiter.");
@@ -232,16 +215,22 @@ static Text* lexer_lex_literal_to_buffer(Lexer* const this, const char delimiter
     bool should_escape_character = false;
     while (lexer_peek(this) != LEXER_EOF) {
         int c = lexer_pop(this);
-
         if (should_escape_character) {
+            const FilePosition escaped_sequence_start = this->cursor;
             c = lexer_escape_character(c);
             if (c == LEXER_UNKNOWN_ESCAPE_CHARACTER) {
-                /* TODO: issue diagnostic, invalid escape sequence, then CONTINUE MUNCHING!!! notice next we will
+                /* issue diagnostic, invalid escape sequence, then CONTINUE MUNCHING!!! notice next we will
                  * store the UNKNOWN_CHARACTER as the character munched, and that's ok since we only need to get the
                  * literal spelling to continue lexing the source text. Since we issued a diagnostic, the compilation
                  * pipline will not finish by definition, so there's no risk by introducing garbage instead of the
                  * escaped character.
                  */
+                context_report_diagnostic(
+                    this->context,
+                    (Diagnostic){
+                        .code = DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE,
+                        .range = range_from_file_positions(escaped_sequence_start, this->cursor)
+                    });
             }
             text_push(literal_text, (char)c);
             should_escape_character = false;
@@ -250,7 +239,14 @@ static Text* lexer_lex_literal_to_buffer(Lexer* const this, const char delimiter
             should_escape_character = true;
         }
         else if (c == '\n') {
-            // TODO: issue a diagnostic, missing delimiter.
+            context_report_diagnostic(
+                this->context,
+                (Diagnostic){
+                    .code = delimiter == '"'
+                                ? DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS
+                                : DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE,
+                    .range = range_from_file_positions(start, this->cursor)
+                });
             return literal_text;
         }
         else if (c == delimiter) { // i.e. if we encounter a non-escaped delimiter
@@ -263,7 +259,12 @@ static Text* lexer_lex_literal_to_buffer(Lexer* const this, const char delimiter
     // sanity check:
     assert(lexer_peek(this) == LEXER_EOF && "expected EOF");
 
-    // TODO: issue diagnostic, unexpected EOF
+    context_report_diagnostic(
+        this->context,
+        (Diagnostic){
+            .code = DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF,
+            .range = range_from_file_positions(start, this->cursor)
+        });
     return literal_text;
 }
 /**
@@ -317,23 +318,54 @@ static Token lexer_lex_punctuator(Lexer* const this) {
 static Token lexer_lex_constant_int(Lexer* const this) {
     assert(is_char_numeric(lexer_peek(this))); // otherwise it's invalid by definition.
 
-    const FilePosition start = this->cursor;
-    bool calculate_value = true;
-    if (lexer_peek(this) == '0' && is_char_numeric(lexer_peek_at(this, 1)))
-        calculate_value = false; // for example, the token 01234 is invalid since its octal base which is unsupported.
+    bool should_calculate_value = true;
+    const FilePosition start = this->cursor; // is used both for the token's range and the value parsing diagnostic.
+    if (lexer_peek(this) == '0' && is_char_numeric(lexer_peek_at(this, 1))) {
+        should_calculate_value = false;
+        // for example, the token 01234 is invalid since its octal base which is unsupported.
+        context_report_diagnostic(this->context, (Diagnostic){
+                                      .code = DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_PREFIX,
+                                      .range = {.position = start, .length = 1}
+                                  });
+    }
     while (is_char_numeric(lexer_peek(this)))
         lexer_pop(this);
-    if (is_char_word_character(lexer_peek(this))) {
-        Range error_spelling = lexer_skip_while(this, is_char_word_character);
-        calculate_value = false;
-        // TODO: issue diagnostic, invalid numerical sequence
+    if (should_calculate_value && is_char_word_character(lexer_peek(this))) {
+        should_calculate_value = false;
+        context_report_diagnostic(this->context, (Diagnostic){
+                                      .code = DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE,
+                                      .range = lexer_skip_while(this, is_char_word_character)
+                                  });
+    }
+    const Range range = range_from_file_positions(start, this->cursor);
+
+    // integer parsing:
+    int value = 0;
+    if (should_calculate_value) {
+        const TextView spelling = range_to_text_view(range, this->context);
+        for (int i = 0; i < range.length; ++i) {
+            const int c = (unsigned char) spelling.data[i];
+            assert(is_char_numeric(c) && "non-numeric char");
+            const int digit = c - '0';
+            if (value > (INT_MAX - digit) / 10) {
+                // checks for overflow before it happens, so no UB by definition.
+                context_report_diagnostic(
+                    this->context, (Diagnostic){
+                        .code = DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS,
+                        .range = range
+                    });
+                value = 0;
+                break;
+            }
+            value *= 10;
+            value += digit;
+        }
     }
 
-    const Range range = range_from_file_positions(start, this->cursor);
     return (Token){
         .kind = TOKEN_CONST_INT,
         .range = range,
-        .as.value = calculate_value ? lexer_text_view_to_int(range_to_text_view(range, this->context)) : 0
+        .as.value = value
     };
 }
 static Token lexer_lex_constant_char(Lexer* const this) {
@@ -341,21 +373,28 @@ static Token lexer_lex_constant_char(Lexer* const this) {
     // should be interpreted as integer constants.
 
     const FilePosition start = this->cursor;
-    Text* const text = lexer_lex_literal_to_buffer(this, '\'');
+    Text* const text = lexer_lex_literal_to_text(this, '\'');
     const Range range = range_from_file_positions(start, this->cursor);
 
     char value;
     if (text_is_empty(text)) {
         value = 0;
-        // TODO: issue diagnostic, "expected expression", set value of token to 0 and return. do not forget to free the buffer!!! or better yet, use the code already written and just have the value be the first character... probably better.
+        context_report_diagnostic(
+            this->context, (Diagnostic){
+                .code = DIAGNOSTIC_CODE_LEXER_EXPECTED_EXPRESSION,
+                .range = range
+            });
     }
     else {
         value = text->data[0]; // data is not empty, so a first value is guaranteed.
         if (text->length > 1) {
-            // TODO: issue diagnostic, multi-character literal, set value of token to 0 and return. do not forget to free the buffer!!! or better yet, use the code already written and just have the value be the first character... probably better.
+            context_report_diagnostic(
+                this->context, (Diagnostic){
+                    .code = DIAGNOSTIC_CODE_LEXER_MULTI_CHARACTER_LITERAL,
+                    .range = range
+                });
         }
     }
-
     text_destroy(text);
     return (Token){
         .kind = TOKEN_CONST_INT,
@@ -365,7 +404,7 @@ static Token lexer_lex_constant_char(Lexer* const this) {
 }
 static Token lexer_lex_string_literal(Lexer* const this) {
     const FilePosition start = this->cursor;
-    Text* const text = lexer_lex_literal_to_buffer(this, '\"');
+    Text* const text = lexer_lex_literal_to_text(this, '\"');
     const Range range = range_from_file_positions(start, this->cursor);
 
     const Token to_return = {
@@ -415,8 +454,13 @@ static Token lexer_lex_token(Lexer* const this) {
     // TODO: add comment lexing as another if (c == '/' or whatever)...
 
     // else: did not match any pattern, so c is unknown.
-    // TODO: issue diagnostic, unknown character.
-    return lexer_get_unknown_token(this);
+    const Token unknown_token = lexer_get_unknown_token(this);
+    context_report_diagnostic(
+        this->context, (Diagnostic){
+            .code = DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER,
+            .range = unknown_token.range
+        });
+    return unknown_token;
 }
 List* lexer_lex_source_text(Lexer* const this) {
     List* token_list = list_create(free);

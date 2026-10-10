@@ -52,7 +52,6 @@ static bool are_tokens_equal(const Token* first, const Token* second, const Cont
         return text_view_equals(*first_spelling, *second_spelling);
     }
     if (kind == TOKEN_STRING_LITERAL) {
-        // TODO: potentially modify once string literal manufacturing is updated.
         return text_list_compare(
             list_at_const(context_first->string_literals_table, first->as.id),
             list_at_const(context_second->string_literals_table, second->as.id)
