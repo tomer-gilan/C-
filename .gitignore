@@ -1,6 +1,8 @@
 /docs/reviews/2026-09-30-code-review.md
 /.idea/dictionaries/project.xml
 /docs/UML.pptx
+# session state for Claude (CLAUDE.md, "Session handoff"): local to this machine
+/docs/Handoff.md
 
 # ---- Build output ----
 # CLion's build directories (one per profile: Debug, ASan, Coverage...)

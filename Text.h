@@ -11,11 +11,12 @@
 
 typedef struct {
     int length;
-    int capacity;
     char* data;
+    int capacity;
 } Text;
 
 Text* text_create_empty();
+Text* text_create_from_view(TextView text_view);
 /**
  * @param buffer caller owned buffer, to be duplicated.
  * @param length length of @b buffer

@@ -16,6 +16,7 @@ Every document under `code/docs/`, what it's for, and whether it's binding.
 | [conventions.md](conventions.md) | Binding | Coding conventions for the compiler's source: naming, objects, `int` vs `size_t`, deep const, macros, errors, ownership, Doxygen. |
 | [testing.md](testing.md) | Binding | How the test suite is structured, and the step-by-step roadmap for building it. |
 | [TODO.md](TODO.md) | Working | Open tasks: diagnostics, allocation wrappers, docs to write, and so on. |
+| [Handoff.md](Handoff.md) | Working | Current session state for Claude, rewritten on "handoff" (see `CLAUDE.md`). Git-ignored: exists only on this machine. |
 | [research.md](research.md) | Working | Topics to study, as lists of questions (translation phases, source slices, Valgrind, sanitizers, coverage). |
 | [reviews/2026-09-30-code-review.md](reviews/2026-09-30-code-review.md) | Working | Second code review (lexer and whole codebase): build break, new lexer bugs found by running it, status of the first review's findings, and regression inputs. |
 | [annex-a-breakdown.md](annex-a-breakdown.md) | Reference | Walkthrough of the standard's Annex A (the C grammar), section by section. |

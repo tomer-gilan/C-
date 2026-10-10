@@ -27,6 +27,11 @@ static void text_expand(Text* this) {
 Text* text_create_empty() {
     return text_create_from_buffer("", 0);
 }
+
+Text* text_create_from_view(const TextView text_view) {
+    return text_create_from_buffer(text_view.data, text_view.length);
+}
+
 Text* text_create_from_buffer(const char* buffer, const int length) {
     Text* const text_view = utils_xmalloc(sizeof(Text));
     *text_view = (Text){
@@ -59,7 +64,8 @@ Text* text_create_from_path(const char* const path) {
     Text* const text = utils_xmalloc(sizeof (Text));
     *text = (Text){
         .length = (int)read,
-        .data = buffer
+        .data = buffer,
+        .capacity = (int)read
     };
     return text;
 }

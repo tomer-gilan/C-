@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,11 +32,12 @@ static bool are_tokens_equal(const Token* first, const Token* second, const Cont
     assert(first != NULL && second != NULL);
     assert(first->kind != TOKEN_UNKNOWN && second->kind != TOKEN_UNKNOWN);
 
-    if (!range_equals(first->range, second->range)) // note: range_equals assumes the underling Context-s are the same.
-                                                               // They are not in this case. However, it is valid since range_equals
-                                                               // only checks the position offset and length, and this is what we
-                                                               // want to find out.
-        return false;
+    if (!range_equals(first->range, second->range))
+        return false;   /* note: range_equals assumes the underling Context-s are the same.
+                         * They are not in this case. However, it is valid since range_equals
+                         * only checks the position offset and length, and this is what we
+                         * want to find out.
+                         */
     if (token_is_eof(*first) && token_is_eof(*second))
         return true;
     if (first->kind != second->kind)
@@ -51,13 +53,13 @@ static bool are_tokens_equal(const Token* first, const Token* second, const Cont
     }
     if (kind == TOKEN_STRING_LITERAL) {
         // TODO: potentially modify once string literal manufacturing is updated.
-        return utils_string_list_compare(
+        return text_list_compare(
             list_at_const(context_first->string_literals_table, first->as.id),
             list_at_const(context_second->string_literals_table, second->as.id)
             ) == 0;
     }
     if (token_kind_is_keyword(kind) || token_kind_is_punctuator(kind)) {
-        return true;
+        return true; // because all other conditions has already been verified.
     }
 
     assert(false && "Unknown token kind");
@@ -79,6 +81,83 @@ static bool are_token_lists_equal(
             context_second))
             return false;
     return true;
+}
+static Token test_token_punc_keyword_create(
+    const int range__source_text_index,
+    const int range__offset,
+    const int range__length,
+    const TokenKind kind) {
+    return (Token){
+        .kind = kind,
+        .range = {
+            .position = {
+                .source_text_index = range__source_text_index,
+                .offset = range__offset
+            },
+            .length = range__length
+        }
+    };
+}
+static Token test_token_const_int_create(
+    const int range__source_text_index,
+    const int range__offset,
+    const int range__length,
+    const int value) {
+    return (Token){
+        .kind = TOKEN_CONST_INT,
+        .range = {
+            .position = {
+                .source_text_index = range__source_text_index,
+                .offset = range__offset
+            },
+            .length = range__length
+        },
+        .as.value = value
+    };
+}
+static Token test_token_ident_create(
+    const int range__source_text_index,
+    const int range__offset,
+    const int range__length,
+    Context* const context,
+    const TextView spelling) {
+    return (Token){
+        .kind = TOKEN_IDENT,
+        .range = {
+            .position = {
+                .source_text_index = range__source_text_index,
+                .offset = range__offset
+            },
+            .length = range__length
+        },
+        .as.id = list_find_or_push(context->identifiers_table, &spelling, text_view_list_compare, text_view_list_duplicate)
+    };
+}
+static Token test_token_string_literal_create(
+    const int range__source_text_index,
+    const int range__offset,
+    const int range__length,
+    Context* const context,
+    const TextView text_view) {
+    Text* text = text_create_from_view(text_view);
+    const Token to_return = (Token){
+        .kind = TOKEN_STRING_LITERAL,
+        .range = {
+            .position = {
+                .source_text_index = range__source_text_index,
+                .offset = range__offset
+            },
+            .length = range__length
+        },
+        .as.id = list_find_or_push(context->string_literals_table, text, text_list_compare, text_list_duplicate)
+    };
+    text_destroy(text);
+    return to_return;
+}
+static Token* test_token_create_ptr(Token token) {
+    Token* to_return = utils_xmalloc(sizeof (Token));
+    *to_return = token;
+    return to_return;
 }
 
 static void test_lexer_empty_buffer(void) {
@@ -228,7 +307,9 @@ static void test_lexer_single_string(void) {
         const Token* const first = list_at(tokens, 0);
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == TOKEN_STRING_LITERAL);
-        CHECK(list_contains(context->string_literals_table, &(test.check_against), text_view_list_compare));
+        Text* string_literal_text = text_create_from_view(test.check_against);
+        CHECK(list_contains(context->string_literals_table, string_literal_text, text_view_list_compare));
+        text_destroy(string_literal_text);
         CHECK(token_is_eof(*second));
 
         list_destroy(tokens);
@@ -276,39 +357,76 @@ static void test_lexer_single_identifier(void) {
 }
 static void test_lexer_int_x_eq_5_sc(void) {
     const TextView source = text_view_from_literal("int x = 5;");
-    Context* lexer_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Context* const lexer_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
-    Context* const expected_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
-    List* expected = list_create(free);
-    {
-        const Token arr[] = {
-            {.kind = TOKEN_KW_INT, .range = {.position = {.source_text_index = 0, .offset = 0}, .length = 3}},
-            {.kind = TOKEN_IDENT, .range = {.position = {.source_text_index = 0, .offset = 4}, .length = 1}},
-            {.kind = TOKEN_EQUALS, .range = {.position = {.source_text_index = 0, .offset = 6}, .length = 1}},
-            {.kind = TOKEN_CONST_INT, .range = {.position = {.source_text_index = 0, .offset = 8}, .length = 1}},
-            {.kind = TOKEN_SEMICOLON, .range = {.position = {.source_text_index = 0, .offset = 9}, .length = 1}},
-            {.kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 10}, .length = 0}},
-        };
-        const int N = sizeof(arr) / sizeof(Token);
-        for (int i = 0; i < N; ++i) {
-            Token* t = malloc(sizeof(Token));
-            *t = arr[i];
-            list_push(expected, t);
-        }
+    Context* const expected_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    { // builds the list
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 3, TOKEN_KW_INT)));
+        list_push(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 4, 1, expected_context, text_view_from_literal("x"))));
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 6, 1, TOKEN_EQUALS)));
+        list_push(expected_tokens, test_token_create_ptr(test_token_const_int_create(   0, 8, 1, 5)));
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 9, 1, TOKEN_SEMICOLON)));
+        list_push(expected_tokens, test_token_create_ptr((Token){.kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 10}, .length = 0}}));
     }
 
-    //are_token_lists_equal(lexer_tokens, expected, lexer_context);
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
 
     list_destroy(lexer_tokens);
     lexer_destroy(lexer);
     context_destroy(lexer_context);
 
-    list_destroy(expected);
+    list_destroy(expected_tokens);
+}
+static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
+    const TextView source = text_view_from_literal("if (num_int == 1234) printf(\"hello\");");
+    Context* const lexer_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<source>"));
+    Lexer* lexer = lexer_create(lexer_context, 0);
+    List* lexer_tokens = lexer_lex_source_text(lexer);
+
+    Context* const expected_context = context_create(source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"));
+    List* expected_tokens = list_create(free);
+    { // builds the list
+        // if
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 2, TOKEN_KW_IF)));
+        // (
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 3, 1, TOKEN_PARENTHESES_LEFT)));
+        // num_int
+        list_push(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 4, 7, expected_context, text_view_from_literal("num_int"))));
+        // ==
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 12, 2, TOKEN_EQUALS_EQUALS)));
+        // 1234
+        list_push(expected_tokens, test_token_create_ptr(test_token_const_int_create(   0, 15, 4, 1234)));
+        // )
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 19, 1, TOKEN_PARENTHESES_RIGHT)));
+        // printf
+        list_push(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 21, 6, expected_context, text_view_from_literal("printf"))));
+        // (
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 27, 1, TOKEN_PARENTHESES_LEFT)));
+        // "hello"
+        list_push(expected_tokens, test_token_create_ptr(test_token_string_literal_create(0, 28, 7, expected_context, text_view_from_literal("hello"))));
+        // )
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 35, 1, TOKEN_PARENTHESES_RIGHT)));
+        // ;
+        list_push(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 36, 1, TOKEN_SEMICOLON)));
+        // EOF
+        list_push(expected_tokens, test_token_create_ptr((Token){.kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 37}, .length = 0}}));
+    }
+
+    CHECK(are_token_lists_equal(lexer_tokens, expected_tokens, lexer_context, expected_context));
+
+    list_destroy(lexer_tokens);
+    lexer_destroy(lexer);
+    context_destroy(lexer_context);
+
+    list_destroy(expected_tokens);
 }
 
 int main(void) {
+    RUN_TEST(test_lexer_if_num_int_eq_eq_1234_printf_hello_sc);
+    return harness_finish();
     RUN_TEST(test_lexer_empty_buffer);
     RUN_TEST(test_lexer_single_punctuator);
     RUN_TEST(test_lexer_single_keyword);
@@ -316,5 +434,5 @@ int main(void) {
     RUN_TEST(test_lexer_single_char);
     RUN_TEST(test_lexer_single_string);
     RUN_TEST(test_lexer_single_identifier);
-    return harness_finish();
+    RUN_TEST(test_lexer_int_x_eq_5_sc);
 }
