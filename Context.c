@@ -16,7 +16,6 @@ CompilationFlags compilation_flags_from_arguments(const int argc, const char* co
         .pedantic = false
     };
 }
-
 CompilationFlags compilation_flags_basic() {
     // TODO: reuse 'compilation_flags_from_arguments'
     return (CompilationFlags)
@@ -24,7 +23,6 @@ CompilationFlags compilation_flags_basic() {
         .pedantic = false
     };
 }
-
 Context* context_create(SourceText * const source, const CompilationFlags flags) {
     assert(source != NULL && "Invalid source!");
 
@@ -80,7 +78,6 @@ TextView context_range_to_text_view(const Context* const this, const Range range
         .length = range.length
     };
 }
-
 int context_intern_identifier(Context* const this, const TextView spelling) {
     assert(this != NULL);
     return list_find_or_push(
@@ -89,7 +86,6 @@ int context_intern_identifier(Context* const this, const TextView spelling) {
         text_view_list_equals,
         text_view_list_duplicate);
 }
-
 int context_intern_string_literal(Context* const this, const Text* const text) {
     return list_find_or_push(
         this->string_literals_table,
@@ -97,7 +93,10 @@ int context_intern_string_literal(Context* const this, const Text* const text) {
         text_list_equals,
         text_list_duplicate);
 }
-
-void context_report_diagnostic(Context * const this, const Diagnostic report) {
+void context_report_diagnostic(Context* const this, const DiagnosticCode code, const Range range) {
+    const Diagnostic report = diagnostic_make(this, code, range);
     list_push(this->diagnostic_report_table, diagnostic_list_duplicate(&report));
+}
+void context_print_range(const Context* const this, const Range to_print) {
+    text_view_print(context_range_to_text_view(this, to_print));
 }

@@ -44,51 +44,86 @@ static const DiagnosticDescriptor diagnostics_table[DIAGNOSTIC_CODE__COUNT] = {
     },
 };
 
+static LineColumn diagnostic_get_line_column(const Context* const context, const FilePosition file_position) {
+    LineColumn to_return = {.line = 0, .column = 0};
+    const SourceText* const source_text = context_source_text_at_const(context, file_position.source_text_index);
+    for (int i = 0; i < file_position.offset; ++i)
+        if (source_text->data->data[i] == '\n') {
+            to_return.line++;
+            to_return.column = 0;
+        }
+        else
+            to_return.column++;
+    return to_return;
+}
 static bool diagnostic_is_valid_code(const DiagnosticCode code) {
     return code < DIAGNOSTIC_CODE__COUNT;
+}
+Diagnostic diagnostic_make(const Context* const context, const DiagnosticCode code, const Range range) {
+    return (Diagnostic){
+        .code = code,
+        .range = range,
+        .line_column = diagnostic_get_line_column(context, range.position)
+    };
 }
 DiagnosticSeverity diagnostic_get_severity(const Diagnostic report) {
     assert(diagnostic_is_valid_code(report.code));
     return diagnostics_table[report.code].severity;
 }
-
 const char *diagnostic_get_severity_string(Diagnostic report) {
     return diagnostic_severity_table[diagnostic_get_severity(report)];
 }
-
 const char *diagnostic_get_info(const Diagnostic report) {
     assert(diagnostic_is_valid_code(report.code));
     return diagnostics_table[report.code].info;
 }
-
-LineColumn diagnostic_get_line_column(const Diagnostic report, const Context* const context) {
-    int line_counter = 0, column_counter = 0;
-    const SourceText* const source_text =
-            context_source_text_at_const(context, report.range.position.source_text_index);
+void static diagnostic_print_marker(const Diagnostic report) {
+    for (int i = 0; i < report.line_column.column; ++i)
+        printf(" ");
+    bool first = true;
     for (int i = 0; i < report.range.length; ++i)
-        if (source_text->data->data[report.range.position.offset + i] == '\n')
-            line_counter++, column_counter = 0;
+        if (first) {
+            first = false;
+            printf("^");
+        }
         else
-            column_counter++;
-    return (LineColumn)
-    {
-        .line = line_counter, .column = column_counter
-    };
+            printf("~");
 }
+void static diagnostic_print_source_text_row(const Diagnostic report, const Context* const context) {
+    // get beg of line pos
+    FilePosition beginning_of_line_position = report.range.position;
+    beginning_of_line_position.offset -= report.line_column.column;
 
+    // set range starting from beg of line
+    Range range_to_print = {
+        .position = beginning_of_line_position,
+        .length = report.line_column.column
+    };
+
+    // extend until EOF or end-of-line.
+    const SourceText* source_text = context_source_text_at_const(context, report.range.position.source_text_index);
+    for (int i = report.range.position.offset; i < source_text->data->length && source_text->data->data[i] != '\n'; ++i)
+        range_extend(&range_to_print, 1);
+
+    // print range
+    context_print_range(context, range_to_print);
+}
 void diagnostic_print(const Diagnostic report, const Context* const context) {
     assert(diagnostic_is_valid_code(report.code) && "Unknown diagnostic code!");
 
     const char* const file_name = context_source_text_at_const(context, report.range.position.source_text_index)->name;
-    const LineColumn line_column = diagnostic_get_line_column(report, context);
-
-    fprintf(stderr, "%s:%d:%d: [%s] %s:",
+    printf("%s:%d:%d: [%s] %s.\n",
             file_name,
-            line_column.line,
-            line_column.column,
+            report.line_column.line,
+            report.line_column.column,
             diagnostic_get_severity_string(report),
             diagnostic_get_info(report));
+    diagnostic_print_source_text_row(report, context);
+    diagnostic_print_marker(report);
+    printf("\n");
 }
+
+/*
 void diagnostic_print_string(const Diagnostic report, const Context* const context, const char* const message) {
     diagnostic_print(report, context);
     fprintf(stderr," %s\n", message);
@@ -102,8 +137,21 @@ void diagnostic_print_int(const Diagnostic report, const Context* const context,
     snprintf(buff, sizeof buff, "%d", message);
     diagnostic_print_string(report, context, buff);
 }
+*/
 bool diagnostic_equals(const Diagnostic first, const Diagnostic second) {
     return first.code == second.code && range_equals(first.range, second.range);
+}
+int diagnostic_compare(const Diagnostic first, const Diagnostic second) {
+    if (diagnostic_equals(first, second))
+        return 0;
+    {
+        const int first_severity = diagnostic_get_severity(first);
+        const int second_severity = diagnostic_get_severity(second);
+        if (first_severity != second_severity)
+            return first_severity - second_severity;
+    }
+    // same severity, so going by range
+    return range_compare(first.range, second.range);
 }
 bool diagnostic_list_equals(const void* const first, const void* const second) {
     return diagnostic_equals(*(Diagnostic *) first, *(Diagnostic *) second);
@@ -112,4 +160,7 @@ void *diagnostic_list_duplicate(const void* const element) {
     Diagnostic* const to_return = utils_xmalloc(sizeof(Diagnostic));
     *to_return = *(Diagnostic *) element;
     return to_return;
+}
+int diagnostic_list_compare(const void* const first, const void* const second) {
+    return diagnostic_compare(*(Diagnostic*)first, *(Diagnostic*)second);
 }

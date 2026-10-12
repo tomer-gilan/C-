@@ -222,12 +222,8 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter, 
         if (c == '\n') {
             context_report_diagnostic(
                 this->context,
-                (Diagnostic){
-                    .code = delimiter == '"'
-                                ? DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS
-                                : DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE,
-                    .range = range_from_file_positions(start, this->cursor)
-                });
+                delimiter == '"' ? DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS : DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE,
+                range_from_file_positions(start, this->cursor));
             *reported = true;
             return literal_text;
         }
@@ -245,10 +241,8 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter, 
                  */
                 context_report_diagnostic(
                     this->context,
-                    (Diagnostic){
-                        .code = DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE,
-                        .range = range_from_file_positions(invalid_sequence_start, this->cursor)
-                    });
+                    DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE,
+                    range_from_file_positions(invalid_sequence_start, this->cursor));
                 *reported = true;
             }
             text_push(literal_text, (char)c);
@@ -269,10 +263,8 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter, 
 
     context_report_diagnostic(
         this->context,
-        (Diagnostic){
-            .code = DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF,
-            .range = range_from_file_positions(start, this->cursor)
-        });
+        DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF,
+        range_from_file_positions(start, this->cursor));
     *reported = true;
     return literal_text;
 }
@@ -329,19 +321,19 @@ static Token lexer_lex_constant_int(Lexer* const this) {
     if (lexer_peek(this) == '0' && is_char_numeric(lexer_peek_at(this, 1))) {
         should_calculate_value = false;
         // for example, the token 01234 is invalid since its octal base which is unsupported.
-        context_report_diagnostic(this->context, (Diagnostic){
-                                      .code = DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_PREFIX,
-                                      .range = {.position = start, .length = 1}
-                                  });
+        context_report_diagnostic(
+            this->context,
+            DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_PREFIX,
+            (Range){.position = start, .length = 1});
     }
     while (is_char_numeric(lexer_peek(this)))
         lexer_pop(this);
     if (should_calculate_value && is_char_word_character(lexer_peek(this))) {
         should_calculate_value = false;
-        context_report_diagnostic(this->context, (Diagnostic){
-                                      .code = DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE,
-                                      .range = lexer_skip_while(this, is_char_word_character)
-                                  });
+        context_report_diagnostic(
+            this->context,
+            DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE,
+            lexer_skip_while(this, is_char_word_character));
     }
     const Range range = range_from_file_positions(start, this->cursor);
 
@@ -356,10 +348,9 @@ static Token lexer_lex_constant_int(Lexer* const this) {
             if (value > (INT_MAX - digit) / 10) {
                 // checks for overflow before it happens, so no UB by definition.
                 context_report_diagnostic(
-                    this->context, (Diagnostic){
-                        .code = DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS,
-                        .range = range
-                    });
+                    this->context,
+                    DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS,
+                    range);
                 value = 0;
                 break;
             }
@@ -387,10 +378,9 @@ static Token lexer_lex_constant_char(Lexer* const this) {
         value = 0;
         if (!reported) {
             context_report_diagnostic(
-                this->context, (Diagnostic){
-                .code = DIAGNOSTIC_CODE_LEXER_EXPECTED_EXPRESSION,
-                .range = range
-            });
+                this->context,
+                DIAGNOSTIC_CODE_LEXER_EXPECTED_EXPRESSION,
+                range);
             reported = true;
         }
     }
@@ -398,10 +388,9 @@ static Token lexer_lex_constant_char(Lexer* const this) {
         value = text->data[0]; // data is not empty, so a first value is guaranteed.
         if (text->length > 1) {
             context_report_diagnostic(
-                this->context, (Diagnostic){
-                    .code = DIAGNOSTIC_CODE_LEXER_MULTI_CHARACTER_LITERAL,
-                    .range = range
-                });
+                this->context,
+                DIAGNOSTIC_CODE_LEXER_MULTI_CHARACTER_LITERAL,
+                range);
         }
     }
 
@@ -463,10 +452,9 @@ static Token lexer_lex_token(Lexer* const this) {
     // else: did not match any pattern, so c is unknown.
     const Token unknown_token = lexer_get_unknown_token(this);
     context_report_diagnostic(
-        this->context, (Diagnostic){
-            .code = DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER,
-            .range = unknown_token.range
-        });
+        this->context,
+        DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER,
+        unknown_token.range);
     return unknown_token;
 }
 List* lexer_lex_source_text(Lexer* const this) {

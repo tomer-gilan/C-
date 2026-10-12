@@ -67,11 +67,11 @@ int context_intern_identifier(Context* this, TextView spelling);
  * @note if the spelling is already cached, the existing id is returned.
  * @attention ownership of @b text remains with the caller
  */
-int context_intern_string_literal(Context * this, const Text * text);
+int context_intern_string_literal(Context* this, const Text * text);
 /**
  * caches the diagnostic.
  */
-void context_report_diagnostic(Context * this, Diagnostic report);
-
+void context_report_diagnostic(Context* this, DiagnosticCode code, Range range);
+void context_print_range(const Context* this, Range to_print);
 
 #endif //C_COMPILER_CONTEXT_H

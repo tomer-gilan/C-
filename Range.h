@@ -32,5 +32,6 @@ void range_extend(Range* this, int n);
  * @attention assumes both have the same underling @c Context
  */
 bool range_equals(Range first, Range second);
+int range_compare(Range first, Range second);
 
 #endif //C_COMPILER_RANGE_H

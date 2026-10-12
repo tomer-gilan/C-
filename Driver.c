@@ -3,6 +3,9 @@
 //
 
 #include "Driver.h"
+
+#include <stdio.h>
+
 #include "Context.h"
 #include "Lexer.h"
 #include "Utils.h"
@@ -33,14 +36,15 @@ void driver_destroy(Driver* this) {
     free(this);
 }
 List* driver_compile(Driver* const this, const int source_text_index) {
+    driver_preprocess_source_text(this, source_text_index);
+
     Lexer* lexer = lexer_create(this->context, source_text_index);
+
     List* const tokens = lexer_lex_source_text(lexer);
     lexer_destroy(lexer);
 
-
     return tokens;
 }
-
 DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
     DiagnosticCount report_count = {.error_count = 0, .warning_count = 0};
     const int N = list_get_size(this->context->diagnostic_report_table);
@@ -63,12 +67,39 @@ DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
     }
     return report_count;
 }
+static void driver_print_diagnostic_count(const Driver* const this) {
+    const DiagnosticCount count = driver_get_diagnostic_count(this);
+    printf("Encountered %d errors, %d warnings.\n", count.error_count, count.warning_count);
+}
+void driver_issue_diagnostics(Driver* const this) {
+    driver_print_diagnostic_count(this);
 
-void driver_issue_diagnostics(const Driver* this) {
-    // TODO: list_clear at the end, and list_sort at the beginning.
-    const int N = list_get_size(this->context->diagnostic_report_table);
+    List* const diagnostic_report_table = this->context->diagnostic_report_table;
+    list_sort(diagnostic_report_table, diagnostic_list_compare, true);
+
+    const int N = list_get_size(diagnostic_report_table);
     for (int i = 0; i < N; ++i) {
-        const Diagnostic* diagnostic = list_at_const(this->context->diagnostic_report_table, i);
+        const Diagnostic* diagnostic = list_at_const(diagnostic_report_table, i);
         diagnostic_print(*diagnostic, this->context);
     }
+
+    list_clear(diagnostic_report_table);
+}
+
+void driver_preprocess_source_text(Driver* this, const int source_text_index) {
+    SourceText* const source_text = context_source_text_at(this->context, source_text_index);
+    Text* const processed = text_create_empty();
+
+    for (int i = 0; i < source_text->data->length; ++i) {
+        const char c = source_text->data->data[i];
+        if (c == '\r') {
+            if (i + 1 == source_text->data->length) {
+                // TODO: issue a diagnostic and return
+            }
+        }
+        else
+            text_push(processed, c);
+    }
+    text_destroy(source_text->data);
+    source_text->data = processed;
 }

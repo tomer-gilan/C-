@@ -20,5 +20,6 @@ typedef struct {
  * @attention assumes both @c FilePosition have the same underling @c Context.
  */
 bool file_position_equals(FilePosition first, FilePosition second);
+int file_position_compare(FilePosition first, FilePosition second);
 
 #endif //C_COMPILER_FILE_POSITION_H

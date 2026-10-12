@@ -29,13 +29,12 @@ TextView text_view_create(int length, const char* data);
  * predicate, checks if both are equal
  */
 bool text_view_equals(TextView first, TextView second);
-
 // for list.h usage
 bool text_view_list_equals(const void* first, const void* second);
-
 /**
  * @attention this is shallow duplication
  */
 void* text_view_list_duplicate(const void* text_view);
+void text_view_print(TextView this);
 
 #endif //C_COMPILER_TEXTVIEW_H

@@ -6,6 +6,7 @@
 #include "TextView.h"
 #include "Utils.h"
 
+#include <stdio.h>
 #include <string.h>
 
 TextView text_view_create(const int length, const char* const data) {
@@ -23,4 +24,7 @@ void* text_view_list_duplicate(const void* const text_view) {
     TextView* new = utils_xmalloc(sizeof(TextView));
     *new = *(TextView*)text_view;
     return new;
+}
+void text_view_print(const TextView this) {
+    printf("%.*s\n", this.length, this.data);
 }

@@ -14,10 +14,10 @@ typedef struct {
 } LineColumn;
 
 typedef enum {
-    DIAGNOSTIC_SEVERITY_NOTE,
-    DIAGNOSTIC_SEVERITY_WARNING,
-    DIAGNOSTIC_SEVERITY_ERROR,
     DIAGNOSTIC_SEVERITY_FATAL,
+    DIAGNOSTIC_SEVERITY_ERROR,
+    DIAGNOSTIC_SEVERITY_WARNING,
+    DIAGNOSTIC_SEVERITY_NOTE,
     DIAGNOSTIC_SEVERITY__COUNT
 } DiagnosticSeverity;
 typedef enum {
@@ -39,32 +39,24 @@ typedef struct DiagnosticDescriptor DiagnosticDescriptor;
 typedef struct {
     DiagnosticCode code;
     Range range; ///< the place the @c error / @c warning took place.
+    LineColumn line_column;
 } Diagnostic;
 
+Diagnostic diagnostic_make(const Context* context, DiagnosticCode code, Range range);
 DiagnosticSeverity diagnostic_get_severity(Diagnostic report);
-
 const char *diagnostic_get_severity_string(Diagnostic report);
-
 const char *diagnostic_get_info(Diagnostic report);
-
-LineColumn diagnostic_get_line_column(Diagnostic report, const Context* context);
-
 void diagnostic_print(Diagnostic report, const Context* context);
-
+/*
 void diagnostic_print_string(Diagnostic report, const Context* context, const char* message);
-
 void diagnostic_print_char(Diagnostic report, const Context* context, char message);
-
 void diagnostic_print_int(Diagnostic report, const Context* context, int message);
-
-/**
- * @c strcmp style-ish, i.e. 0 means equals and non-0 means non-equal.
- */
+*/
 bool diagnostic_equals(Diagnostic first, Diagnostic second);
-
+int diagnostic_compare(Diagnostic first, Diagnostic second);
 // list compliance:
 bool diagnostic_list_equals(const void* first, const void* second);
-
 void *diagnostic_list_duplicate(const void* element);
+int diagnostic_list_compare(const void* first, const void* second);
 
 #endif //C_COMPILER_DIAGNOSTIC_H

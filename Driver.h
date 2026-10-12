@@ -38,9 +38,11 @@ void driver_destroy(Driver* this);
  * @return TODO: change from List* to other types along with compiler building
  */
 List* driver_compile(Driver* this, int source_text_index);
-
 DiagnosticCount driver_get_diagnostic_count(const Driver* this);
-
-void driver_issue_diagnostics(const Driver* this);
+/**
+ * @attention clears @c Context 's diagnostic table
+ */
+void driver_issue_diagnostics(Driver* this);
+void driver_preprocess_source_text(Driver* this, int source_text_index);
 
 #endif //C_COMPILER_DRIVER_H
