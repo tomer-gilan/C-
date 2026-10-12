@@ -81,14 +81,10 @@ bool text_is_empty(const Text* this) {
 }
 bool text_equals(const Text* const first, const Text* const second) {
     assert(first != NULL && second != NULL);
-    return text_compare(first, second) == 0;
-}
-int text_compare(const Text* const first, const Text* const second) {
-    assert(first != NULL && second != NULL);
     if (first->length != second->length)
-        return -1; // -1 as in not 0, i.e. not equal.
+        return false;
     const int length = first->length;
-    return memcmp(first->data, second->data, length);
+    return memcmp(first->data, second->data, length) == 0;
 }
 void text_push(Text* const this, const char c) {
     assert(this != NULL);
@@ -101,8 +97,8 @@ TextView text_as_view(const Text* const this) {
 }
 
 // wrappers for List.h
-int text_list_compare(const void* first, const void* second) {
-    return text_compare(first, second);
+bool text_list_equals(const void* first, const void* second) {
+    return text_equals(first, second);
 }
 void* text_list_duplicate(const void* text) {
     return text_create_from_buffer(

@@ -16,8 +16,8 @@ bool text_view_equals(const TextView first, const TextView second) {
             memcmp(first.data, second.data, first.length) == 0;
 }
 // for list.h usage:
-int text_view_list_compare(const void* const first, const void* const second) {
-    return text_view_equals(*(TextView*)first, *(TextView*)second) ? 0 : 1;
+bool text_view_list_equals(const void* const first, const void* const second) {
+    return text_view_equals(*(TextView *) first, *(TextView *) second);
 }
 void* text_view_list_duplicate(const void* const text_view) {
     TextView* new = utils_xmalloc(sizeof(TextView));

@@ -30,8 +30,8 @@ void* utils_xrealloc(void* const ptr, const size_t size) {
 char* utils_allocate_and_copy_string(const char* const source) {
     return utils_allocate_and_copy_buffer(source, (int)strlen(source) + 1);
 }
-int utils_string_list_compare(const void* const first, const void* const second) {
-    return strcmp(first, second);
+bool utils_string_list_equals(const void* const first, const void* const second) {
+    return strcmp(first, second) == 0;
 }
 void* utils_string_list_allocate_and_copy(const void* const string) {
     return utils_allocate_and_copy_string(string);

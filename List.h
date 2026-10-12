@@ -69,30 +69,35 @@ const void* list_at_const(const List* this, int index);
 /**
  * @param this a handle to the @c List .
  * @param element the element to find the index of.
- * @param compare a function that takes two elements, and returns 0 iff the two are equal, e.g. strcmp. Note that we only care for 0 or non-0 values.
+ * @param equals a predicate the checks for equality
  * @return the index of @b element in the @c List
  * @retval -1 if not found.
  */
-int list_index_of(const List* this, const void* element, int (*compare)(const void* first, const void* second));
+int list_index_of(const List* this, const void* element, bool (*equals)(const void* first, const void* second));
+
 /**
  * @param this a handle to the @c List .
  * @param element the list member in question.
- * @param compare the same as in @c list_index_of , see more info there
+ * @param equals a predicate the checks for equality
  * @retval true if @b element is in the list.
  * @retval false otherwise.
  */
-bool list_contains(const List* this, const void* element, int (*compare)(const void* first, const void* second));
+bool list_contains(const List* this, const void* element, bool (*equals)(const void* first, const void* second));
+
 /**
  * @param this a handle to the @c List .
  * @param element the list member in question.
  * @warning @b element 's ownership remains at the caller at all times. If @b element is not found in the @c List,
  * it is duplicated via @b duplicate and the copy is pushed to @c List
  * @warning assumes @b duplicate works correctly.
- * @param compare the same as in @c list_index_of , see more info there
+ * @param equals a predicate the checks for equality
  * @param duplicate a function that takes an @b element and returns a copy.
  * @return the index of the (newly duplicated or already in-list) element.
  */
-int list_find_or_push(List* this, const void* element,
-    int (*compare)(const void* first, const void* second), void* (*duplicate)(const void* to_duplicate));
+int list_find_or_push(
+    List* this,
+    const void* element,
+    bool (*equals)(const void* first, const void* second),
+    void * (*duplicate)(const void* to_duplicate));
 
 #endif //C_COMPILER_LIST_H

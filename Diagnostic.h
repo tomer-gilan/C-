@@ -60,9 +60,11 @@ void diagnostic_print_int(Diagnostic report, const Context* context, int message
 /**
  * @c strcmp style-ish, i.e. 0 means equals and non-0 means non-equal.
  */
-int diagnostic_compare(Diagnostic first, Diagnostic second);
+bool diagnostic_equals(Diagnostic first, Diagnostic second);
+
 // list compliance:
-int diagnostic_list_compare(const void* first, const void* second);
+bool diagnostic_list_equals(const void* first, const void* second);
+
 void *diagnostic_list_duplicate(const void* element);
 
 #endif //C_COMPILER_DIAGNOSTIC_H

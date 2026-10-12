@@ -5,6 +5,7 @@
 #ifndef C_COMPILER_UTILS_H
 #define C_COMPILER_UTILS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 // -------------------- memory allocation -------------------- //
@@ -32,13 +33,8 @@ void* utils_xrealloc(void* ptr, size_t size);
  */
 char* utils_allocate_and_copy_string(const char* source);
 
-/**
- * Functionally the exact same as strcmp, just taking void* instead of char*
- * @param first the first string
- * @param second the second string
- * @return the same as strcmp
- */
-int utils_string_list_compare(const void* first, const void* second);
+bool utils_string_list_equals(const void* first, const void* second);
+
 // for list.h
 void* utils_string_list_allocate_and_copy(const void* string);
 

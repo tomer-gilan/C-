@@ -86,7 +86,7 @@ int context_intern_identifier(Context* const this, const TextView spelling) {
     return list_find_or_push(
         this->identifiers_table,
         &spelling,
-        text_view_list_compare,
+        text_view_list_equals,
         text_view_list_duplicate);
 }
 
@@ -94,7 +94,7 @@ int context_intern_string_literal(Context* const this, const Text* const text) {
     return list_find_or_push(
         this->string_literals_table,
         text,
-        text_list_compare,
+        text_list_equals,
         text_list_duplicate);
 }
 

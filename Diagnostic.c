@@ -102,11 +102,11 @@ void diagnostic_print_int(const Diagnostic report, const Context* const context,
     snprintf(buff, sizeof buff, "%d", message);
     diagnostic_print_string(report, context, buff);
 }
-int diagnostic_compare(const Diagnostic first, const Diagnostic second) {
-    return first.code == second.code && range_equals(first.range, second.range) ? 0 : 1;
+bool diagnostic_equals(const Diagnostic first, const Diagnostic second) {
+    return first.code == second.code && range_equals(first.range, second.range);
 }
-int diagnostic_list_compare(const void* const first, const void* const second) {
-    return diagnostic_compare(*(Diagnostic *) first, *(Diagnostic *) second);
+bool diagnostic_list_equals(const void* const first, const void* const second) {
+    return diagnostic_equals(*(Diagnostic *) first, *(Diagnostic *) second);
 }
 void *diagnostic_list_duplicate(const void* const element) {
     Diagnostic* const to_return = utils_xmalloc(sizeof(Diagnostic));

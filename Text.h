@@ -36,7 +36,6 @@ void text_destroy(Text* this);
  */
 bool text_is_empty(const Text* this);
 bool text_equals(const Text* first, const Text* second);
-int text_compare(const Text* first, const Text* second);
 /**
  * pushes @c c into @c data, possibly extending its capacity.
  */
@@ -48,7 +47,8 @@ void text_push(Text* this, char c);
 TextView text_as_view(const Text* this);
 
 // for list.h usage
-int text_list_compare(const void* first, const void* second);
+bool text_list_equals(const void* first, const void* second);
+
 /**
  * @attention this is DEEP duplication
  */

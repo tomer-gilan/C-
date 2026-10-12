@@ -31,7 +31,8 @@ TextView text_view_create(int length, const char* data);
 bool text_view_equals(TextView first, TextView second);
 
 // for list.h usage
-int text_view_list_compare(const void* first, const void* second);
+bool text_view_list_equals(const void* first, const void* second);
+
 /**
  * @attention this is shallow duplication
  */

@@ -58,10 +58,9 @@ static bool are_tokens_equal(const Token* first, const Token* second, const Cont
         return text_view_equals(*first_spelling, *second_spelling);
     }
     if (kind == TOKEN_STRING_LITERAL) {
-        return text_list_compare(
+        return text_equals(
             list_at_const(context_first->string_literals_table, first->as.id),
-            list_at_const(context_second->string_literals_table, second->as.id)
-            ) == 0;
+            list_at_const(context_second->string_literals_table, second->as.id));
     }
     if (token_kind_is_keyword(kind) || token_kind_is_punctuator(kind)) {
         return true; // because all other conditions has already been verified.
@@ -135,7 +134,8 @@ static Token test_token_ident_create(
             },
             .length = range__length
         },
-        .as.id = list_find_or_push(context->identifiers_table, &spelling, text_view_list_compare, text_view_list_duplicate)
+        .as.id = list_find_or_push(context->identifiers_table, &spelling, text_view_list_equals,
+                                   text_view_list_duplicate)
     };
 }
 static Token test_token_string_literal_create(
@@ -154,7 +154,7 @@ static Token test_token_string_literal_create(
             },
             .length = range__length
         },
-        .as.id = list_find_or_push(context->string_literals_table, text, text_list_compare, text_list_duplicate)
+        .as.id = list_find_or_push(context->string_literals_table, text, text_list_equals, text_list_duplicate)
     };
     text_destroy(text);
     return to_return;
@@ -315,7 +315,7 @@ static void test_lexer_single_string(void) {
         const Token* const second = list_at(tokens, 1);
         CHECK(first->kind == TOKEN_STRING_LITERAL);
         Text* string_literal_text = text_create_from_view(test.check_against);
-        CHECK(list_contains(context->string_literals_table, string_literal_text, text_view_list_compare));
+        CHECK(list_contains(context->string_literals_table, string_literal_text, text_view_list_equals));
         text_destroy(string_literal_text);
         CHECK(token_is_eof(*second));
 
@@ -1210,7 +1210,7 @@ static void check_diagnostics(const char* const source, const Diagnostic* const 
     if (passed) {
         for (int i = 0; i < expected_count; ++i) {
             const Diagnostic* const got = list_at_const(actual, i);
-            passed = CHECK(diagnostic_compare(*got, expected[i]) == 0) && passed;
+            passed = CHECK(diagnostic_equals(*got, expected[i])) && passed;
         }
     }
     if (!passed) {

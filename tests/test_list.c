@@ -9,8 +9,8 @@
 #include "List.h"
 
 // helpers
-int equals_int(const void* first, const void* second) {
-    return *((int*)first) == *((int*)second) ? 0 : 1;
+bool equals_int(const void* first, const void* second) {
+    return *(int *) first == *(int *) second;
 }
 void* duplicate_int(const void* first) {
     int* to_return = malloc(sizeof(int));
