@@ -431,7 +431,7 @@ static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
 // ---------------- Step 4c regression tests ---------------- //
 // One test per input from the regression list in roadmaps/testing-roadmap.md, Step 4c.
 // The error cases (empty and multi-character constants, 123abc) only check the tokens and that lexing recovers.
-// Checking their diagnostics is Step 8.
+// Their diagnostics are checked in the test_lexer_diag_* tests.
 
 /**
  * Regression: leading whitespace before the first token (" x").
@@ -573,7 +573,7 @@ static void test_lexer_eq_eq_sc(void) {
 
 /**
  * Regression: an empty character constant ('') is one CONST_INT token with value 0, and lexing continues after it.
- * The diagnostic (empty character constant) is checked in Step 8.
+ * The diagnostic (empty character constant) is checked in the test_lexer_diag_* tests.
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_empty_char(void) {
@@ -610,7 +610,7 @@ static void test_lexer_empty_char(void) {
 
 /**
  * Regression: a multi-character constant ('ab') is one CONST_INT token, valued as its first character, and lexing
- * continues after it. The diagnostic (multi-character constant) is checked in Step 8.
+ * continues after it. The diagnostic (multi-character constant) is checked in the test_lexer_diag_* tests.
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_multi_char(void) {
@@ -647,7 +647,7 @@ static void test_lexer_multi_char(void) {
 
 /**
  * Regression: "123abc" is ONE invalid CONST_INT token (value 0), not 123 followed by the identifier abc, and lexing
- * continues after it. The diagnostic (invalid numerical sequence) is checked in Step 8.
+ * continues after it. The diagnostic (invalid numerical sequence) is checked in the test_lexer_diag_* tests.
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_123abc(void) {
@@ -929,7 +929,7 @@ static void test_lexer_char_escapes(void) {
 
 /**
  * Coverage: an unknown escape sequence ("\q") keeps the literal one token long, and lexing continues after it. What
- * byte the sequence turns into is not checked (it is a placeholder until the diagnostic exists, Step 8).
+ * byte the sequence turns into is not checked (a placeholder: the diagnostic is what reports it).
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_string_unknown_escape(void) {
@@ -961,7 +961,7 @@ static void test_lexer_string_unknown_escape(void) {
 /**
  * Coverage: a literal that hits the end of the file before its closing quote still ends in one token, which holds
  * what was read, followed by EOF. A lone backslash at the very end ("abc\) is the same. The diagnostic (unexpected
- * EOF) is checked in Step 8.
+ * EOF) is checked in the test_lexer_diag_* tests.
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_unterminated_literal_at_eof(void) {
@@ -1006,7 +1006,7 @@ static void test_lexer_unterminated_literal_at_eof(void) {
 
 /**
  * Coverage: a literal cannot continue past a newline. In "abc<newline>x the string ends at the newline and x is an
- * identifier again (and the same for 'a<newline>x). The diagnostic (missing delimiter) is checked in Step 8.
+ * identifier again (and the same for 'a<newline>x). The diagnostic (missing delimiter) is checked in the test_lexer_diag_* tests.
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_unterminated_literal_at_newline(void) {
@@ -1045,8 +1045,8 @@ static void test_lexer_unterminated_literal_at_newline(void) {
 
 /**
  * Coverage: a decimal constant with a leading zero ("0123", "00") is octal, which is not supported: one CONST_INT
- * token spanning all its digits, and lexing continues after it. Its value is not checked (a placeholder until the
- * diagnostic exists, Step 8).
+ * token spanning all its digits, and lexing continues after it. Its value is not checked (a placeholder: the
+ * diagnostic is what reports it).
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_leading_zero_constant(void) {
@@ -1071,7 +1071,7 @@ static void test_lexer_leading_zero_constant(void) {
 /**
  * Coverage: the largest int (2147483647) has its exact value. One more, and far more, is still one CONST_INT token
  * over all its digits, with no crash or signed overflow (UBSan would catch one). The value of those is not checked: it
- * is a placeholder until the "too big" diagnostic exists (Step 8).
+ * is a placeholder: the "too big" diagnostic is what reports it.
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_int_constant_limits(void) {
@@ -1095,7 +1095,7 @@ static void test_lexer_int_constant_limits(void) {
 
 /**
  * Coverage: a character that starts no token ('@', '$', '`', '\') is a one-character UNKNOWN token, and lexing
- * continues after it: "a<c>b" is IDENT, UNKNOWN, IDENT, EOF. The diagnostic (unknown character) is checked in Step 8.
+ * continues after it: "a<c>b" is IDENT, UNKNOWN, IDENT, EOF. The diagnostic (unknown character) is checked in the test_lexer_diag_* tests.
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_unknown_character(void) {
@@ -1137,6 +1137,242 @@ static void test_lexer_identifier_character_class_ends(void) {
     list_destroy(tokens);
 }
 
+// Step 8: diagnostics (written by Claude on 11-Oct-26, not by Tomer)
+
+/**
+ * Shorthand for building an expected @c Diagnostic in source text 0.
+ */
+static Diagnostic diag(const DiagnosticCode code, const int offset, const int length) {
+    return (Diagnostic){
+        .code = code,
+        .range = {.position = {.source_text_index = 0, .offset = offset}, .length = length}
+    };
+}
+
+/**
+ * Prints @b source to stderr in quotes, with its newlines as backslash-n, so a failure report stays on one line.
+ */
+static void print_source_escaped(const char* const source) {
+    fputc('"', stderr);
+    for (const char* c = source; *c != '\0'; ++c) {
+        if (*c == '\n')
+            fputs("\\n", stderr);
+        else
+            fputc(*c, stderr);
+    }
+    fputc('"', stderr);
+}
+
+/**
+ * Lexes @b source and checks that the diagnostics the lexer collected are exactly @b expected : same count, same order,
+ * same code and same range (@c diagnostic_compare ). On a mismatch it also prints the source, the diagnostics that were
+ * expected and the ones the lexer actually collected, each as code@offset+length (the code is the number from
+ * @c DiagnosticCode ).
+ * @param source a '\0'-terminated string
+ * @param expected the diagnostics that should have been collected, in order
+ * @param expected_count how many there are in @b expected
+ */
+static void check_diagnostics(const char* const source, const Diagnostic* const expected, const int expected_count) {
+    Context* const context = context_create(
+        source_text_create(text_create_from_buffer(source, (int) strlen(source)), "<source>"));
+    Lexer* const lexer = lexer_create(context, 0);
+    List* const tokens = lexer_lex_source_text(lexer);
+
+    const List* const actual = context->diagnostic_report_table;
+    const int actual_count = list_get_size(actual);
+    bool passed = CHECK(actual_count == expected_count);
+    if (passed) {
+        for (int i = 0; i < expected_count; ++i) {
+            const Diagnostic* const got = list_at_const(actual, i);
+            passed = CHECK(diagnostic_compare(*got, expected[i]) == 0) && passed;
+        }
+    }
+    if (!passed) {
+        fputs("  diagnostic mismatch for source ", stderr);
+        print_source_escaped(source);
+        fputs(", expected", stderr);
+        if (expected_count == 0)
+            fputs(" none", stderr);
+        for (int i = 0; i < expected_count; ++i)
+            fprintf(stderr, " %d@%d+%d", (int) expected[i].code, expected[i].range.position.offset,
+                    expected[i].range.length);
+        fputs(", got", stderr);
+        if (actual_count == 0)
+            fputs(" none", stderr);
+        for (int i = 0; i < actual_count; ++i) {
+            const Diagnostic* const got = list_at_const(actual, i);
+            fprintf(stderr, " %d@%d+%d", (int) got->code, got->range.position.offset, got->range.length);
+        }
+        fputc('\n', stderr);
+    }
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
+    context_destroy(context);
+}
+
+/**
+ * Valid source produces no diagnostics: not for keywords, identifiers, punctuators, the largest int, a lone '0', or
+ * well-formed literals with every kind of escape.
+ */
+static void test_lexer_diag_clean_input(void) {
+    const char* const sources[] = {
+        "",
+        "int main(void) { return 2147483647; }",
+        "x == 0 + 'a' - '\\n' ;",
+        "\"hello\\n\\t\\\\\\\"\\0\" \"\"",
+    };
+    for (int i = 0; i < (int) (sizeof sources / sizeof sources[0]); ++i)
+        check_diagnostics(sources[i], NULL, 0);
+}
+
+/**
+ * A character that starts no token is one UNKNOWN_CHARACTER diagnostic, over exactly that character.
+ */
+static void test_lexer_diag_unknown_character(void) {
+    const char* const sources[] = {"a@b", "a$b", "a`b", "a\\b"};
+    for (int i = 0; i < 4; ++i) {
+        const Diagnostic expected[] = {diag(DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER, 1, 1)};
+        check_diagnostics(sources[i], expected, 1);
+    }
+}
+
+/**
+ * An empty character constant ('') is EXPECTED_EXPRESSION over the whole literal, both quotes included.
+ */
+static void test_lexer_diag_empty_char(void) {
+    const Diagnostic expected[] = {diag(DIAGNOSTIC_CODE_LEXER_EXPECTED_EXPRESSION, 0, 2)};
+    check_diagnostics("'' x", expected, 1);
+}
+
+/**
+ * A multi-character constant ('ab') is MULTI_CHARACTER_LITERAL over the whole literal.
+ */
+static void test_lexer_diag_multi_char(void) {
+    const Diagnostic expected[] = {diag(DIAGNOSTIC_CODE_LEXER_MULTI_CHARACTER_LITERAL, 0, 4)};
+    check_diagnostics("'ab' x", expected, 1);
+}
+
+/**
+ * "123abc" is INVALID_NUMERICAL_SEQUENCE over the bad suffix only ("abc", offset 3, length 3), like a compiler pointing
+ * at the suffix and not at the digits that were fine.
+ */
+static void test_lexer_diag_invalid_numerical_sequence(void) {
+    const Diagnostic expected[] = {diag(DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE, 3, 3)};
+    check_diagnostics("123abc;", expected, 1);
+}
+
+/**
+ * A leading zero followed by a digit (octal, unsupported) is INVALID_NUMERICAL_PREFIX over the '0' only.
+ * A lone "0" is fine (test_lexer_diag_clean_input).
+ */
+static void test_lexer_diag_invalid_numerical_prefix(void) {
+    const char* const sources[] = {"0123 x", "00 x"};
+    for (int i = 0; i < 2; ++i) {
+        const Diagnostic expected[] = {diag(DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_PREFIX, 0, 1)};
+        check_diagnostics(sources[i], expected, 1);
+    }
+}
+
+/**
+ * A constant that doesn't fit in an int is NUMERIC_CONSTANT_OUT_OF_BOUNDS over all its digits. INT_MAX itself
+ * (2147483647) is fine: that is the boundary.
+ */
+static void test_lexer_diag_constant_out_of_bounds(void) {
+    check_diagnostics("2147483647", NULL, 0);
+
+    const Diagnostic one_more[] = {diag(DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS, 0, 10)};
+    check_diagnostics("2147483648", one_more, 1);
+
+    const Diagnostic far_more[] = {diag(DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS, 0, 20)};
+    check_diagnostics("99999999999999999999", far_more, 1);
+}
+
+/**
+ * An unknown escape sequence is INVALID_ESCAPE_SEQUENCE over the backslash AND the character after it (length 2), in
+ * a string and in a character constant. The literal itself is still well-formed, so it's the only diagnostic.
+ * @attention FAILS until Lexer.c is fixed: @c lexer_lex_literal_to_text reads @c escaped_sequence_start after popping
+ * the escaped character, so the range it reports has length 0 and starts after the escape, not at the backslash.
+ */
+static void test_lexer_diag_invalid_escape_sequence(void) {
+    const Diagnostic in_string[] = {diag(DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE, 2, 2)};
+    check_diagnostics("\"a\\qb\" x", in_string, 1);
+
+    const Diagnostic in_char[] = {diag(DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE, 1, 2)};
+    check_diagnostics("'\\q' x", in_char, 1);
+
+    const Diagnostic first_in_string[] = {diag(DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE, 1, 2)};
+    check_diagnostics("\"\\q\"", first_in_string, 1);
+}
+
+/**
+ * A literal cut by a newline is EXPECTED_QUOTATION_MARKS (string) or EXPECTED_APOSTROPHE (character) over the literal
+ * as the token has it, newline included (the same range as the token, see test_lexer_unterminated_literal_at_newline).
+ */
+static void test_lexer_diag_unterminated_at_newline(void) {
+    const Diagnostic string[] = {diag(DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS, 0, 5)};
+    check_diagnostics("\"abc\nx", string, 1);
+
+    const Diagnostic character[] = {diag(DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE, 0, 3)};
+    check_diagnostics("'a\nx", character, 1);
+
+    const Diagnostic empty_string[] = {diag(DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS, 0, 2)};
+    check_diagnostics("\"\nx", empty_string, 1);
+}
+
+/**
+ * A literal cut by the end of the file is UNEXPECTED_EOF over everything from the opening quote to the end, including
+ * a lone backslash at the very end.
+ */
+static void test_lexer_diag_unterminated_at_eof(void) {
+    const struct {
+        const char* source;
+        int length; ///< the length of the whole literal, which is the whole source
+    } cases[] = {
+        {"\"abc", 4},
+        {"\"abc\\", 5},
+        {"\"", 1},
+        {"'a", 2},
+    };
+    for (int i = 0; i < 4; ++i) {
+        const Diagnostic expected[] = {diag(DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF, 0, cases[i].length)};
+        check_diagnostics(cases[i].source, expected, 1);
+    }
+}
+
+/**
+ * One mistake, one diagnostic: a character constant that is cut short and has no character at all ("'" + newline, or
+ * "'" at the end of the file) reports only the missing delimiter, not also an empty-constant error. But "'ab" cut by
+ * the end of the file is two mistakes, a missing delimiter and a multi-character constant, so both are reported, in
+ * that order.
+ */
+static void test_lexer_diag_no_cascade(void) {
+    const Diagnostic apostrophe_only[] = {diag(DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE, 0, 2)};
+    check_diagnostics("'\nx", apostrophe_only, 1);
+
+    const Diagnostic eof_empty[] = {diag(DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF, 0, 1)};
+    check_diagnostics("'", eof_empty, 1);
+
+    const Diagnostic eof_multi[] = {
+        diag(DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF, 0, 3),
+        diag(DIAGNOSTIC_CODE_LEXER_MULTI_CHARACTER_LITERAL, 0, 3),
+    };
+    check_diagnostics("'ab", eof_multi, 2);
+}
+
+/**
+ * Lexing continues after an error, so several errors in one file are all reported, in the order they appear:
+ * "@ 123abc $" is UNKNOWN_CHARACTER at 0, INVALID_NUMERICAL_SEQUENCE ("abc") at 5, UNKNOWN_CHARACTER at 9.
+ */
+static void test_lexer_diag_several_in_order(void) {
+    const Diagnostic expected[] = {
+        diag(DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER, 0, 1),
+        diag(DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE, 5, 3),
+        diag(DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER, 9, 1),
+    };
+    check_diagnostics("@ 123abc $", expected, 3);
+}
+
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
     RUN_TEST(test_lexer_empty_buffer);
@@ -1172,5 +1408,18 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_lexer_int_constant_limits);
     RUN_TEST(test_lexer_unknown_character);
     RUN_TEST(test_lexer_identifier_character_class_ends);
+    // Step 8 diagnostics tests (written by Claude)
+    RUN_TEST(test_lexer_diag_clean_input);
+    RUN_TEST(test_lexer_diag_unknown_character);
+    RUN_TEST(test_lexer_diag_empty_char);
+    RUN_TEST(test_lexer_diag_multi_char);
+    RUN_TEST(test_lexer_diag_invalid_numerical_sequence);
+    RUN_TEST(test_lexer_diag_invalid_numerical_prefix);
+    RUN_TEST(test_lexer_diag_constant_out_of_bounds);
+    RUN_TEST(test_lexer_diag_invalid_escape_sequence);
+    RUN_TEST(test_lexer_diag_unterminated_at_newline);
+    RUN_TEST(test_lexer_diag_unterminated_at_eof);
+    RUN_TEST(test_lexer_diag_no_cascade);
+    RUN_TEST(test_lexer_diag_several_in_order);
     return harness_finish();
 }

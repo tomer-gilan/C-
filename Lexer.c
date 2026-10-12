@@ -201,9 +201,12 @@ static int lexer_escape_character(const int character) {
  * @warning ownership of return value is transferred to the caller.
  * @param this a handle to the @c Lexer
  * @param delimiter ' or "
+ * @param reported flag indicating weather a diagnostic has been reported during lexing.
  * @return the @c Text of the literal
  */
-static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter) {
+static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter, bool* const reported) {
+    *reported = false;
+
     // if one of these is false, it's invalid by definition:
     assert((delimiter == '\'' || delimiter == '\"') && "Invalid delimiter");
     assert(lexer_peek(this) == delimiter && "First character of a char literal was not a delimiter.");
@@ -215,10 +218,25 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter) 
     bool should_escape_character = false;
     while (lexer_peek(this) != LEXER_EOF) {
         int c = lexer_pop(this);
+
+        if (c == '\n') {
+            context_report_diagnostic(
+                this->context,
+                (Diagnostic){
+                    .code = delimiter == '"'
+                                ? DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS
+                                : DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE,
+                    .range = range_from_file_positions(start, this->cursor)
+                });
+            *reported = true;
+            return literal_text;
+        }
+
         if (should_escape_character) {
-            const FilePosition escaped_sequence_start = this->cursor;
             c = lexer_escape_character(c);
             if (c == LEXER_UNKNOWN_ESCAPE_CHARACTER) {
+                FilePosition invalid_sequence_start = this->cursor;
+                invalid_sequence_start.offset -= 2;
                 /* issue diagnostic, invalid escape sequence, then CONTINUE MUNCHING!!! notice next we will
                  * store the UNKNOWN_CHARACTER as the character munched, and that's ok since we only need to get the
                  * literal spelling to continue lexing the source text. Since we issued a diagnostic, the compilation
@@ -229,25 +247,15 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter) 
                     this->context,
                     (Diagnostic){
                         .code = DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE,
-                        .range = range_from_file_positions(escaped_sequence_start, this->cursor)
+                        .range = range_from_file_positions(invalid_sequence_start, this->cursor)
                     });
+                *reported = true;
             }
             text_push(literal_text, (char)c);
             should_escape_character = false;
         }
         else if (c == '\\') { // i.e. if we encounter a non-escaped backslash, the next character SHOULD be escaped.
             should_escape_character = true;
-        }
-        else if (c == '\n') {
-            context_report_diagnostic(
-                this->context,
-                (Diagnostic){
-                    .code = delimiter == '"'
-                                ? DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS
-                                : DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE,
-                    .range = range_from_file_positions(start, this->cursor)
-                });
-            return literal_text;
         }
         else if (c == delimiter) { // i.e. if we encounter a non-escaped delimiter
             return literal_text;
@@ -265,6 +273,7 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter) 
             .code = DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF,
             .range = range_from_file_positions(start, this->cursor)
         });
+    *reported = true;
     return literal_text;
 }
 /**
@@ -368,19 +377,22 @@ static Token lexer_lex_constant_int(Lexer* const this) {
 static Token lexer_lex_constant_char(Lexer* const this) {
     // NOTE - yes, we return a TOKEN_CONST_INT, because the C standard states that char literals
     // should be interpreted as integer constants.
-
+    bool reported = false;
     const FilePosition start = this->cursor;
-    Text* const text = lexer_lex_literal_to_text(this, '\'');
+    Text* const text = lexer_lex_literal_to_text(this, '\'', &reported);
     const Range range = range_from_file_positions(start, this->cursor);
 
     char value;
     if (text_is_empty(text)) {
         value = 0;
-        context_report_diagnostic(
-            this->context, (Diagnostic){
+        if (!reported) {
+            context_report_diagnostic(
+                this->context, (Diagnostic){
                 .code = DIAGNOSTIC_CODE_LEXER_EXPECTED_EXPRESSION,
                 .range = range
             });
+            reported = true;
+        }
     }
     else {
         value = text->data[0]; // data is not empty, so a first value is guaranteed.
@@ -392,6 +404,7 @@ static Token lexer_lex_constant_char(Lexer* const this) {
                 });
         }
     }
+
     text_destroy(text);
     return (Token){
         .kind = TOKEN_CONST_INT,
@@ -400,8 +413,9 @@ static Token lexer_lex_constant_char(Lexer* const this) {
     };
 }
 static Token lexer_lex_string_literal(Lexer* const this) {
+    bool reported = false;
     const FilePosition start = this->cursor;
-    Text* const text = lexer_lex_literal_to_text(this, '\"');
+    Text* const text = lexer_lex_literal_to_text(this, '\"', &reported);
     const Range range = range_from_file_positions(start, this->cursor);
 
     const Token to_return = {

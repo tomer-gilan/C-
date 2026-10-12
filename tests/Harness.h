@@ -18,7 +18,8 @@
  */
 bool harness_check(bool passed, const char* expression, const char* file, int line);
 /**
- * Runs one test function, and prints its name and whether it passed.
+ * Runs one test function, and prints its name only if it failed (@c [ FAIL ] after the failed checks). A passing test
+ * prints nothing; if a test crashes, the sanitizer's stack trace names it.
  * If a name filter was given to @c harness_init , skips the test unless its name contains the filter.
  * @attention use through @c RUN_TEST , not directly.
  * @param test the test function

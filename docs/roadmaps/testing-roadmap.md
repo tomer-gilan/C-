@@ -48,22 +48,22 @@ tests, not all at once through `main`.
 
 **Step 5: Commit check (ADR-002)**
 
-- [ ] Enable "Run Tests" in CLion's commit dialog with the CTest configuration.
-- [ ] Verify: break a test, try to commit, confirm it's caught.
+- [x] Enable "Run Tests" in CLion's commit dialog with the CTest configuration.
+- [x] Verify: break a test, try to commit, confirm it's caught.
 
 **Step 6: Sanitizer build**
 
 - [x] ASan + UBSan build configuration (`-DENABLE_SANITIZERS=ON`, see [`../testing.md`](../testing.md), "Sanitizer and
   coverage builds"); the whole suite runs under it.
 - [x] The sanitizers are on by default in Debug builds (`ENABLE_SANITIZERS` defaults to ON when `CMAKE_BUILD_TYPE` is
-  Debug), so the normal "All CTest" run, and with it the commit check, is sanitized. [ ] Tomer: Reset Cache and Reload
-  Project once on the Debug profile, since its cache still says OFF.
+  Debug), so the normal "All CTest" run, and with it the commit check, is sanitized. The Debug profile's cache now says
+  ON.
 - [x] `CMakePresets.json` defines a `coverage` preset (shared, versioned) for CLion; enable it in Settings → Build,
   Execution, Deployment → CMake.
-- [ ] Fix whatever it finds, and add a regression test for each. The existing tests are clean. The sanitizer build finds
-  the two known `source_text_create_from_path` leaks (file name copied twice, nothing freed for an invalid path) through
-  the new `tests/test_source_text.c` (written by Claude): the `source_text` test fails under sanitizers until Tomer
-  fixes `SourceText.c`.
+- [x] Fix whatever it finds, and add a regression test for each. The sanitizer build found the two known
+  `source_text_create_from_path` leaks (file name copied twice, nothing freed for an invalid path) through
+  `tests/test_source_text.c` (written by Claude). Tomer fixed `SourceText.c`; all 4 CTest tests now pass under ASan +
+  UBSan (checked 2026-10-11 with a fresh Debug build in WSL).
 
 **Step 7: Golden-file tests (ADR-003)**
 
@@ -76,9 +76,13 @@ tests, not all at once through `main`.
 
 **Step 8: Diagnostics in tests**
 
-- [ ] Once diagnostics are collected (see `TODO.md`), test the error cases: which code, at which position, and that
-  lexing continues after it. Start from the Step 4c error cases (`''`, `'ab'`, `123abc`), which today check only the
-  tokens.
+- [x] Diagnostics are collected in `Context` and every lexer call site reports one, so the error cases are tested: which
+  code, at which position (exact offset and length), in which order, and that lexing continues after it. 12
+  `test_lexer_diag_*` tests in `tests/test_lexer.c` (written by Claude, 2026-10-11), one per diagnostic code plus clean
+  input and several-errors-in-order; the Step 4c token tests still check the tokens.
+- [x] The two tests that failed on purpose are settled: Tomer fixed the escape-sequence range in `Lexer.c`
+  (`test_lexer_diag_invalid_escape_sequence`), and decided that `'ab` cut by the end of the file reports both the
+  missing delimiter and the multi-character constant, so `test_lexer_diag_no_cascade` expects both.
 
 **Step 9: Coverage**
 

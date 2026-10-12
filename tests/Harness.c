@@ -42,10 +42,9 @@ void harness_run(void (*const test)(void), const char* const name) {
     tests_run_count++;
     const int failures_before = failure_count;
     current_test = name;
-    printf("[ RUN  ] %s\n", name);
-    fflush(stdout); // if the test crashes, the buffered output (and with it the test's name) would be lost.
     test();
-    printf("[ %s ] %s\n", failure_count == failures_before ? " OK " : "FAIL", name);
+    if (failure_count != failures_before)
+        printf("[ FAIL ] %s\n", name);
     current_test = "(no test)";
 }
 int harness_finish(void) {

@@ -5,6 +5,9 @@ set(CMAKE_C_STANDARD 11)
 
 # Lets CTest run the test executables registered below with add_test.
 enable_testing()
+# Only a failed test prints its output. This applies to the `test` target (cmake --build <dir> --target test); a plain
+# `ctest` or CLion's runner needs the flag / the CTEST_OUTPUT_ON_FAILURE=1 environment variable instead.
+set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 # Warning flags, shared by every target that links this.
 add_library(c_compiler_warnings INTERFACE)
