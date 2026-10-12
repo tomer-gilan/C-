@@ -8,6 +8,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "Context.h"
+
 struct DiagnosticDescriptor {
     DiagnosticSeverity severity;
     const char* info;  // the problematic lexeme/token/etc, as a string.
@@ -45,37 +47,67 @@ static const DiagnosticDescriptor diagnostics_table[DIAGNOSTIC_CODE__COUNT] = {
 static bool diagnostic_is_valid_code(const DiagnosticCode code) {
     return code < DIAGNOSTIC_CODE__COUNT;
 }
+DiagnosticSeverity diagnostic_get_severity(const Diagnostic report) {
+    assert(diagnostic_is_valid_code(report.code));
+    return diagnostics_table[report.code].severity;
+}
 
-void diagnostic_issue(const Diagnostic report, const Context* const context) {
+const char *diagnostic_get_severity_string(Diagnostic report) {
+    return diagnostic_severity_table[diagnostic_get_severity(report)];
+}
+
+const char *diagnostic_get_info(const Diagnostic report) {
+    assert(diagnostic_is_valid_code(report.code));
+    return diagnostics_table[report.code].info;
+}
+
+LineColumn diagnostic_get_line_column(const Diagnostic report, const Context* const context) {
+    int line_counter = 0, column_counter = 0;
+    const SourceText* const source_text =
+            context_source_text_at_const(context, report.range.position.source_text_index);
+    for (int i = 0; i < report.range.length; ++i)
+        if (source_text->data->data[report.range.position.offset + i] == '\n')
+            line_counter++, column_counter = 0;
+        else
+            column_counter++;
+    return (LineColumn)
+    {
+        .line = line_counter, .column = column_counter
+    };
+}
+
+void diagnostic_print(const Diagnostic report, const Context* const context) {
     assert(diagnostic_is_valid_code(report.code) && "Unknown diagnostic code!");
 
-    //const FileLineColumn file_line_column = file_position_get_file_line_column(report.range.position, context);
-    //fprintf(stderr,"%s:%d:%d: [%s] %s:",
-    //        file_line_column.file_name, file_line_column.line, file_line_column.column,
-    //        diagnostic_severity_table[diagnostics_table[report.code].severity],
-    //        diagnostics_table[report.code].info);
+    const char* const file_name = context_source_text_at_const(context, report.range.position.source_text_index)->name;
+    const LineColumn line_column = diagnostic_get_line_column(report, context);
+
+    fprintf(stderr, "%s:%d:%d: [%s] %s:",
+            file_name,
+            line_column.line,
+            line_column.column,
+            diagnostic_get_severity_string(report),
+            diagnostic_get_info(report));
 }
-void diagnostic_issue_string(const Diagnostic report, const Context* const context, const char* const message) {
-    diagnostic_issue(report, context);
+void diagnostic_print_string(const Diagnostic report, const Context* const context, const char* const message) {
+    diagnostic_print(report, context);
     fprintf(stderr," %s\n", message);
 }
-void diagnostic_issue_char(const Diagnostic report, const Context* const context, const char message) {
-    const char buff2[2] = {message, '\0'};
-    diagnostic_issue_string(report, context, buff2);
+void diagnostic_print_char(const Diagnostic report, const Context* const context, const char message) {
+    const char buff[2] = {message, '\0'};
+    diagnostic_print_string(report, context, buff);
 }
-void diagnostic_issue_int(const Diagnostic report, const Context* const context, const int message) {
+void diagnostic_print_int(const Diagnostic report, const Context* const context, const int message) {
     char buff[12];
     snprintf(buff, sizeof buff, "%d", message);
-    diagnostic_issue_string(report, context, buff);
+    diagnostic_print_string(report, context, buff);
 }
-
 int diagnostic_compare(const Diagnostic first, const Diagnostic second) {
     return first.code == second.code && range_equals(first.range, second.range) ? 0 : 1;
 }
 int diagnostic_list_compare(const void* const first, const void* const second) {
     return diagnostic_compare(*(Diagnostic *) first, *(Diagnostic *) second);
 }
-
 void *diagnostic_list_duplicate(const void* const element) {
     Diagnostic* const to_return = utils_xmalloc(sizeof(Diagnostic));
     *to_return = *(Diagnostic *) element;

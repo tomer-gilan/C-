@@ -1,7 +1,7 @@
 # Testing Roadmap
 
-The step-by-step plan for building the C~~ test suite. The background, structure and decisions behind it are in [
-`../testing.md`](../testing.md).
+The step-by-step plan for building the C~~ test suite. The background, structure and decisions behind it are
+in [](testing.md).
 
 Built step by step. Each step ends in a state that works and can be committed.
 
@@ -53,7 +53,7 @@ tests, not all at once through `main`.
 
 **Step 6: Sanitizer build**
 
-- [x] ASan + UBSan build configuration (`-DENABLE_SANITIZERS=ON`, see [`../testing.md`](../testing.md), "Sanitizer and
+- [x] ASan + UBSan build configuration (`-DENABLE_SANITIZERS=ON`, see [`../testing.md`](testing.md), "Sanitizer and
   coverage builds"); the whole suite runs under it.
 - [x] The sanitizers are on by default in Debug builds (`ENABLE_SANITIZERS` defaults to ON when `CMAKE_BUILD_TYPE` is
   Debug), so the normal "All CTest" run, and with it the commit check, is sanitized. The Debug profile's cache now says
@@ -66,6 +66,12 @@ tests, not all at once through `main`.
   UBSan (checked 2026-10-11 with a fresh Debug build in WSL).
 
 **Step 7: Golden-file tests (ADR-003)**
+
+> **Deferred, out of v1 scope** (Tomer's call, 2026-10-12). The lexer is covered by unit tests (Steps 4c, 6, 8, 9), so
+> golden files for it are not needed to call the lexer done. Nothing here was started. The golden-file runner is built
+> when a stage actually needs it, which is the parser's `--dump-ast` (see [`parser-roadmap.md`](parser-roadmap.md), Step
+> 0f); then the lexer's token-dump golden files can be added on top, with the same runner. The unticked items below are
+> the plan for that day, not work owed before `lexer-v1`.
 
 - [ ] A real `main` that drives the compiler and dumps tokens, ideally behind a flag like `--dump-tokens` (`main.c` is
   still a sample program).
@@ -96,12 +102,15 @@ tests, not all at once through `main`.
   `-DENABLE_COVERAGE_CHECK=ON` adds a CTest test `coverage` that fails if a line of `Lexer.c` never ran. Both are off
   the normal path ("All CTest" and the commit check don't run them); the failing check is for CI (see "Later").
 - [ ] After the lexer changes (comments, diagnostics), look at the never-taken branches in the report and cover the new
-  ones.
+  ones. **Deferred with comments:** comment lexing is out of v1 scope (`TODO.md`), so this waits for it; it doesn't
+  block `lexer-v1`. The diagnostics half is done (Step 8).
 
 **Step 10: Lexer milestone**
 
 - [ ] Claude reminds Tomer that the roadmap is finished. With his approval, tag the commit:
-  `git tag -a lexer-v1 -m "Lexer complete for v1 scope"`.
+  `git tag -a lexer-v1 -m "Lexer complete for v1 scope"`. The roadmap counts as finished for v1 with Steps 7 and the
+  last
+  Step 9 item deferred (see their notes); Tomer's decision, 2026-10-12.
 
 **Later**
 

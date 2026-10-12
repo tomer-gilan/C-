@@ -14,6 +14,11 @@ typedef struct {
     Context* context;
 } Driver;
 
+typedef struct {
+    int error_count;
+    int warning_count;
+} DiagnosticCount;
+
 /**
  * Creates a new @c Driver .
  * @param argc the same as @c main 's
@@ -33,5 +38,9 @@ void driver_destroy(Driver* this);
  * @return TODO: change from List* to other types along with compiler building
  */
 List* driver_compile(Driver* this, int source_text_index);
+
+DiagnosticCount driver_get_diagnostic_count(const Driver* this);
+
+void driver_issue_diagnostics(const Driver* this);
 
 #endif //C_COMPILER_DRIVER_H

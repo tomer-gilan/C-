@@ -12,7 +12,9 @@ A strictly portable program, however, *should* stay within these numbers — tha
 A single line of source code, after line-splicing (`\` at end of line) is resolved.
 
 **4095 characters in a string literal, after concatenation.**
-Applies to the final, merged string — adjacent string literals (`"foo" "bar"` → `"foobar"`, see [annex-a-breakdown.md](../annex-a-breakdown.md) A.1.6) are concatenated *before* this limit is measured, not each token individually.
+Applies to the final, merged string — adjacent string literals (`"foo" "bar"` → `"foobar"`,
+see [annex-a-breakdown.md](annex-a-breakdown.md) A.1.6) are concatenated *before* this limit is measured, not each token
+individually.
 
 **63 significant initial characters in an internal identifier or a macro name.**
 **31 significant initial characters in an external identifier.**
@@ -36,7 +38,8 @@ One file including another including another, 15 deep.
 Example: `int ****p;` uses 4 of the 12. Stack up enough `*`, `[]`, and `()` on one declarator and you can theoretically hit this — essentially never a concern in practice.
 
 **63 nesting levels of parenthesized declarators within a full declarator.**
-Nested parens around a declarator, e.g. in complex function-pointer-returning-function-pointer type spellings (see [dictionary.md](../dictionary.md)'s **Function pointer** entry for why these get parenthesis-heavy).
+Nested parens around a declarator, e.g. in complex function-pointer-returning-function-pointer type spellings
+(see [dictionary.md](dictionary.md)'s **Function pointer** entry for why these get parenthesis-heavy).
 
 **511 identifiers with block scope declared in one block.**
 The number of distinct local variables you can declare inside one `{ }`.
@@ -84,4 +87,8 @@ The minimum guaranteed size for any single object — including, notably, the ba
 You don't need to enforce any of these as hard caps — that's not what they're for, and doing so would just make your compiler stricter than gcc/clang for no benefit. What's actually useful about this list:
 
 - It tells you the *kinds* of things a fully standards-conforming implementation has to think about (deeply nested parens, huge structs, long identifiers) even if you never hit the numbers in practice with hand-written test programs.
-- If you ever write a stress-test/fuzzer for your own lexer or parser, these numbers are a reasonable source of "how deep should I nest this to find stack-overflow-style bugs in a recursive-descent parser" — a parser implemented with one function call per nesting level (very likely, given [dictionary.md](../dictionary.md)'s **Recursive descent** entry) will blow its own call stack on sufficiently deep nesting long before hitting these standard numbers, which is a real, common bug class in hand-written recursive-descent parsers worth being aware of.
+- If you ever write a stress-test/fuzzer for your own lexer or parser, these numbers are a reasonable source of "how
+  deep should I nest this to find stack-overflow-style bugs in a recursive-descent parser" — a parser implemented with
+  one function call per nesting level (very likely, given [dictionary.md](dictionary.md)'s **Recursive descent** entry)
+  will blow its own call stack on sufficiently deep nesting long before hitting these standard numbers, which is a real,
+  common bug class in hand-written recursive-descent parsers worth being aware of.

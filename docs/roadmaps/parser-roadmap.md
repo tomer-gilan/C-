@@ -41,7 +41,7 @@ stay identical across all three.
 | 12 | Arrays and indexing                                       | `int a[3]; a[1] = 5;`                  |
 | 13 | `char`, character constants, string literals              | `char *s = "hi"; return s[1];`         |
 
-Everything comes from [`SUBSET.md`](../SUBSET.md). If a slice seems to need something that isn't in it (`for`, `sizeof`,
+Everything comes from [`SUBSET.md`](SUBSET.md). If a slice seems to need something that isn't in it (`for`, `sizeof`,
 `++`, `?:`, `+=`), it's out of scope until `SUBSET.md` says otherwise.
 
 ---
@@ -58,7 +58,9 @@ normal build and in the sanitizer build (testing roadmap Step 6).
 2. **Error tests.** Each step lists inputs that must be rejected. Check the diagnostic's code and position, and the
    recovery policy (ADR from Step 0d).
 3. **Golden files.** One or two realistic programs per step in `tests/golden/parser/`, run through the golden-file
-   runner from the testing roadmap (Step 7) with `--dump-ast`.
+   runner with `--dump-ast`. The runner is the testing roadmap's Step 7, which was deferred out of v1 on 2026-10-12 and
+   not started, so the parser roadmap builds it (Step 0f) instead of waiting for it. Until then, 1 and 2 carry the
+   tests.
 
 The end-to-end test (compile, link, run, check the exit code) belongs to the codegen roadmap's Step N, but every slice's
 example program is chosen so that it can become that test.
@@ -72,15 +74,15 @@ questions.
 
 **Step 0a: Prerequisites**
 
-- [ ] The testing roadmap is finished, including Step 8, which means diagnostics are collected in `Context` (ADR-012)
-  and the driver can stop after a stage that reported errors.
+- [x] The testing roadmap is finished for v1 (Step 7, the golden-file runner, is deferred, see Step 0f), including
+  Step 8: diagnostics are collected in `Context` (ADR-012).
+- [ ] The driver can stop after a stage that reported errors (`TODO.md`: error count, not done yet).
 - [ ] Diagnostic codes have a parser range (like the lexer's), ready to be filled in step by step.
 
 **Step 0b: The grammar (`SUBSET.md`, A.2)**
 
 - [ ] Write A.2.1 (expressions), A.2.2 (declarations), A.2.3 (statements) and A.2.4 (external definitions) as a trimmed
-  EBNF of what C~~ accepts, starting from the standard's Annex A (see [
-  `annex-a-breakdown.md`](../annex-a-breakdown.md)).
+  EBNF of what C~~ accepts, starting from the standard's Annex A (see [](annex-a-breakdown.md)).
 - [ ] Settle the open decisions below, and record each one in `SUBSET.md` or `implementation-defined.md`.
 
 Open decisions:
@@ -119,7 +121,7 @@ Open decisions:
 
 **Step 0d: AST design (ADRs)**
 
-Each of these gets an ADR in [`architecture-decisions.md`](../architecture-decisions.md):
+Each of these gets an ADR in [`architecture-decisions.md`](architecture-decisions.md):
 
 - [ ] **Node families:** separate `Expr`, `Stmt` and `Decl` types (recommended), rather than one `Node` union. Then a
   statement can't end up where an expression belongs.
@@ -147,7 +149,9 @@ Each of these gets an ADR in [`architecture-decisions.md`](../architecture-decis
 - [ ] `test_parser` executable registered with CTest.
 - [ ] A helper that parses a string, dumps the AST, and compares it to an expected string, printing both on a mismatch.
 - [ ] A helper for error tests: parse a string, check that it fails with a given diagnostic code at a given offset.
-- [ ] `tests/golden/parser/` wired into the golden-file runner, using `--dump-ast`.
+- [ ] The golden-file runner (testing roadmap, Step 7, deferred out of v1 and not started): build it here, then wire
+  `tests/golden/parser/` into it, using `--dump-ast`. This is also when the real `main` and the dump format work
+  (`TODO.md`) happen. Optional until the unit tests above are in place; slices 1 to 3 can go ahead without it.
 
 ---
 

@@ -8,6 +8,11 @@
 typedef struct Context Context; // forward declaration
 #include "Range.h"
 
+typedef struct {
+    int line;
+    int column;
+} LineColumn;
+
 typedef enum {
     DIAGNOSTIC_SEVERITY_NOTE,
     DIAGNOSTIC_SEVERITY_WARNING,
@@ -36,22 +41,28 @@ typedef struct {
     Range range; ///< the place the @c error / @c warning took place.
 } Diagnostic;
 
-void diagnostic_issue(Diagnostic report, const Context* context);
+DiagnosticSeverity diagnostic_get_severity(Diagnostic report);
 
-void diagnostic_issue_string(Diagnostic report, const Context* context, const char* message);
+const char *diagnostic_get_severity_string(Diagnostic report);
 
-void diagnostic_issue_char(Diagnostic report, const Context* context, char message);
+const char *diagnostic_get_info(Diagnostic report);
 
-void diagnostic_issue_int(Diagnostic report, const Context* context, int message);
+LineColumn diagnostic_get_line_column(Diagnostic report, const Context* context);
+
+void diagnostic_print(Diagnostic report, const Context* context);
+
+void diagnostic_print_string(Diagnostic report, const Context* context, const char* message);
+
+void diagnostic_print_char(Diagnostic report, const Context* context, char message);
+
+void diagnostic_print_int(Diagnostic report, const Context* context, int message);
 
 /**
  * @c strcmp style-ish, i.e. 0 means equals and non-0 means non-equal.
  */
 int diagnostic_compare(Diagnostic first, Diagnostic second);
-
 // list compliance:
 int diagnostic_list_compare(const void* first, const void* second);
-
 void *diagnostic_list_duplicate(const void* element);
 
 #endif //C_COMPILER_DIAGNOSTIC_H

@@ -11,20 +11,32 @@
 #include "TextView.h"
 #include "Diagnostic.h"
 
+typedef struct {
+    bool pedantic; ///< interpret every warning as an error
+} CompilationFlags;
+
+CompilationFlags compilation_flags_from_arguments(int argc, const char* const* argv);
+
+CompilationFlags compilation_flags_basic();
+
 typedef struct Context {
     List* identifiers_table;        ///< @c List of @c TextView
     List* string_literals_table;    ///< @c List of @c Text
     List* source_text_table;        ///< @c List of @c SourceText
-    List* diagnostic_report_table; ///< @c List of @c DiagnosticReport
+    List* diagnostic_report_table; ///< @c List of @c Diagnostic
+
+    CompilationFlags flags;
 } Context;
 
 /**
  * Creates a new @c Context .
  * @warning ownership of @b source is transferred to the callee.
  * @param source a @c SourceText containing the source code.
+ * @param flags the flags needed for the compilation process.
  * @return a @c Context handle
  */
-Context* context_create(SourceText* source);
+Context *context_create(SourceText* source, CompilationFlags flags);
+
 /**
  * Destroys the @c Context .
  * @param this handle to the @c Context

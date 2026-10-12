@@ -4,11 +4,28 @@
 
 #include "Context.h"
 #include "Utils.h"
+#include "Diagnostic.h"
 
 #include <assert.h>
 #include <stdlib.h>
 
-Context* context_create(SourceText* const source) {
+CompilationFlags compilation_flags_from_arguments(const int argc, const char* const* const argv) {
+    // TODO: implement argv parsing
+    return (CompilationFlags)
+    {
+        .pedantic = false
+    };
+}
+
+CompilationFlags compilation_flags_basic() {
+    // TODO: reuse 'compilation_flags_from_arguments'
+    return (CompilationFlags)
+    {
+        .pedantic = false
+    };
+}
+
+Context* context_create(SourceText * const source, const CompilationFlags flags) {
     assert(source != NULL && "Invalid source!");
 
     Context* context = utils_xmalloc(sizeof (Context));
@@ -16,7 +33,8 @@ Context* context_create(SourceText* const source) {
         .identifiers_table      = list_create(free),
         .string_literals_table  = list_create(text_list_destroy),
         .source_text_table = list_create(source_text_list_destroy),
-        .diagnostic_report_table = list_create(free)
+        .diagnostic_report_table = list_create(free),
+        .flags = flags
     };
     list_push(context->source_text_table, source);
     return context;
