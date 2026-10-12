@@ -46,8 +46,7 @@ List* list_create(void (*destroy_element)(void* element))  {
 }
 void list_destroy(List* this)  {
     assert(this != NULL && "list handle was NULL");
-    while (!list_is_empty(this))
-        list_pop_destroy(this);
+    list_clear(this);
     free(this->elements);
     free(this);
 }
@@ -59,6 +58,12 @@ bool list_is_empty(const List* this) {
     assert(this != NULL && "list handle was NULL");
     return this->size == 0;
 }
+void list_clear(List* const this) {
+    assert(this != NULL);
+    while (!list_is_empty(this))
+        list_pop_destroy(this);
+}
+
 int list_push(List* this, void* value) {
     assert(this != NULL && "list handle was NULL");
     if (list_has_met_capacity(this))
@@ -104,9 +109,9 @@ bool list_contains(const List* const this, const void* const element, bool (*equ
     return list_index_of(this, element, equals) != -1;
 }
 int list_find_or_push(
-    List * const this,
-    const void*const element,
-    bool(*equals)(const void*, const void*),
+    List* const this,
+    const void* const element,
+    bool (*equals)(const void*, const void*),
     void*(*duplicate)(const void*)) {
     assert(this != NULL && "list handle was NULL");
     assert(duplicate != NULL && "must provide a 'duplicate' function when calling 'list_find_or_push'.");
@@ -116,4 +121,22 @@ int list_find_or_push(
     if (index_of_element == -1)
         index_of_element = list_push(this, duplicate(element));
     return index_of_element;
+}
+void list_swap(List* const this, const int first_index, const int second_index) {
+    assert(list_is_index_in_bounds(this, first_index));
+    assert(list_is_index_in_bounds(this, second_index));
+    void* tmp = this->elements[first_index];
+    this->elements[first_index] = this->elements[second_index];
+    this->elements[second_index] = tmp;
+}
+
+void list_sort(List* const this, int (*compare)(const void* first, const void* second), const bool ascending) {
+    const int N = list_get_size(this);
+    for (int i = 0; i < N - 1; ++i)
+        for (int j = i + 1; j < N; ++j) {
+            const int compare_result = compare(list_at_const(this, i), list_at_const(this, j));
+            if ((ascending && compare_result > 0) ||
+                (!ascending && compare_result < 0))
+                list_swap(this, i, j);
+        }
 }

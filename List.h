@@ -31,6 +31,8 @@ int list_get_size(const List* this);
  * @return true iff the @c List has no elements in it.
  */
 bool list_is_empty(const List* this);
+void list_clear(List* this);
+
 /**
  * Adds a new element to the end of the @c List .
  * @warning ownership of @b value is transferred to the callee.
@@ -74,7 +76,6 @@ const void* list_at_const(const List* this, int index);
  * @retval -1 if not found.
  */
 int list_index_of(const List* this, const void* element, bool (*equals)(const void* first, const void* second));
-
 /**
  * @param this a handle to the @c List .
  * @param element the list member in question.
@@ -83,7 +84,6 @@ int list_index_of(const List* this, const void* element, bool (*equals)(const vo
  * @retval false otherwise.
  */
 bool list_contains(const List* this, const void* element, bool (*equals)(const void* first, const void* second));
-
 /**
  * @param this a handle to the @c List .
  * @param element the list member in question.
@@ -99,5 +99,12 @@ int list_find_or_push(
     const void* element,
     bool (*equals)(const void* first, const void* second),
     void * (*duplicate)(const void* to_duplicate));
+
+void list_swap(List* this, int first_index, int second_index);
+
+void list_sort(
+    List* this,
+    int (*compare)(const void* first, const void* second),
+    bool ascending);
 
 #endif //C_COMPILER_LIST_H
