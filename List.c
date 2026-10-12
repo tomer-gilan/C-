@@ -87,7 +87,7 @@ const void* list_at_const(const List* this, const int index) {
     assert(list_is_index_in_bounds(this, index) && "list index out of bounds");
     return this->elements[index];
 }
-int list_index_of(const List* constthis, const void* const element, bool (*equals)(const void*, const void*)) {
+int list_index_of(const List* const this, const void* const element, bool (*equals)(const void*, const void*)) {
     assert(this != NULL && "list handle was NULL");
     assert(equals != NULL && "'equals' was NULL");
     for (int i = 0; i < this->size; ++i)
@@ -95,7 +95,7 @@ int list_index_of(const List* constthis, const void* const element, bool (*equal
             return i;
     return -1;
 }
-bool list_contains(const List* constthis, const void* const element, bool (*equals)(const void*, const void*)) {
+bool list_contains(const List* const this, const void* const element, bool (*equals)(const void*, const void*)) {
     assert(this != NULL && "list handle was NULL");
     assert(equals != NULL && "'equals' was NULL");
 
