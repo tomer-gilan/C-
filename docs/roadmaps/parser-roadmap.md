@@ -40,9 +40,11 @@ stay identical across all three.
 | 11 | Pointers: `*` and `&`                                     | `int *p = &x; *p = 3;`                 |
 | 12 | Arrays and indexing                                       | `int a[3]; a[1] = 5;`                  |
 | 13 | `char`, character constants, string literals              | `char *s = "hi"; return s[1];`         |
+| 14 | `sizeof` (expression form)                                | `int a[3]; return sizeof a;`           |
 
-Everything comes from [`SUBSET.md`](SUBSET.md). If a slice seems to need something that isn't in it (`for`, `sizeof`,
-`++`, `?:`, `+=`), it's out of scope until `SUBSET.md` says otherwise.
+Everything comes from [`SUBSET.md`](../specifications/SUBSET.md). If a slice seems to need something that isn't in it (`for`,
+`sizeof(int)`, casts, `++`, `?:`, `+=`), it's out of scope until `SUBSET.md` says otherwise. Its "v2 candidates" list
+holds what's planned after v1.
 
 ---
 
@@ -76,39 +78,39 @@ questions.
 
 - [x] The testing roadmap is finished for v1 (Step 7, the golden-file runner, is deferred, see Step 0f), including
   Step 8: diagnostics are collected in `Context` (ADR-012).
-- [ ] The driver can stop after a stage that reported errors (`TODO.md`: error count, not done yet).
-- [ ] Diagnostic codes have a parser range (like the lexer's), ready to be filled in step by step.
+- [x] The driver can stop after a stage that reported errors (`TODO.md`: error count, not done yet).
+- Parser diagnostic codes are added as each step needs them, starting in Step 1 (no upfront range).
 
 **Step 0b: The grammar (`SUBSET.md`, A.2)**
 
-- [ ] Write A.2.1 (expressions), A.2.2 (declarations), A.2.3 (statements) and A.2.4 (external definitions) as a trimmed
-  EBNF of what C~~ accepts, starting from the standard's Annex A (see [](annex-a-breakdown.md)).
-- [ ] Settle the open decisions below, and record each one in `SUBSET.md` or `implementation-defined.md`.
+- [x] Write A.2.1 (expressions), A.2.2 (declarations), A.2.3 (statements) and A.2.4 (external definitions) as a trimmed
+  EBNF of what C~~ accepts, starting from the standard's Annex A (see [`annex-a-breakdown.md`](../specifications/annex-a-breakdown.md)).
+- [x] Settle the open decisions below, and record each one in `SUBSET.md` or `implementation-defined.md` (2026-10-13).
 
-Open decisions:
+Decisions (2026-10-13; the details are in `SUBSET.md` A.2):
 
-- **Comma operator.** Recommended: out, so `,` only separates arguments, parameters and declarators.
-- **Multiple declarators** (`int a, b;`): in or out? (If in: `int *p, q;` makes `q` an `int`, not a pointer.)
-- **Initializers:** on locals and globals, yes or no? Array initializers `{1, 2}`: recommended out, so `{` `}` only
-  delimit blocks.
-- **Parenthesized declarators** (`int (*p)[3]`, function pointers): recommended out. A declarator is then just `*`s, a
-  name, then `[N]` or `(params)`, and C's inside-out declarator reading is never needed.
-- **`()` vs `(void)`.** In C11, `int f()` declares a function *without a prototype*, not a function with no parameters.
-  Reject `()`, or treat it as `(void)`. Either way, document it.
-- **Declarations in blocks:** anywhere (C99) or only at the start (C89). Recommended: anywhere. It costs the parser
-  nothing.
-- **`--x` and `a--b`.** C~~ has no `--` token, so the lexer splits `--x` into `- -x`, which means double negation. In
-  real C, `--x` is a decrement. A C~~ program that compiles and means something different in C breaks the "C~~ is a
-  subset of C" promise. Decide: reject `- -` written without a space, or document the divergence.
-- **`-2147483648`.** The constant `2147483648` doesn't fit in `int`, and there's no `long`, so `INT_MIN` can't be
-  written as a literal. Document it in `implementation-defined.md` (the usual workaround is `-2147483647 - 1`).
-- **Calling libc.** There's no preprocessor (so no `#include`) and no `...` punctuator (so no variadic prototypes like
-  `printf`'s). Programs declare what they call by hand, e.g. `int putchar(int c);`. Decide whether that's the intended
-  way to do output.
+- **Comma operator:** out. `,` only separates arguments, parameters and declarators.
+- **Multiple declarators** (`int a, b;`): in. `int *p, q;` makes `q` an `int`.
+- **Initializers:** locals take any expression. Globals take only an integer or character constant (optionally with one
+  leading `-`) or a string literal. Brace initializers are out, so `{` `}` only delimit blocks.
+- **Parenthesized declarators** (`int (*p)[3]`, function pointers): out.
+- **`()` vs `(void)`:** `()` means `(void)` (C23's rule), recorded in `implementation-defined.md`.
+- **Unnamed parameters:** allowed in prototypes, required in definitions.
+- **Declarations in blocks:** anywhere (C99), but never as an `if`/`while` body.
+- **`--x` and `a--b`:** rejected. Two `-` (or two `+`) tokens whose ranges touch are a syntax error; `- -x` is fine.
+- **`-2147483648`:** already documented in `implementation-defined.md` (write `-2147483647 - 1`).
+- **Arrays:** multi-dimensional arrays are in. A size is a single integer-constant token, so nothing needs constant
+  folding.
+- **`sizeof`:** in, expression form only (`sizeof x`), type `int`. It needs a new lexer keyword (slice 14).
+- **Calling libc:** in, through hand-written non-variadic prototypes (`int putchar(int c);`, `void *malloc(int size);`),
+  linked against libc. No `printf` until v2's `...`.
+- **`break`, `continue`, `for`, `do`-`while`:** not in v1.
+- **v2 candidates** (optional): `sizeof(type)`, casts, constant folding (constant global initializers and array
+  sizes), brace initializers, `...` in prototypes, prefix and postfix `++`/`--`.
 
 **Step 0c: Study**
 
-- [ ] *Crafting Interpreters*, ch. 5–6 (representing code, parsing expressions) and ch. 8–9 (statements): recursive
+- [x] *Crafting Interpreters*, ch. 5–6 (representing code, parsing expressions) and ch. 8–9 (statements): recursive
   descent from scratch.
 - [ ] One expression technique: Eli Bendersky, "Parsing expressions by precedence climbing" (recommended: one loop plus
   a precedence table, instead of one function per level), or Bob Nystrom, "Pratt Parsers: Expression Parsing Made Easy".
@@ -121,7 +123,7 @@ Open decisions:
 
 **Step 0d: AST design (ADRs)**
 
-Each of these gets an ADR in [`architecture-decisions.md`](architecture-decisions.md):
+Each of these gets an ADR in [`architecture-decisions.md`](../specifications/architecture-decisions.md):
 
 - [ ] **Node families:** separate `Expr`, `Stmt` and `Decl` types (recommended), rather than one `Node` union. Then a
   statement can't end up where an expression belongs.
@@ -155,7 +157,7 @@ Each of these gets an ADR in [`architecture-decisions.md`](architecture-decision
 
 ---
 
-## Steps 1–13: one per slice
+## Steps 1–14: one per slice
 
 Each step lists what's parsed, the AST it adds, the tests, and the gotchas.
 
@@ -177,7 +179,8 @@ Each step lists what's parsed, the AST it adds, the tests, and the gotchas.
 - [ ] AST: unary node.
 - [ ] Tests: `-2`, `~-2`, `!!1`, `-(-(2))`, `(((2)))`.
 - [ ] Error tests: `()`, `(2`, `-` followed by `;`.
-- Gotchas: `--2` (see Step 0b's `--x` decision). Parentheses produce no node, but the inner node's range is the *inner*
+- [ ] Error tests: `--2` and `++2` (touching same signs). `- -2`, `-(-2)` and `-+2` are fine.
+- Gotchas: the `--` check needs ranges, not just token kinds, since the lexer drops whitespace. Parentheses produce no node, but the inner node's range is the *inner*
   expression's, so decide whether that's fine for diagnostics.
 
 **Step 3: Arithmetic**
@@ -207,12 +210,12 @@ Each step lists what's parsed, the AST it adds, the tests, and the gotchas.
 
 **Step 6: Local variables, assignment, expression statements**
 
-- [ ] Declarations `int x;` and `int x = <expr>;` (plus multiple declarators if Step 0b allowed them), identifiers as
+- [ ] Declarations `int x;`, `int x = <expr>;` and multiple declarators `int a, b = 1;`, identifiers as
   primary expressions, `=` (right-associative, lowest precedence), expression statements, and the null statement `;`.
 - [ ] AST: variable declaration, identifier, assignment, expression statement.
-- [ ] Tests: `a = b = 1` → `(= a (= b 1))`; `x = 1 + 2`; declaration vs. expression statement chosen by the first token
+- [ ] Tests: `a = b = 1` → `(= a (= b 1))`; `x = 1 + 2`; `int a, b = 2, c;`; declaration vs. expression statement chosen by the first token
   (`int`/`char`/`void` → declaration).
-- [ ] Error tests: `int ;`, `int 1x;`, `int x = ;`, `x = ;`.
+- [ ] Error tests: `int ;`, `int 1x;`, `int x = ;`, `x = ;`, `int a, ;`, `int a b;`.
 - Gotchas: parse the left side of `=` as an ordinary expression and leave the lvalue check (`1 = x`) to sema. Scope
   starts right after the declarator (`int x = x;` refers to the new `x`), but that's sema's business too.
 
@@ -234,23 +237,25 @@ Each step lists what's parsed, the AST it adds, the tests, and the gotchas.
 
 **Step 9: Functions**
 
-- [ ] General function definitions and prototypes, parameter lists (`(void)` and named or unnamed parameters, per Step
-  0b), the `void` return type, `return;`, and calls `f(a, b)` as a postfix expression.
+- [ ] General function definitions and prototypes, parameter lists (`(void)`, `()` meaning `(void)`, and parameters
+  whose names are optional in prototypes), the `void` return type, `return;`, and calls `f(a, b)` as a postfix expression.
 - [ ] AST: parameter list, call node.
 - [ ] Tests: several functions in one file, prototype then definition, calls with zero, one and many arguments, a call
   inside an argument (`f(g(1), 2)`), `f(1)(2)` (grammatically valid, sema rejects it).
 - [ ] Error tests: `int f(int a,) {}`, `f(1,)`, a definition inside a function (no nested functions in C).
-- Gotchas: in a call, the `,` separates arguments; it's not the comma operator. The `()` vs `(void)` decision from Step
-  0b takes effect here.
+- Gotchas: in a call, the `,` separates arguments; it's not the comma operator. A missing parameter name in a
+  *definition* is easiest to report in sema (the parser doesn't know yet whether a `{` follows when it parses the
+  parameters). `int f(), g;` is legal with multiple declarators.
 
 **Step 10: Global variables**
 
 - [ ] Top-level variable declarations next to functions.
-- [ ] Tests: globals before and after functions, a global with an initializer (if allowed).
+- [ ] Tests: globals before and after functions, globals with initializers (`int g = -1;`, `char *s = "hi";`).
 - [ ] Error tests: `int x` at EOF, `int = 1;`.
 - Gotchas: at the top level, `int f` can start a variable, a prototype, or a definition, so parse the declarator first
   and then decide by the next token (`;`, `=`, `{`). `int x; int x;` is legal C (tentative definitions), and checking
-  that is sema's job.
+  that is sema's job. The parser can accept any expression as a global's initializer and leave the "constant or string
+  literal only" rule to sema, which gives a better diagnostic than a syntax error.
 
 **Step 11: Pointers**
 
@@ -262,11 +267,12 @@ Each step lists what's parsed, the AST it adds, the tests, and the gotchas.
 
 **Step 12: Arrays**
 
-- [ ] Array declarators with a constant size (`int a[3]`, `int *a[3]`), and postfix indexing `a[i]`.
-- [ ] Tests: `a[1] = 5`, `a[i][j]` (if multi-dimensional arrays are in), `*p[1]` → `(* ([] p 1))` (postfix binds tighter
+- [ ] Array declarators with a size that is one integer-constant token (`int a[3]`, `int *a[3]`, `int a[2][3]`), and
+  postfix indexing `a[i]`.
+- [ ] Tests: `a[1] = 5`, `a[i][j]`, `*p[1]` → `(* ([] p 1))` (postfix binds tighter
   than unary), `int *a[3]` is an array of pointers.
-- [ ] Error tests: `int a[];` (if unsized arrays are out), `int a[x];` (VLAs are out; that may be a sema check if sizes
-  are parsed as expressions), `a[1`.
+- [ ] Error tests: `int a[];`, `int a[x];`, `int a[2 + 1];` (all syntax errors, since a size is one token), `int f(int
+  a[]);`, `a[1`. `int a[0];` parses, and sema rejects it.
 - Gotcha: `a[i]` is defined as `*(a + i)`, so `i[a]` is legal C. Decide whether the AST keeps an index node
   (recommended, for diagnostics) or lowers it to `*` and `+` right away.
 
@@ -278,6 +284,16 @@ Each step lists what's parsed, the AST it adds, the tests, and the gotchas.
 - [ ] Error tests: `"a" "b"` (adjacent string literal concatenation is out, per `TODO.md`).
 - Gotcha: the dump should show string literals by their interned id or escaped contents, never by raw bytes (a `\0` or
   `\n` would break the one-line format).
+
+**Step 14: `sizeof`**
+
+- [ ] Prerequisite (lexer, Tomer's): `sizeof` keyword token.
+- [ ] `sizeof` *unary-expression*, at the same level as the other prefix operators.
+- [ ] AST: unary node (or a separate `sizeof` node: sema treats it very differently, since the operand isn't evaluated).
+- [ ] Tests: `sizeof x`, `sizeof *p`, `sizeof a[0]`, `sizeof (x)`, `sizeof -x`, `sizeof x + 1` → `(+ (sizeof x) 1)`,
+  `sizeof sizeof x`.
+- [ ] Error tests: `sizeof(int)`, `sizeof(char *)` (v2), `sizeof;`.
+- Gotcha: `sizeof (x)` is legal: `(x)` is a primary expression. Only a type keyword after the `(` makes it the v2 form.
 
 ---
 

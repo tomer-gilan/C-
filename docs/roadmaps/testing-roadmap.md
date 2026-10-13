@@ -1,7 +1,7 @@
 # Testing Roadmap
 
 The step-by-step plan for building the C~~ test suite. The background, structure and decisions behind it are
-in [](testing.md).
+in [](../todo/testing.md).
 
 Built step by step. Each step ends in a state that works and can be committed.
 
@@ -53,7 +53,7 @@ tests, not all at once through `main`.
 
 **Step 6: Sanitizer build**
 
-- [x] ASan + UBSan build configuration (`-DENABLE_SANITIZERS=ON`, see [`../testing.md`](testing.md), "Sanitizer and
+- [x] ASan + UBSan build configuration (`-DENABLE_SANITIZERS=ON`, see [`../testing.md`](../todo/testing.md), "Sanitizer and
   coverage builds"); the whole suite runs under it.
 - [x] The sanitizers are on by default in Debug builds (`ENABLE_SANITIZERS` defaults to ON when `CMAKE_BUILD_TYPE` is
   Debug), so the normal "All CTest" run, and with it the commit check, is sanitized. The Debug profile's cache now says

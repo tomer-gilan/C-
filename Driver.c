@@ -3,13 +3,11 @@
 //
 
 #include "Driver.h"
-
-#include <stdio.h>
-
 #include "Context.h"
 #include "Lexer.h"
 #include "Utils.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 Driver* driver_create(const int argc, const char* const* argv) {
@@ -35,15 +33,25 @@ void driver_destroy(Driver* this) {
     context_destroy(this->context);
     free(this);
 }
-List* driver_compile(Driver* const this, const int source_text_index) {
+static bool driver_encountered_errors(const Driver* const this) {
+    const DiagnosticCount count = driver_get_diagnostic_count(this);
+    return count.error_count > 0;
+}
+void driver_compile(Driver* const this, const int source_text_index) {
+    bool continue_pipeline = true;
     driver_preprocess_source_text(this, source_text_index);
 
     Lexer* lexer = lexer_create(this->context, source_text_index);
-
     List* const tokens = lexer_lex_source_text(lexer);
-    lexer_destroy(lexer);
 
-    return tokens;
+    if (driver_encountered_errors(this))
+        continue_pipeline = false;
+    driver_issue_diagnostics(this);
+
+    // next pipeline stages (parser, semantic, code gen, ...)
+
+    list_destroy(tokens);
+    lexer_destroy(lexer);
 }
 DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
     DiagnosticCount report_count = {.error_count = 0, .warning_count = 0};
@@ -78,15 +86,13 @@ void driver_issue_diagnostics(Driver* const this) {
     list_sort(diagnostic_report_table, diagnostic_list_compare, true);
 
     const int N = list_get_size(diagnostic_report_table);
-    for (int i = 0; i < N; ++i) {
-        const Diagnostic* diagnostic = list_at_const(diagnostic_report_table, i);
-        diagnostic_print(*diagnostic, this->context);
-    }
+    for (int i = 0; i < N; ++i)
+        diagnostic_print(*(Diagnostic*)list_at_const(diagnostic_report_table, i), this->context);
 
     list_clear(diagnostic_report_table);
 }
 
-void driver_preprocess_source_text(Driver* this, const int source_text_index) {
+void driver_preprocess_source_text(Driver* const this, const int source_text_index) {
     SourceText* const source_text = context_source_text_at(this->context, source_text_index);
     Text* const processed = text_create_empty();
 

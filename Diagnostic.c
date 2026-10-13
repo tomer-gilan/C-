@@ -118,7 +118,9 @@ void diagnostic_print(const Diagnostic report, const Context* const context) {
             report.line_column.column,
             diagnostic_get_severity_string(report),
             diagnostic_get_info(report));
+    printf("|");
     diagnostic_print_source_text_row(report, context);
+    printf("|");
     diagnostic_print_marker(report);
     printf("\n");
 }
