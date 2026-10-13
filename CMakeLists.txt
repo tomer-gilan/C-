@@ -39,39 +39,43 @@ if (ENABLE_COVERAGE)
     target_link_options(c_compiler_instrumentation INTERFACE --coverage)
 endif ()
 
-# Everything except main.c, so test executables can link it with their own main.
+# Everything except src/main.c, so test executables can link it with their own main.
 add_library(c_compiler_core STATIC
-        Lexer.c
-        Lexer.h
-        Diagnostic.c
-        Diagnostic.h
-        List.c
-        List.h
-        Utils.c
-        Utils.h
-        Token.c
-        Token.h
-        FilePosition.c
-        FilePosition.h
-        SourceText.c
-        SourceText.h
-        Context.c
-        Context.h
-        Driver.c
-        Driver.h
-        Range.c
-        Range.h
-        Text.c
-        Text.h
-        TextView.c
-        TextView.h)
+        src/lexer/Lexer.c
+        src/lexer/Lexer.h
+        src/lexer/Token.c
+        src/lexer/Token.h
+        src/Diagnostic.c
+        src/Diagnostic.h
+        src/List.c
+        src/List.h
+        src/Utils.c
+        src/Utils.h
+        src/FilePosition.c
+        src/FilePosition.h
+        src/SourceText.c
+        src/SourceText.h
+        src/Context.c
+        src/Context.h
+        src/Driver.c
+        src/Driver.h
+        src/Range.c
+        src/Range.h
+        src/Text.c
+        src/Text.h
+        src/TextView.c
+        src/TextView.h)
 # -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
 # only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
 # never hide the system one from #include <x.h>. Propagates to every target that links the library.
-target_compile_options(c_compiler_core PUBLIC "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}")
+# One directory per stage, so a header is included by its bare name ("Lexer.h") from anywhere, tests included.
+target_compile_options(c_compiler_core PUBLIC
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/lexer"
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/parser")
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings PUBLIC c_compiler_instrumentation)
 
-add_executable(c_compiler main.c)
+add_executable(c_compiler src/main.c)
 target_link_libraries(c_compiler PRIVATE c_compiler_core c_compiler_warnings)
 
 # -------- Tests -------- #
@@ -112,7 +116,7 @@ if (UNIX AND NOT ENABLE_COVERAGE)
     # The report, on demand (report only, never fails): cmake --build <build dir> --target coverage
     add_custom_target(coverage
             COMMAND ${CMAKE_COMMAND} -E env BUILD_DIR=${CMAKE_BINARY_DIR}/coverage-build
-            sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh Lexer.c
+            sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh src/lexer/Lexer.c
             USES_TERMINAL VERBATIM)
 
     # The gate, for CI: the CTest test `coverage` fails if a line of Lexer.c never ran. Off by default, because it is
@@ -121,7 +125,7 @@ if (UNIX AND NOT ENABLE_COVERAGE)
     if (ENABLE_COVERAGE_CHECK)
         add_test(NAME coverage
                 COMMAND ${CMAKE_COMMAND} -E env BUILD_DIR=${CMAKE_BINARY_DIR}/coverage-build
-                sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh --fail-on-uncovered-lines Lexer.c)
+                sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh --fail-on-uncovered-lines src/lexer/Lexer.c)
         set_tests_properties(coverage PROPERTIES TIMEOUT 300)
     endif ()
 endif ()
