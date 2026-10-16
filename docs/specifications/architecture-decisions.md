@@ -203,7 +203,7 @@ Decoded string literals are stored and interned as **(bytes, length)** pairs and
 
 ## ADR-011: Error policy: asserts for compiler bugs, diagnostics for user errors
 
-- **Status:** Accepted
+- **Status:** Accepted. Narrowed for the parser by ADR-020 (stop at the first syntax error in v1).
 - **Date:** 2026-09-30 (recorded; stated in `Lexer.c`'s "general note" and in the lexer code review)
 
 ### Context
@@ -281,3 +281,144 @@ Keep the one-character-at-a-time munch, and treat "the punctuator set is prefix-
   - A missing **longer** prefix (e.g. standard C's `...` without `..`) produces **wrong tokens**: `...` lexes as three `.` tokens.
 - So any change to the punctuator set in `SUBSET.md` or `Token.h` must re-check this invariant, or change the munching algorithm.
 - Possible guards, when wanted: a unit test that checks every prefix of every punctuator spelling is in the table, and/or an assert that every non-EOF token has length > 0 (a progress guarantee that covers every lexing path). See `reviews/2026-09-30-code-review.md`, M5.
+
+---
+
+## ADR-015: The AST has one node type per family, each a tagged union
+
+- **Status:** Accepted, implemented in slice 1
+- **Date:** 2026-10-16 (recorded; decided in parser roadmap Step 0d)
+
+### Context
+An AST can use a single `Node` type with one big union for every construct, or a separate type per grammatical family.
+With a single type, nothing stops a statement from ending up where an expression belongs.
+
+### Decision
+One type per family: `ExpressionNode`, `StatementNode`, `ExternalDefinitionNode`, and later a declaration node. Each is
+a tagged union: a `kind` enum (`EXPRESSION_KIND_*`, ...) plus an `as` union with one member per kind. A place that can
+hold more than one family gets its own small tagged wrapper, like `BlockItem` (a statement or, from slice 6, a
+declaration).
+
+### Consequences
+- The compiler checks that a child belongs to the right family: a `ReturnStatement` holds an `ExpressionNode*`, and
+  nothing else fits.
+- Every switch over a `kind` has to handle each kind, and a new kind shows up as a `-Wswitch` warning wherever it's
+  missing.
+- Code that walks every node (the AST dump, later sema) needs one function per family, not one generic visitor.
+
+---
+
+## ADR-016: Every AST node carries a `Range` spanning the whole construct
+
+- **Status:** Accepted, implemented in slice 1
+- **Date:** 2026-10-16
+
+### Context
+Sema and later stages report errors at nodes (an undeclared identifier, a non-lvalue on the left of `=`), so nodes need
+source positions, just like tokens (ADR-008). The question is how much of the source a node covers.
+
+### Decision
+Every node has a `Range` from its first token to its last, **punctuation included**: `return 2;` includes the `;`, a
+compound statement goes from `{` to `}`, and a function definition from `int` to the closing `}`. A binary node spans
+from its left operand's start to its right operand's end. A node's range is built with `range_union` over its tokens
+and children.
+
+### Consequences
+- A diagnostic about a node can underline exactly the code the user wrote.
+- Parse functions have to keep the tokens they consume (`(`, `;`, `}`), not only the children, to compute the range.
+- Tests that check ranges by hand-counted offsets are fragile. Keep them in a few dedicated tests once the AST dump
+  exists (parser roadmap Step 0e).
+
+---
+
+## ADR-017: AST nodes live in `Context`'s arena; sequences are `next` pointers
+
+- **Status:** Accepted, implemented in slice 1
+- **Date:** 2026-10-16
+
+### Context
+The AST is built once, read by every later stage, and thrown away all at once at the end. Freeing it node by node
+would need a destroy function per node kind, kept in sync with every new kind.
+
+### Decision
+- Every node is allocated from the **arena owned by `Context`** (ADR-007), and the whole AST is freed only by
+  `context_destroy`. There's no per-node free.
+- Sequences in the AST (a translation unit's definitions, a block's items) are **intrusive `next` pointers**, never a
+  `List`.
+- Nodes copy what they need from tokens (`Range`, interned id, constant value) and never point at a `Token`.
+
+### Consequences
+- The AST outlives the `Parser` and the token list: the driver can destroy both right after parsing.
+- Nothing in the AST needs a destroy call, so a half-built AST after a syntax error leaks nothing.
+- Every pointer into the AST becomes invalid when `Context` is destroyed. Nothing may keep one past that.
+- Walking a sequence is a `for (x = head; x != NULL; x = x->next)` loop. There's no indexing and no size: count by
+  walking.
+
+---
+
+## ADR-018: AST nodes name things by their interned identifier id
+
+- **Status:** Accepted, implemented in slice 1
+- **Date:** 2026-10-16
+
+### Context
+The lexer already interns every identifier in `Context`'s identifier table, and an identifier token carries its id.
+Nodes could store that id, or the spelling (a `TextView` into the source).
+
+### Decision
+Nodes store the **interned `int` id** (e.g. `name_identifier_id`), never a string or a `TextView`.
+
+### Consequences
+- Two names are equal exactly when their ids are equal: comparing them is `==`, with no string comparison.
+- Sema's symbol table can key on the id.
+- Printing a name (diagnostics, the AST dump) goes through `Context`'s identifier table.
+
+---
+
+## ADR-019: The parser builds `Type`s for declarations
+
+- **Status:** Accepted, to be implemented in slice 6 (slice 1 only has the `int` keyword)
+- **Date:** 2026-10-16
+
+### Context
+Declarations carry types, some of them nested (`int *a[3]`: array of 3 pointers to `int`). The parser can build a
+`Type` while it parses the declarator, or store the declarator syntax as written and leave the interpretation to sema.
+C~~ has no `typedef` (`SUBSET.md`), so the syntax alone always determines the type.
+
+### Decision
+The parser builds `Type`s directly. There's one `Type` representation (`int`, `char`, `void`, pointer-to, array-of,
+function), allocated from `Context`'s arena (ADR-017), and declaration nodes point at their `Type`.
+
+### Consequences
+- There are no declarator nodes in the AST, and only the parser has to understand declarator syntax.
+- Sema works on `Type`s only: type checking, sizes and compatibility never look at syntax.
+- The `Type` representation is needed in slice 6, before sema exists, so it's designed in the parser roadmap.
+
+---
+
+## ADR-020: The parser stops at the first syntax error (v1)
+
+- **Status:** Accepted, implemented in slice 1. Narrows ADR-011's "processing continues" for the parser.
+- **Date:** 2026-10-16
+
+### Context
+ADR-011 says errors in the user's source become diagnostics and processing continues. For a parser, continuing means
+error recovery: after an error, skip tokens up to a synchronization point and resume ("panic mode"). That brings
+half-built nodes and cascades of follow-up errors, which is about as much work as the parser itself.
+
+### Decision
+- In v1 the parser **stops at the first syntax error.** It reports one diagnostic and sets its error flag
+  (`parser_set_error`). Once the flag is set, nothing else is parsed.
+- **Failure contract:** a parse function that fails returns `NULL`, and its caller checks for that before using the
+  result or calling the next parse function. A parse function's asserted preconditions (ADR-011) only hold on the
+  no-error path, so the caller checks before it calls.
+- **Panic mode is a possible later addition**, not part of v1. When it comes, the synchronization points are: in a
+  block, the next `;`, or a `}` at the current brace depth; at top level, the next `int` at brace depth 0.
+
+### Consequences
+- One run reports at most one syntax error.
+- A crash on bad input is still a compiler bug (ADR-011). With this contract it's usually a caller that didn't check
+  for `NULL`, or that called a function whose precondition no longer holds.
+- Error tests check the **first** diagnostic's code and position, not that there's exactly one, so they keep passing
+  if panic mode is added.
+- The driver doesn't run later stages after a parser error (ADR-012).

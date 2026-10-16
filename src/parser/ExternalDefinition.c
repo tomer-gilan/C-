@@ -13,8 +13,6 @@ static ExternalDefinitionNode* external_function_definition_parse(Parser* parser
     if (parser_has_error(parser))
         return NULL;
 
-    assert(parser_peek(parser)->kind == TOKEN_PARENTHESES_LEFT);
-
     const Token* const token_pare_left = parser_expect(parser,TOKEN_PARENTHESES_LEFT);
     const Token* const token_void =parser_expect(parser, TOKEN_KW_VOID);
     const Token* const token_pare_right =parser_expect(parser,TOKEN_PARENTHESES_RIGHT);
@@ -42,8 +40,6 @@ static ExternalDefinitionNode* external_function_definition_parse(Parser* parser
 static ExternalDefinitionNode* external_definition_node_parse(Parser* parser) {
     if (parser_has_error(parser))
         return NULL;
-
-    assert(parser_peek(parser)->kind == TOKEN_KW_INT);
 
     const Token* const type_specifier = parser_expect(parser, TOKEN_KW_INT);
     const Token* const identifier = parser_expect(parser, TOKEN_IDENT);

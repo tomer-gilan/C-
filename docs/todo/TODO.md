@@ -64,6 +64,16 @@ scope from the 2026-10-13 quiz (A.2), except for the EBNF:
 - [ ] Fill in the **A.2 Phrase structure grammar** EBNF (the scope is written; the grammar isn't): A.2.1 Expressions, A.2.2 Declarations, A.2.3 Statements, A.2.4 External definitions. Write each as a trimmed-down (E)BNF of what C~~ accepts (see `annex-a-breakdown.md`). This is the parser's spec, so it has to exist before the parser does.
 - [x] Record pointer − pointer as unsupported (only pointer ± int; see `implementation-defined.md`).
 
+## Parser
+
+- [ ] **Driver integration.** The driver lexes the file, stops if the lexer reported errors (ADR-012), then creates a
+  `Parser` on the token list, calls `parser_parse`, and stops if the parser's error flag is set. The `Parser` and the
+  token list are destroyed after parsing; the AST lives in `Context`'s arena. Related: the "Real `main`" item under
+  "Other".
+- [ ] **AST dump, ELI15.** Before designing the dump format (parser roadmap Step 0e), get a from-scratch explanation:
+  what an AST dump is, why tests compare dump strings instead of node fields, and what the format options look like
+  (S-expressions like `(+ 1 (* 2 3))` vs. indented trees, and what to print for ranges and ids).
+
 ## Docs
 
 - [ ] Fix `overview.md`: it's still pre-decision generic advice. Record the actual answers to §2 and §6 (implementation language, host, preprocessor, backend, self-hosting); they're now in ADR-001 and ADR-004 to ADR-006, so link to those, and replace §4 ("minimal subset") with a pointer to `SUBSET.md`, which it currently contradicts (e.g. bitwise operators).

@@ -1,10 +1,11 @@
 //
 // Written by Claude on 16-Oct-26.
 //
-// Parser tests for slice 1, valid input only: expressions, statements, function definitions, the translation unit, and
-// whole programs through parser_parse. Each test lexes a source string, calls one parse function and checks the nodes
-// it returns, the parser's error flag (parser_has_error), and the next token (what the parse function left
-// unconsumed). Expected values come from SUBSET.md, not from the parser's output.
+// Parser tests for slice 1: expressions, statements, function definitions, the translation unit, whole programs
+// through parser_parse, and inputs that must be rejected. Each valid-input test lexes a source string, calls one parse
+// function and checks the nodes it returns, the parser's error flag (parser_has_error), and the next token (what the
+// parse function left unconsumed). Each error test checks that parser_parse returns NULL and sets the error flag.
+// Expected values come from SUBSET.md, not from the parser's output.
 //
 
 #include <string.h>
@@ -426,6 +427,61 @@ static void test_parser_parse_whole_program(void) {
     parse_fixture_destroy(fixture);
 }
 
+// ---------------- Errors (parser_parse) ---------------- //
+// The parser stops at the first syntax error (ADR-020): parser_parse returns NULL and the error flag is set. Parser
+// diagnostics don't exist yet; once they do, these tests also check the first diagnostic's code and position.
+
+/** Checks that parsing @b source as a whole program fails: @c NULL result and the error flag set. */
+static void check_parse_fails(const char* const source) {
+    const ParseFixture fixture = parse_fixture_create(source);
+
+    CHECK(parser_parse(fixture.parser) == NULL);
+    CHECK(parser_has_error(fixture.parser));
+
+    parse_fixture_destroy(fixture);
+}
+
+/** "": SUBSET.md A.2.4: a translation unit has at least one external definition. */
+static void test_parser_error_empty_file(void) {
+    check_parse_fails("");
+}
+/** "   ": whitespace only is an empty translation unit too. */
+static void test_parser_error_whitespace_only(void) {
+    check_parse_fails("   ");
+}
+/** "int main(void) { return 42 }": the ';' after the return expression is missing. */
+static void test_parser_error_missing_semicolon(void) {
+    check_parse_fails("int main(void) { return 42 }");
+}
+/** "int main(void) { return 2;": the closing '}' is missing; EOF comes first. */
+static void test_parser_error_missing_right_brace(void) {
+    check_parse_fails("int main(void) { return 2;");
+}
+/** "int (void) { return 2; }": the function has no name. */
+static void test_parser_error_missing_function_name(void) {
+    check_parse_fails("int (void) { return 2; }");
+}
+/** "int main(void) return 2;": the body isn't a block. */
+static void test_parser_error_missing_left_brace(void) {
+    check_parse_fails("int main(void) return 2;");
+}
+/** "int main(void": EOF in the middle of the parameter list. */
+static void test_parser_error_eof_in_parameter_list(void) {
+    check_parse_fails("int main(void");
+}
+/** "int main(int) { return 2; }": parameters come in slice 9, and an unnamed one stays an error in a definition. */
+static void test_parser_error_unnamed_parameter(void) {
+    check_parse_fails("int main(int) { return 2; }");
+}
+/** "int main(void) { return 2; } }": a stray '}' after the last definition. */
+static void test_parser_error_stray_right_brace(void) {
+    check_parse_fails("int main(void) { return 2; } }");
+}
+/** "int main(void) { return 2; } 5": a token that can't start an external definition. */
+static void test_parser_error_trailing_token(void) {
+    check_parse_fails("int main(void) { return 2; } 5");
+}
+
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
 
@@ -447,6 +503,17 @@ int main(const int argc, char** const argv) {
 
     RUN_TEST(test_parser_parse_slice_1_program);
     RUN_TEST(test_parser_parse_whole_program);
+
+    RUN_TEST(test_parser_error_empty_file);
+    RUN_TEST(test_parser_error_whitespace_only);
+    RUN_TEST(test_parser_error_missing_semicolon);
+    RUN_TEST(test_parser_error_missing_right_brace);
+    RUN_TEST(test_parser_error_missing_function_name);
+    RUN_TEST(test_parser_error_missing_left_brace);
+    RUN_TEST(test_parser_error_eof_in_parameter_list);
+    RUN_TEST(test_parser_error_unnamed_parameter);
+    RUN_TEST(test_parser_error_stray_right_brace);
+    RUN_TEST(test_parser_error_trailing_token);
 
     return harness_finish();
 }

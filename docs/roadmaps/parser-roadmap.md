@@ -126,17 +126,19 @@ Decisions (2026-10-13; the details are in `SUBSET.md` A.2):
 Each of these gets an ADR in [`architecture-decisions.md`](../specifications/architecture-decisions.md):
 
 - [x] **Node families:** separate `Expr`, `Stmt` and `Decl` types (recommended), rather than one `Node` union. Then a
-  statement can't end up where an expression belongs.
-- [ ] **Ranges:** every node carries a `Range` (ADR-008), spanning the whole construct. A binary node spans from its
-  left operand's start to its right operand's end. Sema diagnostics will point at nodes.
-- [ ] **Ownership:** an arena owned by `Context` (ADR-007), freed once (recommended), versus a destroy function per node
-  kind.
-- [ ] **Types:** declarations carry types (`int *a[3]`), so a `Type` representation (`int`, `char`, `void`, pointer-to,
+  statement can't end up where an expression belongs. *(ADR-015)*
+- [x] **Ranges:** every node carries a `Range` (ADR-008), spanning the whole construct. A binary node spans from its
+  left operand's start to its right operand's end. Sema diagnostics will point at nodes. *(ADR-016: punctuation
+  included)*
+- [x] **Ownership:** an arena owned by `Context` (ADR-007), freed once (recommended), versus a destroy function per node
+  kind. *(ADR-017: arena, sequences as `next` pointers)*
+- [x] **Types:** declarations carry types (`int *a[3]`), so a `Type` representation (`int`, `char`, `void`, pointer-to,
   array-of, function) is needed now. Decide whether the parser builds `Type`s directly (recommended, since there's no
-  `typedef`) or stores raw declarator syntax for sema to interpret.
-- [ ] **Identifiers:** nodes hold the interned id from the lexer, not strings.
-- [ ] **Error policy:** stop at the first syntax error (recommended for v1), or report it and resynchronize at `;` / `}`
-  (panic mode). The error tests in every step depend on this.
+  `typedef`) or stores raw declarator syntax for sema to interpret. *(ADR-019: the parser builds them, from slice 6)*
+- [x] **Identifiers:** nodes hold the interned id from the lexer, not strings. *(ADR-018)*
+- [x] **Error policy:** stop at the first syntax error (recommended for v1), or report it and resynchronize at `;` / `}`
+  (panic mode). The error tests in every step depend on this. *(ADR-020: stop at the first error; panic mode later,
+  maybe)*
 
 **Step 0e: The AST dump format**
 

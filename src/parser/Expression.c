@@ -9,10 +9,7 @@
 #include <assert.h>
 
 static ExpressionNode* expression_int_constant_parse(Parser* const parser) {
-    // BNF: literal numeric value, e.g. <42>
-    assert(parser_peek(parser)->kind == TOKEN_CONST_INT);
-
-    const Token* const token_constant_int = parser_pop(parser);
+    const Token* const token_constant_int = parser_expect(parser, TOKEN_CONST_INT);
     ExpressionNode* to_return = arena_allocate(parser_get_arena(parser), (sizeof (ExpressionNode)));
     *to_return = (ExpressionNode){
         .range = token_constant_int->range,

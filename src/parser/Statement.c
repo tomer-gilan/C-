@@ -38,7 +38,6 @@ static BlockItem* block_item_parse(Parser* parser) {
     return to_return;
 }
 static StatementNode* return_statement_parse(Parser* const parser) {
-    assert(parser_peek(parser)->kind == TOKEN_KW_RETURN);
     if (parser_has_error(parser))
         return NULL;
 
@@ -59,12 +58,12 @@ static StatementNode* return_statement_parse(Parser* const parser) {
     return to_return;
 }
 StatementNode* compound_statement_parse(Parser* const parser) {
-    assert(parser_peek(parser)->kind == TOKEN_BRACE_LEFT);
-
     if (parser_has_error(parser))
         return NULL;
 
-    const Token* const token_brace_left = parser_pop(parser); // pops the '{' token
+    const Token* const token_brace_left = parser_expect(parser, TOKEN_BRACE_LEFT); // pops the '{' token
+    if (parser_has_error(parser))
+        return NULL;
     Range node_union_range = token_brace_left->range;
 
     BlockItem dummy = {.next = NULL};
