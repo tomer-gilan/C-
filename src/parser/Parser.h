@@ -11,6 +11,7 @@ typedef struct Context Context;
 #include "ExternalDefinition.h"
 #include "List.h"
 #include "Token.h"
+#include "Diagnostic.h"
 
 Parser* parser_create(const List* tokens, Context* context);
 void parser_destroy(Parser* this);
@@ -20,6 +21,7 @@ const Token* parser_expect(Parser* this, TokenKind kind);
 Arena* parser_get_arena(Parser* this);
 void parser_set_error(Parser* this);
 bool parser_has_error(const Parser* this);
+void parser_report_diagnostic(Parser* this, DiagnosticCode code, Range range);
 
 TranslationUnitNode* parser_parse(Parser* this);
 

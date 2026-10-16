@@ -46,10 +46,10 @@ void driver_compile(Driver* const this, const int source_text_index) {
     bool continue_pipeline = true;
     driver_preprocess_source_text(this, source_text_index);
     // Lexing:
-    List* const tokens = NULL;
+    List* tokens = NULL;
     if (continue_pipeline) {
         Lexer* lexer = lexer_create(this->context, source_text_index);
-        lexer_lex_source_text(lexer);
+        tokens = lexer_lex_source_text(lexer);
         lexer_destroy(lexer);
         if (driver_encountered_errors(this))
             continue_pipeline = false;
@@ -93,6 +93,7 @@ DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
             case DIAGNOSTIC_SEVERITY_FATAL: // currently unused
             case DIAGNOSTIC_SEVERITY_NOTE:  // currently unused
                 break;
+            case DIAGNOSTIC_SEVERITY__COUNT:
             default:
                 assert(false && "invalid input");
                 break;

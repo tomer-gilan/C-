@@ -40,6 +40,8 @@ static StatementNode* return_statement_parse(Parser* const parser) {
         return NULL;
 
     const Token* const return_token = parser_expect(parser, TOKEN_KW_RETURN);
+    if (parser_has_error(parser))
+        return NULL;
     ExpressionNode* const return_expression = expression_node_parse(parser);
     if (parser_has_error(parser))
         return NULL;
@@ -73,6 +75,8 @@ StatementNode* compound_statement_parse(Parser* const parser) {
         node_union_range = range_union(node_union_range, block_item_get_range(curr->next));
     }
     const Token* const token_brace_right = parser_expect(parser, TOKEN_BRACE_RIGHT); // pop the '}' token
+    if (parser_has_error(parser))
+        return NULL;
     node_union_range = range_union(node_union_range, token_brace_right->range);
 
     StatementNode* const to_return = arena_allocate(parser_get_arena(parser), sizeof (StatementNode));
@@ -92,7 +96,10 @@ StatementNode* statement_node_parse(Parser* const parser) {
         return return_statement_parse(parser);
     if (kind == TOKEN_BRACE_LEFT) // compound-statement
         return compound_statement_parse(parser);
-    // TODO: issue a diagnostic - invalid statement
-    parser_set_error(parser);
+
+    parser_report_diagnostic(
+        parser,
+        DIAGNOSTIC_CODE_PARSER_INVALID_STATEMENT,
+        parser_peek(parser)->range);
     return NULL;
 }

@@ -50,8 +50,8 @@ const Token* parser_pop(Parser* const this) {
 }
 const Token* parser_expect(Parser* const this, const TokenKind kind) {
     if (parser_peek(this)->kind != kind) {
-        // TODO: issue a diagnostic, expected 'kind'
-        parser_set_error(this);
+        if (!parser_has_error(this))
+            parser_report_diagnostic(this, DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, parser_peek(this)->range); // TODO: think how to communicate which specific kind was expected.
         return NULL;
     }
     return parser_pop(this);
@@ -65,9 +65,14 @@ void parser_set_error(Parser* this) {
 bool parser_has_error(const Parser* const this) {
     return this->error;
 }
-
+void parser_report_diagnostic(Parser* const this, const DiagnosticCode code, const Range range) {
+    assert(this != NULL);
+    parser_set_error(this);
+    context_report_diagnostic(this->context, code, range);
+}
 TranslationUnitNode* parser_parse(Parser* this) {
     if (parser_has_error(this))
         return NULL;
+
     return translation_unit_node_parse(this);
 }

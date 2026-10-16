@@ -22,26 +22,24 @@ static const char* const diagnostic_severity_table[DIAGNOSTIC_SEVERITY__COUNT] =
     [DIAGNOSTIC_SEVERITY_FATAL]     = "FATAL"
 };
 static const DiagnosticDescriptor diagnostics_table[DIAGNOSTIC_CODE__COUNT] = {
-    [DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER]               = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unknown character"},
-    [DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS] = {
-        .severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unmatched quotation marks"
-    },
-    [DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE] = {
-        .severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unmatched apostrophe"
-    },
-    [DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE]      = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid numerical sequence"},
-    [DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE]         = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid escape sequence"},
-    [DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS]  = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "numerical constant out of bounds"},
-    [DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_PREFIX] = {
-        .severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid numerical prefix"
-    },
-    [DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF] = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unexpected end-of-file"},
-    [DIAGNOSTIC_CODE_LEXER_EXPECTED_EXPRESSION] = {
-        .severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "expected expression"
-    },
-    [DIAGNOSTIC_CODE_LEXER_MULTI_CHARACTER_LITERAL] = {
-        .severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "multi character literal"
-    },
+    // Lexer:
+    [DIAGNOSTIC_CODE_LEXER_UNKNOWN_CHARACTER]                   = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unknown character"},
+    [DIAGNOSTIC_CODE_LEXER_EXPECTED_QUOTATION_MARKS]                = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unmatched quotation marks"},
+    [DIAGNOSTIC_CODE_LEXER_EXPECTED_APOSTROPHE]                     = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unmatched apostrophe"},
+    [DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_SEQUENCE]              = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid numerical sequence"},
+    [DIAGNOSTIC_CODE_LEXER_INVALID_ESCAPE_SEQUENCE]                 = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid escape sequence"},
+    [DIAGNOSTIC_CODE_LEXER_NUMERIC_CONSTANT_OUT_OF_BOUNDS]          = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "numerical constant out of bounds"},
+    [DIAGNOSTIC_CODE_LEXER_INVALID_NUMERICAL_PREFIX]                = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid numerical prefix"},
+    [DIAGNOSTIC_CODE_LEXER_UNEXPECTED_EOF]                          = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "unexpected end-of-file"},
+    [DIAGNOSTIC_CODE_LEXER_EXPECTED_EXPRESSION]                     = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "expected expression"},
+    [DIAGNOSTIC_CODE_LEXER_MULTI_CHARACTER_LITERAL]                 = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "multi character literal"},
+    // Parser:
+    [DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN]                         = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "expected certain token"},
+    [DIAGNOSTIC_CODE_PARSER_EXPECTED_COMPOUND_STATEMENT]            = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "expected compound statement"},
+    [DIAGNOSTIC_CODE_PARSER_EXPECTED_EXTERNAL_FUNCTION_DEFINITION]  = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "expected external function definition"},
+    [DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION]                     = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid expression"},
+    [DIAGNOSTIC_CODE_PARSER_INVALID_STATEMENT]                      = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid statement"},
+    [DIAGNOSTIC_CODE_PARSER_MISSING_EXTERNAL_DEFINITION]            = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "missing external definition(s)"},
 };
 
 static LineColumn diagnostic_get_line_column(const Context* const context, const FilePosition file_position) {

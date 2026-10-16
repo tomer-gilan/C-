@@ -14,16 +14,17 @@ static ExternalDefinitionNode* external_function_definition_parse(Parser* parser
         return NULL;
 
     const Token* const token_pare_left = parser_expect(parser,TOKEN_PARENTHESES_LEFT);
-    const Token* const token_void =parser_expect(parser, TOKEN_KW_VOID);
-    const Token* const token_pare_right =parser_expect(parser,TOKEN_PARENTHESES_RIGHT);
-
+    if (parser_has_error(parser))
+        return NULL;
+    const Token* const token_void = parser_expect(parser, TOKEN_KW_VOID);
+    if (parser_has_error(parser))
+        return NULL;
+    const Token* const token_pare_right = parser_expect(parser,TOKEN_PARENTHESES_RIGHT);
+    if (parser_has_error(parser))
+        return NULL;
     StatementNode* const body = compound_statement_parse(parser);
     if (parser_has_error(parser))
         return NULL;
-    if (body->kind != STATEMENT_KIND_COMPOUND) {
-        // TODO: issue a diagnostic - expected compound statement
-        parser_set_error(parser);
-    }
 
     ExternalDefinitionNode* to_return = arena_allocate(parser_get_arena(parser), sizeof (ExternalDefinitionNode));
     *to_return = (ExternalDefinitionNode){
@@ -42,13 +43,19 @@ static ExternalDefinitionNode* external_definition_node_parse(Parser* parser) {
         return NULL;
 
     const Token* const type_specifier = parser_expect(parser, TOKEN_KW_INT);
+    if (parser_has_error(parser))
+        return NULL;
     const Token* const identifier = parser_expect(parser, TOKEN_IDENT);
+    if (parser_has_error(parser))
+        return NULL;
 
     const TokenKind kind = parser_peek(parser)->kind;
     if (kind == TOKEN_PARENTHESES_LEFT)
         return external_function_definition_parse(parser, type_specifier, identifier);
-    // TODO: issue a diagnostic - unsupported external definition
-    parser_set_error(parser);
+    parser_report_diagnostic(
+        parser,
+        DIAGNOSTIC_CODE_PARSER_EXPECTED_EXTERNAL_FUNCTION_DEFINITION, // for now, only function definitions are supported for external definitions
+        parser_peek(parser)->range);
     return NULL;
 }
 TranslationUnitNode* translation_unit_node_parse(Parser* parser) {
@@ -56,8 +63,10 @@ TranslationUnitNode* translation_unit_node_parse(Parser* parser) {
         return NULL;
 
     if (parser_peek(parser)->kind == TOKEN_EOF) {
-        // TODO: issue a diagnostic - no external definitions found
-        parser_set_error(parser);
+        parser_report_diagnostic(
+            parser,
+            DIAGNOSTIC_CODE_PARSER_MISSING_EXTERNAL_DEFINITION,
+            parser_peek(parser)->range);
         return NULL;
     }
 

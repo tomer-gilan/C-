@@ -419,6 +419,8 @@ half-built nodes and cascades of follow-up errors, which is about as much work a
 - One run reports at most one syntax error.
 - A crash on bad input is still a compiler bug (ADR-011). With this contract it's usually a caller that didn't check
   for `NULL`, or that called a function whose precondition no longer holds.
-- Error tests check the **first** diagnostic's code and position, not that there's exactly one, so they keep passing
-  if panic mode is added.
+- Error tests check the first diagnostic's code and position, **and that it's the only one** (count == 1). The count
+  check is what catches cascades: a caller that didn't check after a failed `expect`, so a second call reports again
+  (found 2026-10-16, when one stray `}` produced 3 diagnostics). If panic mode is added, the count check is relaxed
+  for the tests where resynchronizing legitimately finds more errors.
 - The driver doesn't run later stages after a parser error (ADR-012).

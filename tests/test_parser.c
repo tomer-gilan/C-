@@ -4,7 +4,8 @@
 // Parser tests for slice 1: expressions, statements, function definitions, the translation unit, whole programs
 // through parser_parse, and inputs that must be rejected. Each valid-input test lexes a source string, calls one parse
 // function and checks the nodes it returns, the parser's error flag (parser_has_error), and the next token (what the
-// parse function left unconsumed). Each error test checks that parser_parse returns NULL and sets the error flag.
+// parse function left unconsumed). Each error test checks that parser_parse returns NULL, sets the error flag and
+// reports exactly one diagnostic, with the expected code and offset.
 // Expected values come from SUBSET.md, not from the parser's output.
 //
 
@@ -428,58 +429,72 @@ static void test_parser_parse_whole_program(void) {
 }
 
 // ---------------- Errors (parser_parse) ---------------- //
-// The parser stops at the first syntax error (ADR-020): parser_parse returns NULL and the error flag is set. Parser
-// diagnostics don't exist yet; once they do, these tests also check the first diagnostic's code and position.
+// The parser stops at the first syntax error (ADR-020): parser_parse returns NULL, the error flag is set, and exactly
+// one diagnostic is reported. The expected code and offset of each one were worked out by hand from the input (the
+// offset of the token the parser found instead; EOF is at the end of the input), not copied from the parser's output.
 
-/** Checks that parsing @b source as a whole program fails: @c NULL result and the error flag set. */
-static void check_parse_fails(const char* const source) {
+/**
+ * Checks that parsing @b source as a whole program fails: @c NULL result, the error flag set, and exactly one
+ * diagnostic, with code @b code at byte offset @b offset .
+ */
+static void check_parse_fails(const char* const source, const DiagnosticCode code, const int offset) {
     const ParseFixture fixture = parse_fixture_create(source);
 
     CHECK(parser_parse(fixture.parser) == NULL);
     CHECK(parser_has_error(fixture.parser));
 
+    const List* const diagnostics = fixture.context->diagnostic_report_table;
+    if (CHECK(list_get_size(diagnostics) == 1)) {
+        const Diagnostic* const diagnostic = list_at_const(diagnostics, 0);
+        CHECK(diagnostic->code == code);
+        CHECK(diagnostic->range.position.offset == offset);
+    }
+
     parse_fixture_destroy(fixture);
 }
 
-/** "": SUBSET.md A.2.4: a translation unit has at least one external definition. */
+/** "": SUBSET.md A.2.4: a translation unit has at least one external definition. Reported at EOF. */
 static void test_parser_error_empty_file(void) {
-    check_parse_fails("");
+    check_parse_fails("", DIAGNOSTIC_CODE_PARSER_MISSING_EXTERNAL_DEFINITION, 0);
 }
-/** "   ": whitespace only is an empty translation unit too. */
+/** "   ": whitespace only is an empty translation unit too. EOF is after the 3 spaces. */
 static void test_parser_error_whitespace_only(void) {
-    check_parse_fails("   ");
+    check_parse_fails("   ", DIAGNOSTIC_CODE_PARSER_MISSING_EXTERNAL_DEFINITION, 3);
 }
-/** "int main(void) { return 42 }": the ';' after the return expression is missing. */
+/** "int main(void) { return 42 }": the ';' after the return expression is missing. Reported at the '}'. */
 static void test_parser_error_missing_semicolon(void) {
-    check_parse_fails("int main(void) { return 42 }");
+    check_parse_fails("int main(void) { return 42 }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 27);
 }
-/** "int main(void) { return 2;": the closing '}' is missing; EOF comes first. */
+/** "int main(void) { return 2;": the closing '}' is missing, so the block asks for another statement at EOF. */
 static void test_parser_error_missing_right_brace(void) {
-    check_parse_fails("int main(void) { return 2;");
+    check_parse_fails("int main(void) { return 2;", DIAGNOSTIC_CODE_PARSER_INVALID_STATEMENT, 26);
 }
-/** "int (void) { return 2; }": the function has no name. */
+/** "int (void) { return 2; }": the function has no name. Reported at the '('. */
 static void test_parser_error_missing_function_name(void) {
-    check_parse_fails("int (void) { return 2; }");
+    check_parse_fails("int (void) { return 2; }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 4);
 }
-/** "int main(void) return 2;": the body isn't a block. */
+/** "int main(void) return 2;": the body isn't a block. Reported at 'return', where the '{' should be. */
 static void test_parser_error_missing_left_brace(void) {
-    check_parse_fails("int main(void) return 2;");
+    check_parse_fails("int main(void) return 2;", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 15);
 }
-/** "int main(void": EOF in the middle of the parameter list. */
+/** "int main(void": EOF in the middle of the parameter list, where the ')' should be. */
 static void test_parser_error_eof_in_parameter_list(void) {
-    check_parse_fails("int main(void");
+    check_parse_fails("int main(void", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 13);
 }
-/** "int main(int) { return 2; }": parameters come in slice 9, and an unnamed one stays an error in a definition. */
+/**
+ * "int main(int) { return 2; }": parameters come in slice 9, and an unnamed one stays an error in a definition.
+ * Reported at 'int', where the 'void' should be; the ')' that's then also missing must not be reported too.
+ */
 static void test_parser_error_unnamed_parameter(void) {
-    check_parse_fails("int main(int) { return 2; }");
+    check_parse_fails("int main(int) { return 2; }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 9);
 }
-/** "int main(void) { return 2; } }": a stray '}' after the last definition. */
+/** "int main(void) { return 2; } }": a stray '}' after the last definition, where an 'int' should be. */
 static void test_parser_error_stray_right_brace(void) {
-    check_parse_fails("int main(void) { return 2; } }");
+    check_parse_fails("int main(void) { return 2; } }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 29);
 }
-/** "int main(void) { return 2; } 5": a token that can't start an external definition. */
+/** "int main(void) { return 2; } 5": a token that can't start an external definition, where an 'int' should be. */
 static void test_parser_error_trailing_token(void) {
-    check_parse_fails("int main(void) { return 2; } 5");
+    check_parse_fails("int main(void) { return 2; } 5", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 29);
 }
 
 int main(const int argc, char** const argv) {
