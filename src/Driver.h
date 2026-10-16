@@ -6,7 +6,6 @@
 #define C_COMPILER_DRIVER_H
 
 #include "Context.h"
-#include "List.h"
 
 typedef struct {
     int argc;

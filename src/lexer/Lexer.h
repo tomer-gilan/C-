@@ -6,7 +6,7 @@
 #define C_COMPILER_LEXER_H
 
 #include "Context.h"
-#include "List.h"
+#include "../data_structures/List.h"
 
 // ----------------- Lexer ----------------- //
 typedef struct Lexer Lexer; // opaque struct

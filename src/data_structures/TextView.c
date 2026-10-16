@@ -4,7 +4,7 @@
 
 
 #include "TextView.h"
-#include "Utils.h"
+#include "../Utils.h"
 
 #include <stdio.h>
 #include <string.h>

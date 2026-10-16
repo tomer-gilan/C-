@@ -17,6 +17,18 @@ typedef struct {
 } Range;
 
 /**
+ * @attention asserts @b count is strictly positive.
+ * @return the smallest @c Range which includes all @b ranges
+ */
+Range range_union_array(const Range* ranges, int count);
+/**
+ * the variadic version of @c range_union_array .
+ */
+#define range_union(...) range_union_array((const Range[]){__VA_ARGS__}, (int)(sizeof ((const Range[]){__VA_ARGS__}) / sizeof (Range)))
+
+extern const Range RANGE_EMPTY;
+
+/**
  * generates a @c Range based on two @c FilePosition.
  * @warning asserts both are sourced at the same file (since it's meaningless to talk about a range starting at one
  * file and ending in another), and that start does not come after end (can be the same).

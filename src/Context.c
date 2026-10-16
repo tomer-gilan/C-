@@ -5,9 +5,23 @@
 #include "Context.h"
 #include "Utils.h"
 #include "Diagnostic.h"
+#include "Arena.h"
 
 #include <assert.h>
 #include <stdlib.h>
+
+/**
+ * @param to_destroy type: void*, meaning: the element to be destroyed.
+ * @param destroyer type: void (*)(void*), meaning: a function that takes a pointer and destroys it.
+ */
+#define assert_destroy_and_nullify(to_destroy, destroyer)   \
+    do                                                      \
+    {                                                       \
+        assert(to_destroy != NULL);                         \
+        destroyer(to_destroy);                              \
+        to_destroy = NULL;                                  \
+    }                                                       \
+    while (false)                                           \
 
 CompilationFlags compilation_flags_from_arguments(const int argc, const char* const* const argv) {
     // TODO: implement argv parsing
@@ -32,29 +46,21 @@ Context* context_create(SourceText * const source, const CompilationFlags flags)
         .string_literals_table  = list_create(text_list_destroy),
         .source_text_table = list_create(source_text_list_destroy),
         .diagnostic_report_table = list_create(free),
+        .arena = arena_create(),
         .flags = flags
     };
-    list_push(context->source_text_table, source);
+    list_push_last(context->source_text_table, source);
     return context;
 }
 void context_destroy(Context* const this) {
     assert(this != NULL);
 
-    assert(this->identifiers_table != NULL && "table is NULL");
-    list_destroy(this->identifiers_table);
-    this->identifiers_table = NULL;
+    assert_destroy_and_nullify(this->identifiers_table, list_destroy);
+    assert_destroy_and_nullify(this->string_literals_table, list_destroy);
+    assert_destroy_and_nullify(this->source_text_table, list_destroy);
+    assert_destroy_and_nullify(this->diagnostic_report_table, list_destroy);
 
-    assert(this->string_literals_table != NULL && "table is NULL");
-    list_destroy(this->string_literals_table);
-    this->string_literals_table = NULL;
-
-    assert(this->source_text_table != NULL && "table is NULL");
-    list_destroy(this->source_text_table);
-    this->source_text_table = NULL;
-
-    assert(this->diagnostic_report_table != NULL && "table is NULL");
-    list_destroy(this->diagnostic_report_table);
-    this->diagnostic_report_table = NULL;
+    assert_destroy_and_nullify(this->arena, arena_destroy);
 
     free(this);
 }
@@ -95,7 +101,7 @@ int context_intern_string_literal(Context* const this, const Text* const text) {
 }
 void context_report_diagnostic(Context* const this, const DiagnosticCode code, const Range range) {
     const Diagnostic report = diagnostic_make(this, code, range);
-    list_push(this->diagnostic_report_table, diagnostic_list_duplicate(&report));
+    list_push_last(this->diagnostic_report_table, diagnostic_list_duplicate(&report));
 }
 void context_print_range(const Context* const this, const Range to_print) {
     text_view_print(context_range_to_text_view(this, to_print));

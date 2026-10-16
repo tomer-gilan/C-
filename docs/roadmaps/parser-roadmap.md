@@ -112,10 +112,10 @@ Decisions (2026-10-13; the details are in `SUBSET.md` A.2):
 
 - [x] *Crafting Interpreters*, ch. 5–6 (representing code, parsing expressions) and ch. 8–9 (statements): recursive
   descent from scratch.
-- [ ] One expression technique: Eli Bendersky, "Parsing expressions by precedence climbing" (recommended: one loop plus
+- [x] ~One expression technique: Eli Bendersky, "Parsing expressions by precedence climbing" (recommended: one loop plus
   a precedence table, instead of one function per level), or Bob Nystrom, "Pratt Parsers: Expression Parsing Made Easy".
-- [ ] chibicc's `parse.c`, in its early commits: a C parser written in C.
-- [ ] Be able to answer:
+- [x] ~chibicc's `parse.c`, in its early commits: a C parser written in C.
+- [x] Be able to answer:
     - How does your loop make `a = b = c` right-associative but `a - b - c` left-associative?
     - How do `-x * y` and `*p[1]` parse?
     - Why is `1 = x` usually a *semantic* error (not an lvalue), and not a syntax error?
@@ -125,7 +125,7 @@ Decisions (2026-10-13; the details are in `SUBSET.md` A.2):
 
 Each of these gets an ADR in [`architecture-decisions.md`](../specifications/architecture-decisions.md):
 
-- [ ] **Node families:** separate `Expr`, `Stmt` and `Decl` types (recommended), rather than one `Node` union. Then a
+- [x] **Node families:** separate `Expr`, `Stmt` and `Decl` types (recommended), rather than one `Node` union. Then a
   statement can't end up where an expression belongs.
 - [ ] **Ranges:** every node carries a `Range` (ADR-008), spanning the whole construct. A binary node spans from its
   left operand's start to its right operand's end. Sema diagnostics will point at nodes.

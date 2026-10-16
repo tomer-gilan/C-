@@ -77,7 +77,7 @@ const char *diagnostic_get_info(const Diagnostic report) {
     assert(diagnostic_is_valid_code(report.code));
     return diagnostics_table[report.code].info;
 }
-void static diagnostic_print_marker(const Diagnostic report) {
+static void diagnostic_print_marker(const Diagnostic report) {
     for (int i = 0; i < report.line_column.column; ++i)
         printf(" ");
     bool first = true;
@@ -89,7 +89,7 @@ void static diagnostic_print_marker(const Diagnostic report) {
         else
             printf("~");
 }
-void static diagnostic_print_source_text_row(const Diagnostic report, const Context* const context) {
+static void diagnostic_print_source_text_row(const Diagnostic report, const Context* const context) {
     // get beg of line pos
     FilePosition beginning_of_line_position = report.range.position;
     beginning_of_line_position.offset -= report.line_column.column;

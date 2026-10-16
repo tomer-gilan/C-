@@ -2,8 +2,8 @@
 // Created by tomer on 27-Sep-26.
 //
 
-#include "SourceText.h"
-#include "Utils.h"
+#include "data_structures/SourceText.h"
+#include "../Utils.h"
 
 #include <stdlib.h>
 

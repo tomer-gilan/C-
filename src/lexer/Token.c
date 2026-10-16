@@ -57,10 +57,6 @@ TokenKind token_kind_from_spelling(const TextView spelling) {
             return kind;
     return TOKEN_NONE;
 }
-
-bool token_is_eof(const Token token) {
-    return token.kind == TOKEN_EOF;
-}
 bool token_kind_is_keyword(const TokenKind kind) {
     return TOKEN__KW_FIRST <= kind && kind <= TOKEN__KW_LAST;
 }

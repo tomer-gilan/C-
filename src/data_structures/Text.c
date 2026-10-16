@@ -2,8 +2,8 @@
 // Created by tomer on 05-Oct-26.
 //
 
-#include "Text.h"
-#include "Utils.h"
+#include "data_structures/Text.h"
+#include "../Utils.h"
 
 #include <assert.h>
 #include <stdlib.h>

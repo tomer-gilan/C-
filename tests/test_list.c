@@ -28,10 +28,10 @@ static void test_list_create_is_empty(void) {
 
     list_destroy(list);
 }
-static void test_list_pop(void) {
+static void test_list_pop_last(void) {
     List* const list = list_create(free);
 
-    CHECK(list_pop(list) == NULL);
+    CHECK(list_pop_last(list) == NULL);
 
     const int n = 3;
     list_find_or_push(list, &n, equals_int, duplicate_int);
@@ -39,24 +39,24 @@ static void test_list_pop(void) {
 
     list_destroy(list);
 }
-static void test_list_push_pop_indexes(void) {
+static void test_list_push_last_pop_indexes(void) {
     List* const list = list_create(free);
     int* p1 = malloc(sizeof(int));
     int* p2 = malloc(sizeof(int));
     int* p3 = malloc(sizeof(int));
     int* p4 = malloc(sizeof(int));
     int* p5 = malloc(sizeof(int));
-    CHECK(list_push(list, p1) == 0);
-    CHECK(list_push(list, p2) == 1);
-    CHECK(list_push(list, p3) == 2);
-    CHECK(list_push(list, p4) == 3);
-    CHECK(list_push(list, p5) == 4);
+    CHECK(list_push_last(list, p1) == 0);
+    CHECK(list_push_last(list, p2) == 1);
+    CHECK(list_push_last(list, p3) == 2);
+    CHECK(list_push_last(list, p4) == 3);
+    CHECK(list_push_last(list, p5) == 4);
 
-    CHECK(list_pop(list) == p5);
-    CHECK(list_pop(list) == p4);
-    CHECK(list_pop(list) == p3);
-    CHECK(list_pop(list) == p2);
-    CHECK(list_pop(list) == p1);
+    CHECK(list_pop_last(list) == p5);
+    CHECK(list_pop_last(list) == p4);
+    CHECK(list_pop_last(list) == p3);
+    CHECK(list_pop_last(list) == p2);
+    CHECK(list_pop_last(list) == p1);
     free(p1);
     free(p2);
     free(p3);
@@ -72,11 +72,11 @@ static void test_list_at(void) {
     int* p3 = malloc(sizeof(int));
     int* p4 = malloc(sizeof(int));
     int* p5 = malloc(sizeof(int));
-    list_push(list, p1);
-    list_push(list, p2);
-    list_push(list, p3);
-    list_push(list, p4);
-    list_push(list, p5);
+    list_push_last(list, p1);
+    list_push_last(list, p2);
+    list_push_last(list, p3);
+    list_push_last(list, p4);
+    list_push_last(list, p5);
     CHECK(list_at(list, 0) == p1);
     CHECK(list_at(list, 1) == p2);
     CHECK(list_at(list, 2) == p3);
@@ -91,11 +91,11 @@ static void test_list_at_const(void) {
     int* p3 = malloc(sizeof(int));
     int* p4 = malloc(sizeof(int));
     int* p5 = malloc(sizeof(int));
-    list_push(list, p1);
-    list_push(list, p2);
-    list_push(list, p3);
-    list_push(list, p4);
-    list_push(list, p5);
+    list_push_last(list, p1);
+    list_push_last(list, p2);
+    list_push_last(list, p3);
+    list_push_last(list, p4);
+    list_push_last(list, p5);
     CHECK(list_at_const(list, 0) == p1);
     CHECK(list_at_const(list, 1) == p2);
     CHECK(list_at_const(list, 2) == p3);
@@ -118,11 +118,11 @@ static void test_list_index_of(void) {
     *p4 = 4;
     *p5 = 3;
 
-    list_push(list, p1);
-    list_push(list, p2);
-    list_push(list, p3);
-    list_push(list, p4);
-    list_push(list, p5);
+    list_push_last(list, p1);
+    list_push_last(list, p2);
+    list_push_last(list, p3);
+    list_push_last(list, p4);
+    list_push_last(list, p5);
 
     const int n1 = 1, n2 = 2, n3 = 3, n4 = 4, n5 = 5;
     CHECK(list_index_of(list, &n5, equals_int) == 0);
@@ -163,7 +163,7 @@ static void test_list_contains(void) {
     CHECK(!list_contains(list, &n3, equals_int));
     CHECK(!list_contains(list, &n4, equals_int));
     CHECK(!list_contains(list, &n5, equals_int));
-    list_push(list, p1);
+    list_push_last(list, p1);
     CHECK(list_contains(list, p1, equals_int));
     CHECK(!list_contains(list, p2, equals_int));
     CHECK(!list_contains(list, p3, equals_int));
@@ -175,7 +175,7 @@ static void test_list_contains(void) {
     CHECK(!list_contains(list, &n3, equals_int));
     CHECK(!list_contains(list, &n4, equals_int));
     CHECK(!list_contains(list, &n5, equals_int));
-    list_push(list, p2);
+    list_push_last(list, p2);
     CHECK(list_contains(list, p1, equals_int));
     CHECK(list_contains(list, p2, equals_int));
     CHECK(!list_contains(list, p3, equals_int));
@@ -187,7 +187,7 @@ static void test_list_contains(void) {
     CHECK(!list_contains(list, &n3, equals_int));
     CHECK(!list_contains(list, &n4, equals_int));
     CHECK(!list_contains(list, &n5, equals_int));
-    list_push(list, p3);
+    list_push_last(list, p3);
     CHECK(list_contains(list, p1, equals_int));
     CHECK(list_contains(list, p2, equals_int));
     CHECK(list_contains(list, p3, equals_int));
@@ -199,7 +199,7 @@ static void test_list_contains(void) {
     CHECK(list_contains(list, &n3, equals_int));
     CHECK(!list_contains(list, &n4, equals_int));
     CHECK(!list_contains(list, &n5, equals_int));
-    list_push(list, p4);
+    list_push_last(list, p4);
     CHECK(list_contains(list, p1, equals_int));
     CHECK(list_contains(list, p2, equals_int));
     CHECK(list_contains(list, p3, equals_int));
@@ -211,7 +211,7 @@ static void test_list_contains(void) {
     CHECK(list_contains(list, &n3, equals_int));
     CHECK(list_contains(list, &n4, equals_int));
     CHECK(!list_contains(list, &n5, equals_int));
-    list_push(list, p5);
+    list_push_last(list, p5);
     CHECK(list_contains(list, p1, equals_int));
     CHECK(list_contains(list, p2, equals_int));
     CHECK(list_contains(list, p3, equals_int));
@@ -304,7 +304,7 @@ static List *list_of_ints(const int* const values, const int count) {
     for (int i = 0; i < count; ++i) {
         int* const element = malloc(sizeof(int));
         *element = values[i];
-        list_push(list, element);
+        list_push_last(list, element);
     }
     return list;
 }
@@ -408,7 +408,7 @@ static void test_list_swap_two_elements(void) {
 
     const int expected[] = {2, 1};
     check_list_ints(list, expected, 2);
-    int* const popped = list_pop(list);
+    int* const popped = list_pop_last(list);
     CHECK(*popped == 1);
     free(popped);
     list_destroy(list);
@@ -638,11 +638,113 @@ static void test_list_sort_extreme_compare_results_descending(void) {
     list_destroy(list);
 }
 
+/**
+ * Popping the front returns the first element (the very same pointer, now owned by the caller) and shifts the rest
+ * down by one, keeping their order.
+ * @note Written by Claude on 14-Oct-26, not by Tomer.
+ */
+static void test_list_pop_last_front_returns_first_and_shifts(void) {
+    const int values[] = {10, 20, 30, 40};
+    List* const list = list_of_ints(values, 4);
+    const void* const first = list_at(list, 0);
+
+    int* const popped = list_pop_front(list);
+
+    CHECK(popped == first);
+    CHECK(*popped == 10);
+    const int expected[] = {20, 30, 40};
+    check_list_ints(list, expected, 3);
+    free(popped); // the caller owns it now: a double free here means the list still freed it too
+    list_destroy(list);
+}
+
+/**
+ * Popping the front over and over hands out the elements in the order they were pushed (a queue), and ends with an
+ * empty list.
+ * @note Written by Claude on 14-Oct-26, not by Tomer.
+ */
+static void test_list_pop_last_front_until_empty(void) {
+    const int values[] = {1, 2, 3, 4, 5};
+    List* const list = list_of_ints(values, 5);
+
+    bool in_order = true;
+    for (int i = 0; i < 5; ++i) {
+        int* const popped = list_pop_front(list);
+        if (*popped != values[i] || list_get_size(list) != 4 - i)
+            in_order = false;
+        free(popped);
+    }
+
+    CHECK(in_order);
+    CHECK(list_is_empty(list));
+    list_destroy(list);
+}
+
+/**
+ * A one-element list becomes empty, and stays usable: pushing again puts the new element at index 0.
+ * @note Written by Claude on 14-Oct-26, not by Tomer.
+ */
+static void test_list_pop_last_front_single_then_push(void) {
+    const int values[] = {7};
+    List* const list = list_of_ints(values, 1);
+
+    free(list_pop_front(list));
+    CHECK(list_is_empty(list));
+
+    int* const element = malloc(sizeof(int));
+    *element = 8;
+    CHECK(list_push_last(list, element) == 0);
+    CHECK(list_at(list, 0) == element);
+    list_destroy(list);
+}
+
+/**
+ * Popping the front and pushing the back interleave like a queue, and the last element stays reachable from both
+ * ends (pop_last still finds it after the shift).
+ * @note Written by Claude on 14-Oct-26, not by Tomer.
+ */
+static void test_list_pop_last_front_interleaved_with_push_and_pop_last(void) {
+    const int values[] = {1, 2};
+    List* const list = list_of_ints(values, 2);
+
+    free(list_pop_front(list));                 // {2}
+    int* const three = malloc(sizeof(int));
+    *three = 3;
+    list_push_last(list, three);                // {2, 3}
+    const int expected[] = {2, 3};
+    check_list_ints(list, expected, 2);
+
+    CHECK(list_pop_last(list) == three);        // {2}
+    free(three);
+    const int remaining[] = {2};
+    check_list_ints(list, remaining, 1);
+    list_destroy(list);
+}
+
+/**
+ * A list that grew several times (capacity starts at 1 and doubles) shifts every element, the last one included:
+ * an off-by-one in the shift loop shows up here as a wrong last element or an out-of-bounds read under ASan.
+ * @note Written by Claude on 14-Oct-26, not by Tomer.
+ */
+static void test_list_pop_last_front_after_growth(void) {
+    enum { COUNT = 33 };
+    int values[COUNT];
+    for (int i = 0; i < COUNT; ++i)
+        values[i] = i;
+    List* const list = list_of_ints(values, COUNT);
+
+    free(list_pop_front(list));
+    free(list_pop_front(list));
+
+    check_list_ints(list, values + 2, COUNT - 2);
+    list_destroy(list);
+}
+
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
     RUN_TEST(test_list_create_is_empty);
-    RUN_TEST(test_list_push_pop_indexes);
-    RUN_TEST(test_list_pop);
+    RUN_TEST(test_list_push_last_pop_indexes);
+    RUN_TEST(test_list_pop_last);
     RUN_TEST(test_list_at);
     RUN_TEST(test_list_at_const);
     RUN_TEST(test_list_index_of);
@@ -663,6 +765,12 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_list_sort_keeps_the_same_elements);
     RUN_TEST(test_list_sort_many_elements);
     RUN_TEST(test_list_sort_extreme_compare_results_ascending);
+    // pop_front tests (written by Claude)
+    RUN_TEST(test_list_pop_last_front_returns_first_and_shifts);
+    RUN_TEST(test_list_pop_last_front_until_empty);
+    RUN_TEST(test_list_pop_last_front_single_then_push);
+    RUN_TEST(test_list_pop_last_front_interleaved_with_push_and_pop_last);
+    RUN_TEST(test_list_pop_last_front_after_growth);
     RUN_TEST(test_list_sort_extreme_compare_results_descending); // last: UBSan aborts the process when it fails
     return harness_finish();
 }

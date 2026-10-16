@@ -41,21 +41,35 @@ void list_clear(List* this);
  * @param value the new element to add
  * @return the index of @b value in the @c List
  */
-int list_push(List* this, void* value);
+int list_push_last(List* this, void* value);
 /**
- * Removes the element from the top of the @c List .
+ * Removes the element from the end of the @c List .
  * @attention if @c List is empty, @c NULL is returned.
  * @warning ownership of return value is transferred to the caller.
  * @param this a handle to the @c List
  * @return the removed element.
  */
-void* list_pop(List* this);
+void* list_pop_last(List* this);
 /**
- * Removes the element from the top of the @c List , and destroys it.
+ * Removes the element from the bottom of the @c List .
+ * @attention if @c List is empty, @c NULL is returned.
+ * @warning ownership of return value is transferred to the caller.
+ * @param this a handle to the @c List
+ * @return the removed element.
+ */
+void* list_pop_front(List* this);
+/**
+ * Removes the element from the start of the @c List , and destroys it.
  * @warning the @c List cannot be empty.
  * @param this a handle to the @c List
  */
-void list_pop_destroy(List* this);
+void list_pop_front_destroy(List* this);
+/**
+ * Removes the element from the end of the @c List , and destroys it.
+ * @warning the @c List cannot be empty.
+ * @param this a handle to the @c List
+ */
+void list_pop_last_destroy(List* this);
 /**
  * Retrieves a value of the @c List at a given @b index .
  * @attention ownership of return value remains with the @c List

@@ -24,6 +24,13 @@ void* utils_xmalloc(size_t size);
  */
 void* utils_xrealloc(void* ptr, size_t size);
 
+// --------- abortion utils ------------ //
+/**
+ * prints message to @c stderr, then @c abort
+ * @param string the message string to print. Isn't required a '\n' at the end (i.e. one will be added)
+ */
+void utils_abort_with_message(const char* string);
+
 // -------------------- string utils -------------------- //
 /**
  * Allocated a new string, and copies the content of source to it.

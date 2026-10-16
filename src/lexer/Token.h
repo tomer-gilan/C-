@@ -7,8 +7,8 @@
 
 #include <stdbool.h>
 
-#include "Range.h"
-#include "TextView.h"
+#include "../data_structures/Range.h"
+#include "../data_structures/TextView.h"
 
 // Token Kinds. WHEN ADDING A NEW ONE, DO NOT FORGET TO UPDATE THE ALIASES AT THE END!!
 typedef enum {
@@ -92,7 +92,6 @@ TextView token_kind_get_spelling(TokenKind kind);
  */
 TokenKind token_kind_from_spelling(TextView spelling);
 
-bool token_is_eof(Token token);
 bool token_kind_is_keyword(TokenKind kind);
 bool token_kind_is_punctuator(TokenKind kind);
 

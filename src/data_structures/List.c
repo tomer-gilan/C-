@@ -2,8 +2,9 @@
 // Created by tomer on 23-Sep-26.
 //
 
+
 #include "List.h"
-#include "Utils.h"
+#include "../Utils.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -61,26 +62,42 @@ bool list_is_empty(const List* this) {
 void list_clear(List* const this) {
     assert(this != NULL);
     while (!list_is_empty(this))
-        list_pop_destroy(this);
+        list_pop_last_destroy(this);
 }
 
-int list_push(List* this, void* value) {
+int list_push_last(List* this, void* value) {
     assert(this != NULL && "list handle was NULL");
     if (list_has_met_capacity(this))
         list_expand(this);
     this->elements[this->size++] = value;
     return this->size - 1;
 }
-void* list_pop(List* this) {
+void* list_pop_last(List* this) {
     assert(this != NULL && "list handle was NULL");
     if (list_is_empty(this))
         return NULL;
     return this->elements[--this->size];
 }
-void list_pop_destroy(List* this) {
+void* list_pop_front(List* const this) {
+    assert(this != NULL);
+    if (list_is_empty(this))
+        return NULL;
+
+    void* to_return = this->elements[0];
+    this->size--;
+    for (int i = 0; i < this->size; ++i)
+        this->elements[i] = this->elements[i + 1];
+    return to_return;
+}
+void list_pop_front_destroy(List* this) {
     assert(this != NULL && "list handle was NULL");
     assert(!list_is_empty(this) && "list was empty");
-    this->destroy_element(list_pop(this));
+    this->destroy_element(list_pop_front(this));
+}
+void list_pop_last_destroy(List* this) {
+    assert(this != NULL && "list handle was NULL");
+    assert(!list_is_empty(this) && "list was empty");
+    this->destroy_element(list_pop_last(this));
 }
 void* list_at(List* const this, const int index) {
     assert(this != NULL && "list handle was NULL");
@@ -119,7 +136,7 @@ int list_find_or_push(
 
     int index_of_element = list_index_of(this, element, equals);
     if (index_of_element == -1)
-        index_of_element = list_push(this, duplicate(element));
+        index_of_element = list_push_last(this, duplicate(element));
     return index_of_element;
 }
 void list_swap(List* const this, const int first_index, const int second_index) {

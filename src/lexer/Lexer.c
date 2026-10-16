@@ -463,7 +463,7 @@ List* lexer_lex_source_text(Lexer* const this) {
     do {
         new_token = utils_xmalloc(sizeof(Token));
         *new_token = lexer_lex_token(this);
-        list_push(token_list, new_token);
-    } while (!token_is_eof(*new_token));
+        list_push_last(token_list, new_token);
+    } while (new_token->kind != TOKEN_EOF);
     return token_list;
 }

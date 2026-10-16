@@ -5,10 +5,11 @@
 #ifndef C_COMPILER_CONTEXT_H
 #define C_COMPILER_CONTEXT_H
 
-#include "List.h"
-#include "SourceText.h"
-#include "Text.h"
-#include "TextView.h"
+typedef struct Arena Arena;
+#include "data_structures/List.h"
+#include "data_structures/SourceText.h"
+#include "data_structures/Text.h"
+#include "data_structures/TextView.h"
 #include "Diagnostic.h"
 
 typedef struct {
@@ -16,14 +17,15 @@ typedef struct {
 } CompilationFlags;
 
 CompilationFlags compilation_flags_from_arguments(int argc, const char* const* argv);
-
 CompilationFlags compilation_flags_basic();
 
-typedef struct Context {
+typedef struct Context{
     List* identifiers_table;        ///< @c List of @c TextView
     List* string_literals_table;    ///< @c List of @c Text
     List* source_text_table;        ///< @c List of @c SourceText
     List* diagnostic_report_table; ///< @c List of @c Diagnostic
+
+    Arena* arena;
 
     CompilationFlags flags;
 } Context;
@@ -35,8 +37,7 @@ typedef struct Context {
  * @param flags the flags needed for the compilation process.
  * @return a @c Context handle
  */
-Context *context_create(SourceText* source, CompilationFlags flags);
-
+Context* context_create(SourceText* source, CompilationFlags flags);
 /**
  * Destroys the @c Context .
  * @param this handle to the @c Context

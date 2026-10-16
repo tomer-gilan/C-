@@ -47,30 +47,43 @@ add_library(c_compiler_core STATIC
         src/lexer/Token.h
         src/Diagnostic.c
         src/Diagnostic.h
-        src/List.c
-        src/List.h
         src/Utils.c
         src/Utils.h
-        src/FilePosition.c
-        src/FilePosition.h
-        src/SourceText.c
-        src/SourceText.h
         src/Context.c
         src/Context.h
         src/Driver.c
         src/Driver.h
-        src/Range.c
-        src/Range.h
-        src/Text.c
-        src/Text.h
-        src/TextView.c
-        src/TextView.h)
+        src/data_structures/List.c
+        src/data_structures/List.h
+        src/data_structures/FilePosition.c
+        src/data_structures/FilePosition.h
+        src/data_structures/SourceText.c
+        src/data_structures/SourceText.h
+        src/data_structures/Range.c
+        src/data_structures/Range.h
+        src/data_structures/Text.c
+        src/data_structures/Text.h
+        src/data_structures/TextView.c
+        src/data_structures/TextView.h
+        src/parser/Expression.c
+        src/parser/Expression.h
+        src/parser/Statement.c
+        src/parser/Statement.h
+        src/parser/Declaration.c
+        src/parser/Declaration.h
+        src/parser/Parser.c
+        src/parser/Parser.h
+        src/parser/ExternalDefinition.c
+        src/parser/ExternalDefinition.h
+        src/data_structures/Arena.c
+        src/data_structures/Arena.h)
 # -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
 # only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
 # never hide the system one from #include <x.h>. Propagates to every target that links the library.
 # One directory per stage, so a header is included by its bare name ("Lexer.h") from anywhere, tests included.
 target_compile_options(c_compiler_core PUBLIC
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/data_structures"
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/lexer"
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/parser")
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings PUBLIC c_compiler_instrumentation)
@@ -102,9 +115,19 @@ add_executable(test_source_text tests/test_source_text.c)
 target_link_libraries(test_source_text PRIVATE c_compiler_core test_harness c_compiler_warnings)
 add_test(NAME source_text COMMAND test_source_text)
 
+add_executable(test_arena tests/test_arena.c)
+target_link_libraries(test_arena PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME arena COMMAND test_arena)
+
+add_executable(test_parser tests/test_parser.c)
+target_link_libraries(test_parser PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME parser COMMAND test_parser)
+# A parser loop that never consumes a token hangs instead of failing; CTest's default timeout is 1500 seconds.
+set_tests_properties(parser PROPERTIES TIMEOUT 10)
+
 if (ENABLE_SANITIZERS)
     # ASan and LeakSanitizer already print a stack trace; UBSan only does on request.
-    set_tests_properties(list text_view lexer source_text PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
+    set_tests_properties(list text_view lexer source_text arena parser PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
 endif ()
 
 # Coverage without blocking anything. tests/coverage.sh makes its own instrumented build (in a subdirectory of this

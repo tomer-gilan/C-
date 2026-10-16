@@ -6,7 +6,7 @@
 #define C_COMPILER_DIAGNOSTIC_H
 
 typedef struct Context Context; // forward declaration
-#include "Range.h"
+#include "data_structures/Range.h"
 
 typedef struct {
     int line;
