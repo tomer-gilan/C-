@@ -18,11 +18,11 @@ bool text_view_equals(const TextView first, const TextView second) {
 }
 // for list.h usage:
 bool text_view_list_equals(const void* const first, const void* const second) {
-    return text_view_equals(*(TextView *) first, *(TextView *) second);
+    return text_view_equals(*(const TextView*)first, *(const TextView*) second);
 }
 void* text_view_list_duplicate(const void* const text_view) {
     TextView* new = utils_xmalloc(sizeof(TextView));
-    *new = *(TextView*)text_view;
+    *new = *(const TextView*)text_view;
     return new;
 }
 void text_view_print(const TextView this) {

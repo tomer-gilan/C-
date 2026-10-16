@@ -8,37 +8,23 @@
 #include "Harness.h"
 #include "TextView.h"
 
-// helpers
-int equals_int(const void* first, const void* second) {
-    return *((int*)first) == *((int*)second) ? 0 : 1;
-}
-void* duplicate_int(const void* first) {
-    int* to_return = malloc(sizeof(int));
-    *to_return = *((int*)first);
-    return to_return;
-}
-// end helpers
-
-static void test_text_view_(void) {
-}
-
 static void test_text_view_equals(void) {
     TextView sv_literal[] = {
-        text_view_from_literal(""),
-        text_view_from_literal("a"),
-        text_view_from_literal("ab"),
-        text_view_from_literal("abc"),
-        text_view_from_literal("bc"),
-        text_view_from_literal("b"),
-        text_view_from_literal("c"),
-        text_view_from_literal("ac"),
-        text_view_from_literal("babc"),
-        text_view_from_literal("abcc"),
-        text_view_from_literal("a\0a"),
-        text_view_from_literal("b\0b"),
-        text_view_from_literal("c\0"),
-        text_view_from_literal("\0d"),
-        text_view_from_literal("\0")
+        text_view_value_of_literal(""),
+        text_view_value_of_literal("a"),
+        text_view_value_of_literal("ab"),
+        text_view_value_of_literal("abc"),
+        text_view_value_of_literal("bc"),
+        text_view_value_of_literal("b"),
+        text_view_value_of_literal("c"),
+        text_view_value_of_literal("ac"),
+        text_view_value_of_literal("babc"),
+        text_view_value_of_literal("abcc"),
+        text_view_value_of_literal("a\0a"),
+        text_view_value_of_literal("b\0b"),
+        text_view_value_of_literal("c\0"),
+        text_view_value_of_literal("\0d"),
+        text_view_value_of_literal("\0")
     };
     TextView sv_reg[] = {
         {.data = "", .length = 0},
@@ -64,9 +50,9 @@ static void test_text_view_equals(void) {
     CHECK(sv_literal[14].length == 1); // "\0"
 
     {
-        TextView sv1 = text_view_from_literal("a\0b                     c  ");
-        TextView sv2 = text_view_from_literal("a\0b                     c ");
-        TextView sv3 = text_view_from_literal("a\0b                     c");
+        TextView sv1 = text_view_value_of_literal("a\0b                     c  ");
+        TextView sv2 = text_view_value_of_literal("a\0b                     c ");
+        TextView sv3 = text_view_value_of_literal("a\0b                     c");
         CHECK(!text_view_equals(sv1, sv2));
         CHECK(!text_view_equals(sv2, sv3));
         CHECK(!text_view_equals(sv1, sv3));
@@ -122,15 +108,15 @@ static void test_text_view_list_duplicate(void) {
         free(sv_ptr);
     }
     {
-        TextView sv1 = text_view_from_literal("a\0b                     c  ");
+        TextView sv1 = text_view_value_of_literal("a\0b                     c  ");
         TextView* sv_ptr = text_view_list_duplicate(&sv1);
         CHECK(text_view_equals(sv1, *sv_ptr));
         free(sv_ptr);
     }
     {
-        TextView sv1 = text_view_from_literal("a\0b                     c  ");
-        TextView sv2 = text_view_from_literal("a\0b                     c ");
-        TextView sv3 = text_view_from_literal("a\0b                     c");
+        TextView sv1 = text_view_value_of_literal("a\0b                     c  ");
+        TextView sv2 = text_view_value_of_literal("a\0b                     c ");
+        TextView sv3 = text_view_value_of_literal("a\0b                     c");
 
         TextView* sv_ptr1 = text_view_list_duplicate(&sv1);
         TextView* sv_ptr2 = text_view_list_duplicate(&sv2);

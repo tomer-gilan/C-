@@ -13,6 +13,14 @@ typedef struct {
 } TextView;
 
 /**
+ * This macro generates an INITIALIZER based on a string literal @b literal .
+ * @note as a general guideline, no macros of this style are welcome in this project.
+ * However, a compile-time-calculated expression was needed, and this solution far too simple and elegant to ignore.
+ * @param literal
+ * @return an INITIALIZER of a @c TextView
+ */
+#define TEXT_VIEW_INITIALIZER_OF_LITERAL(literal) {.data = "" literal "", .length = sizeof(literal) - 1}
+/**
  * This macro generates an initialization list for a @c TextView, sourced specifically from a string literal.
  * @warning passing anything other than string literals will cause a compilation error.
  * @note as a general guideline, no macros of this style are welcome in this project.
@@ -20,7 +28,7 @@ typedef struct {
  * @param literal a string literal, to be taken as the source for the @c TextView
  * @return a @c TextView
  */
-#define text_view_from_literal(literal) ((TextView){.data = "" literal "", .length = sizeof(literal) - 1})
+#define text_view_value_of_literal(literal) ((TextView)TEXT_VIEW_INITIALIZER_OF_LITERAL(literal))
 /**
  * @attention @b data must outlive the return value, since the returned @c TextView points to @b data.
  */

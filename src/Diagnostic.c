@@ -156,13 +156,13 @@ int diagnostic_compare(const Diagnostic first, const Diagnostic second) {
     return range_compare(first.range, second.range);
 }
 bool diagnostic_list_equals(const void* const first, const void* const second) {
-    return diagnostic_equals(*(Diagnostic *) first, *(Diagnostic *) second);
+    return diagnostic_equals(*(const Diagnostic*)first, *(const Diagnostic*)second);
 }
 void *diagnostic_list_duplicate(const void* const element) {
     Diagnostic* const to_return = utils_xmalloc(sizeof(Diagnostic));
-    *to_return = *(Diagnostic *) element;
+    *to_return = *(const Diagnostic*)element;
     return to_return;
 }
 int diagnostic_list_compare(const void* const first, const void* const second) {
-    return diagnostic_compare(*(Diagnostic*)first, *(Diagnostic*)second);
+    return diagnostic_compare(*(const Diagnostic*)first, *(const Diagnostic*)second);
 }

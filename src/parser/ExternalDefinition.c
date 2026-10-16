@@ -44,14 +44,12 @@ static ExternalDefinitionNode* external_definition_node_parse(Parser* parser) {
     const Token* const type_specifier = parser_expect(parser, TOKEN_KW_INT);
     const Token* const identifier = parser_expect(parser, TOKEN_IDENT);
 
-    switch (parser_peek(parser)->kind) {
-        case TOKEN_PARENTHESES_LEFT: // function declaration
-            return external_function_definition_parse(parser, type_specifier, identifier);
-        default:
-            // TODO: issue a diagnostic - unsupported external definition
-            parser_set_error(parser);
-            return NULL; // TODO: change to handle better
-    }
+    const TokenKind kind = parser_peek(parser)->kind;
+    if (kind == TOKEN_PARENTHESES_LEFT)
+        return external_function_definition_parse(parser, type_specifier, identifier);
+    // TODO: issue a diagnostic - unsupported external definition
+    parser_set_error(parser);
+    return NULL;
 }
 TranslationUnitNode* translation_unit_node_parse(Parser* parser) {
     if (parser_has_error(parser))

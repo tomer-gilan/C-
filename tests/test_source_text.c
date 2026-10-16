@@ -2,6 +2,10 @@
 // Written by Claude on 10-Oct-26.
 //
 
+// mkstemp and fdopen are POSIX, not ISO C. Under -std=c11 the headers hide them unless this is defined before the
+// first #include.
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

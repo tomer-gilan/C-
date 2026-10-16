@@ -85,6 +85,18 @@ scope from the 2026-10-13 quiz (A.2), except for the EBNF:
 See `research.md` (translation phases, Valgrind, sanitizers, code coverage, unit testing), `testing.md` (test suite
 structure), and `roadmaps/` (the testing and parser roadmaps).
 
+## Possible future goals
+
+Not planned; recorded so the trade-offs don't have to be re-derived.
+
+- [ ] **Migrate the compiler's own source from C11 to C23** (`CMAKE_C_STANDARD 23`). The main gain: `f()` becomes a
+  real prototype (it means `(void)`, as in C~~), so empty parameter lists get argument checking. Checked on
+  2026-10-16: every `.c` file compiles as `gnu23` with GCC 15.2 with no errors. The costs:
+  - it supersedes ADR-004, so it needs a new ADR;
+  - the toolchain floor rises to GCC 13+ / Clang 16+;
+  - `bool`, `true`, `false`, `nullptr`, `typeof`, `constexpr`, `static_assert` become keywords;
+  - most references (books, chibicc) are C99/C11.
+
 ## Other
 
 - [ ] *(Deferred out of v1, 2026-10-12, same reason.)* Real `main`: build a `Driver`, lex the file, dump tokens (kind, spelling, line:column). `main.c` is still a sample C program.

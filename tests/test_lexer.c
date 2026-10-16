@@ -207,21 +207,21 @@ static void test_lexer_single_numeric(void) {
         int number;
     } test_numeric;
     test_numeric arr[] = {
-        {.spelling = text_view_from_literal("0"), .number = 0},
-        {.spelling = text_view_from_literal("1"), .number = 1},
-        {.spelling = text_view_from_literal("2"), .number = 2},
-        {.spelling = text_view_from_literal("3"), .number = 3},
-        {.spelling = text_view_from_literal("4"), .number = 4},
-        {.spelling = text_view_from_literal("5"), .number = 5},
-        {.spelling = text_view_from_literal("6"), .number = 6},
-        {.spelling = text_view_from_literal("7"), .number = 7},
-        {.spelling = text_view_from_literal("8"), .number = 8},
-        {.spelling = text_view_from_literal("9"), .number = 9},
-        {.spelling = text_view_from_literal("10"), .number = 10},
-        {.spelling = text_view_from_literal("2147483647"), .number = 2147483647},
-        {.spelling = text_view_from_literal("4953728"), .number = 4953728},
-        {.spelling = text_view_from_literal("111111111"), .number = 111111111},
-        {.spelling = text_view_from_literal("245800002"), .number = 245800002}
+        {.spelling = text_view_value_of_literal("0"), .number = 0},
+        {.spelling = text_view_value_of_literal("1"), .number = 1},
+        {.spelling = text_view_value_of_literal("2"), .number = 2},
+        {.spelling = text_view_value_of_literal("3"), .number = 3},
+        {.spelling = text_view_value_of_literal("4"), .number = 4},
+        {.spelling = text_view_value_of_literal("5"), .number = 5},
+        {.spelling = text_view_value_of_literal("6"), .number = 6},
+        {.spelling = text_view_value_of_literal("7"), .number = 7},
+        {.spelling = text_view_value_of_literal("8"), .number = 8},
+        {.spelling = text_view_value_of_literal("9"), .number = 9},
+        {.spelling = text_view_value_of_literal("10"), .number = 10},
+        {.spelling = text_view_value_of_literal("2147483647"), .number = 2147483647},
+        {.spelling = text_view_value_of_literal("4953728"), .number = 4953728},
+        {.spelling = text_view_value_of_literal("111111111"), .number = 111111111},
+        {.spelling = text_view_value_of_literal("245800002"), .number = 245800002}
     };
     const int N = sizeof(arr) / sizeof(test_numeric);
 
@@ -245,22 +245,22 @@ static void test_lexer_single_char(void) {
         int number;
     } test_char;
     test_char arr[] = {
-        {.spelling = text_view_from_literal("'0'"), .number = '0'},
-        {.spelling = text_view_from_literal("'1'"), .number = '1'},
-        {.spelling = text_view_from_literal("'2'"), .number = '2'},
-        {.spelling = text_view_from_literal("'3'"), .number = '3'},
-        {.spelling = text_view_from_literal("'4'"), .number = '4'},
-        {.spelling = text_view_from_literal("'5'"), .number = '5'},
-        {.spelling = text_view_from_literal("'6'"), .number = '6'},
-        {.spelling = text_view_from_literal("'7'"), .number = '7'},
-        {.spelling = text_view_from_literal("'8'"), .number = '8'},
-        {.spelling = text_view_from_literal("'9'"), .number = '9'},
-        {.spelling = text_view_from_literal("'\\0'"), .number = '\0'},
-        {.spelling = text_view_from_literal("'\\n'"), .number = '\n'},
-        {.spelling = text_view_from_literal("'\\r'"), .number = '\r'},
-        {.spelling = text_view_from_literal("'\\f'"), .number = '\f'},
-        {.spelling = text_view_from_literal("'\\a'"), .number = '\a'},
-        {.spelling = text_view_from_literal("'\\t'"), .number = '\t'},
+        {.spelling = text_view_value_of_literal("'0'"), .number = '0'},
+        {.spelling = text_view_value_of_literal("'1'"), .number = '1'},
+        {.spelling = text_view_value_of_literal("'2'"), .number = '2'},
+        {.spelling = text_view_value_of_literal("'3'"), .number = '3'},
+        {.spelling = text_view_value_of_literal("'4'"), .number = '4'},
+        {.spelling = text_view_value_of_literal("'5'"), .number = '5'},
+        {.spelling = text_view_value_of_literal("'6'"), .number = '6'},
+        {.spelling = text_view_value_of_literal("'7'"), .number = '7'},
+        {.spelling = text_view_value_of_literal("'8'"), .number = '8'},
+        {.spelling = text_view_value_of_literal("'9'"), .number = '9'},
+        {.spelling = text_view_value_of_literal("'\\0'"), .number = '\0'},
+        {.spelling = text_view_value_of_literal("'\\n'"), .number = '\n'},
+        {.spelling = text_view_value_of_literal("'\\r'"), .number = '\r'},
+        {.spelling = text_view_value_of_literal("'\\f'"), .number = '\f'},
+        {.spelling = text_view_value_of_literal("'\\a'"), .number = '\a'},
+        {.spelling = text_view_value_of_literal("'\\t'"), .number = '\t'},
     };
     const int N = sizeof(arr) / sizeof(test_char);
 
@@ -284,20 +284,20 @@ static void test_lexer_single_string(void) {
         TextView check_against;
     } test_string;
     test_string arr[] = {
-        {.source = text_view_from_literal("\"\""),                                                  .check_against = text_view_from_literal("")},
-        {.source = text_view_from_literal("\"'\""),                                                 .check_against = text_view_from_literal("'")},
-        {.source = text_view_from_literal("\"''\""),                                                .check_against = text_view_from_literal("''")},
-        {.source = text_view_from_literal("\"'''\""),                                               .check_against = text_view_from_literal("'''")},
-        {.source = text_view_from_literal("\"        \""),                                          .check_against = text_view_from_literal("        ")},
-        {.source = text_view_from_literal("\"\\0\""),                                               .check_against = text_view_from_literal("\0")},
-        {.source = text_view_from_literal("\"a\""),                                                 .check_against = text_view_from_literal("a")},
-        {.source = text_view_from_literal("\"ab\""),                                                .check_against = text_view_from_literal("ab")},
-        {.source = text_view_from_literal("\"abc\""),                                               .check_against = text_view_from_literal("abc")},
-        {.source = text_view_from_literal("\"a51fdg2g78\""),                                        .check_against = text_view_from_literal("a51fdg2g78")},
-        {.source = text_view_from_literal("\"]\""),                                                 .check_against = text_view_from_literal("]")},
-        {.source = text_view_from_literal("\"]%S&@BVBSH@*(SG@*(S*#^@\""),                           .check_against = text_view_from_literal("]%S&@BVBSH@*(SG@*(S*#^@")},
-        {.source = text_view_from_literal("\"]%S&@\\nBVBSH@\\n*(SG\\r\\f\\n@*(S*#^@\""),            .check_against = text_view_from_literal("]%S&@\nBVBSH@\n*(SG\r\f\n@*(S*#^@")},
-        {.source = text_view_from_literal("\"\\0]%S&@\\nBVB\\0SH@\\n*(SG\\r\\f\\n@*(S*#^@\\0\""),   .check_against = text_view_from_literal("\0]%S&@\nBVB\0SH@\n*(SG\r\f\n@*(S*#^@\0")},
+        {.source = text_view_value_of_literal("\"\""),                                                  .check_against = text_view_value_of_literal("")},
+        {.source = text_view_value_of_literal("\"'\""),                                                 .check_against = text_view_value_of_literal("'")},
+        {.source = text_view_value_of_literal("\"''\""),                                                .check_against = text_view_value_of_literal("''")},
+        {.source = text_view_value_of_literal("\"'''\""),                                               .check_against = text_view_value_of_literal("'''")},
+        {.source = text_view_value_of_literal("\"        \""),                                          .check_against = text_view_value_of_literal("        ")},
+        {.source = text_view_value_of_literal("\"\\0\""),                                               .check_against = text_view_value_of_literal("\0")},
+        {.source = text_view_value_of_literal("\"a\""),                                                 .check_against = text_view_value_of_literal("a")},
+        {.source = text_view_value_of_literal("\"ab\""),                                                .check_against = text_view_value_of_literal("ab")},
+        {.source = text_view_value_of_literal("\"abc\""),                                               .check_against = text_view_value_of_literal("abc")},
+        {.source = text_view_value_of_literal("\"a51fdg2g78\""),                                        .check_against = text_view_value_of_literal("a51fdg2g78")},
+        {.source = text_view_value_of_literal("\"]\""),                                                 .check_against = text_view_value_of_literal("]")},
+        {.source = text_view_value_of_literal("\"]%S&@BVBSH@*(SG@*(S*#^@\""),                           .check_against = text_view_value_of_literal("]%S&@BVBSH@*(SG@*(S*#^@")},
+        {.source = text_view_value_of_literal("\"]%S&@\\nBVBSH@\\n*(SG\\r\\f\\n@*(S*#^@\""),            .check_against = text_view_value_of_literal("]%S&@\nBVBSH@\n*(SG\r\f\n@*(S*#^@")},
+        {.source = text_view_value_of_literal("\"\\0]%S&@\\nBVB\\0SH@\\n*(SG\\r\\f\\n@*(S*#^@\\0\""),   .check_against = text_view_value_of_literal("\0]%S&@\nBVB\0SH@\n*(SG\r\f\n@*(S*#^@\0")},
     };
     const int N = sizeof(arr) / sizeof(test_string);
 
@@ -330,14 +330,14 @@ static void test_lexer_single_identifier(void) {
         TextView identifier;
     } test_identifier;
     test_identifier arr[] = {
-        {.spelling = text_view_from_literal("_"), .identifier = text_view_from_literal("_")},
-        {.spelling = text_view_from_literal("a"), .identifier = text_view_from_literal("a")},
-        {.spelling = text_view_from_literal("abcdefg"), .identifier = text_view_from_literal("abcdefg")},
-        {.spelling = text_view_from_literal("int_but_not_quite"), .identifier = text_view_from_literal("int_but_not_quite")},
-        {.spelling = text_view_from_literal("is_char_or_is"), .identifier = text_view_from_literal("is_char_or_is")},
-        {.spelling = text_view_from_literal("not_if_is_but_else"), .identifier = text_view_from_literal("not_if_is_but_else")},
-        {.spelling = text_view_from_literal("a1_1234"), .identifier = text_view_from_literal("a1_1234")},
-        {.spelling = text_view_from_literal("_122345678"), .identifier = text_view_from_literal("_122345678")},
+        {.spelling = text_view_value_of_literal("_"), .identifier = text_view_value_of_literal("_")},
+        {.spelling = text_view_value_of_literal("a"), .identifier = text_view_value_of_literal("a")},
+        {.spelling = text_view_value_of_literal("abcdefg"), .identifier = text_view_value_of_literal("abcdefg")},
+        {.spelling = text_view_value_of_literal("int_but_not_quite"), .identifier = text_view_value_of_literal("int_but_not_quite")},
+        {.spelling = text_view_value_of_literal("is_char_or_is"), .identifier = text_view_value_of_literal("is_char_or_is")},
+        {.spelling = text_view_value_of_literal("not_if_is_but_else"), .identifier = text_view_value_of_literal("not_if_is_but_else")},
+        {.spelling = text_view_value_of_literal("a1_1234"), .identifier = text_view_value_of_literal("a1_1234")},
+        {.spelling = text_view_value_of_literal("_122345678"), .identifier = text_view_value_of_literal("_122345678")},
     };
     const int N = sizeof(arr) / sizeof(test_identifier);
 
@@ -366,7 +366,7 @@ static void test_lexer_single_identifier(void) {
 }
 // full lexer tests:
 static void test_lexer_int_x_eq_5_sc(void) {
-    const TextView source = text_view_from_literal("int x = 5;");
+    const TextView source = text_view_value_of_literal("int x = 5;");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -380,7 +380,7 @@ static void test_lexer_int_x_eq_5_sc(void) {
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 3, TOKEN_KW_INT)));
         list_push_last(expected_tokens,
                   test_token_create_ptr(
-                      test_token_ident_create(0, 4, 1, expected_context, text_view_from_literal("x"))));
+                      test_token_ident_create(0, 4, 1, expected_context, text_view_value_of_literal("x"))));
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 6, 1, TOKEN_EQUALS)));
         list_push_last(expected_tokens, test_token_create_ptr(test_token_const_int_create(   0, 8, 1, 5)));
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 9, 1, TOKEN_SEMICOLON)));
@@ -397,7 +397,7 @@ static void test_lexer_int_x_eq_5_sc(void) {
     context_destroy(expected_context);
 }
 static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
-    const TextView source = text_view_from_literal("if (num_int == 1234) printf(\"hello\");");
+    const TextView source = text_view_value_of_literal("if (num_int == 1234) printf(\"hello\");");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -413,7 +413,7 @@ static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
         // (
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 3, 1, TOKEN_PARENTHESES_LEFT)));
         // num_int
-        list_push_last(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 4, 7, expected_context, text_view_from_literal("num_int"))));
+        list_push_last(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 4, 7, expected_context, text_view_value_of_literal("num_int"))));
         // ==
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 12, 2, TOKEN_EQUALS_EQUALS)));
         // 1234
@@ -421,11 +421,11 @@ static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
         // )
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 19, 1, TOKEN_PARENTHESES_RIGHT)));
         // printf
-        list_push_last(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 21, 6, expected_context, text_view_from_literal("printf"))));
+        list_push_last(expected_tokens, test_token_create_ptr(test_token_ident_create(       0, 21, 6, expected_context, text_view_value_of_literal("printf"))));
         // (
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 27, 1, TOKEN_PARENTHESES_LEFT)));
         // "hello"
-        list_push_last(expected_tokens, test_token_create_ptr(test_token_string_literal_create(0, 28, 7, expected_context, text_view_from_literal("hello"))));
+        list_push_last(expected_tokens, test_token_create_ptr(test_token_string_literal_create(0, 28, 7, expected_context, text_view_value_of_literal("hello"))));
         // )
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 35, 1, TOKEN_PARENTHESES_RIGHT)));
         // ;
@@ -454,7 +454,7 @@ static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_space_x(void) {
-    const TextView source = text_view_from_literal(" x");
+    const TextView source = text_view_value_of_literal(" x");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -468,7 +468,7 @@ static void test_lexer_space_x(void) {
         // builds the list
         list_push_last(expected_tokens,
                   test_token_create_ptr(
-                      test_token_ident_create(0, 1, 1, expected_context, text_view_from_literal("x"))));
+                      test_token_ident_create(0, 1, 1, expected_context, text_view_value_of_literal("x"))));
         list_push_last(expected_tokens, test_token_create_ptr((Token)
         {
             .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 2}, .length = 0}
@@ -490,7 +490,7 @@ static void test_lexer_space_x(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_x_newline(void) {
-    const TextView source = text_view_from_literal("x\n");
+    const TextView source = text_view_value_of_literal("x\n");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -504,7 +504,7 @@ static void test_lexer_x_newline(void) {
         // builds the list
         list_push_last(expected_tokens,
                   test_token_create_ptr(
-                      test_token_ident_create(0, 0, 1, expected_context, text_view_from_literal("x"))));
+                      test_token_ident_create(0, 0, 1, expected_context, text_view_value_of_literal("x"))));
         list_push_last(expected_tokens, test_token_create_ptr((Token)
         {
             .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 2}, .length = 0}
@@ -527,7 +527,7 @@ static void test_lexer_x_newline(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_plus(void) {
-    const TextView source = text_view_from_literal("+");
+    const TextView source = text_view_value_of_literal("+");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -561,7 +561,7 @@ static void test_lexer_plus(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_eq_eq_sc(void) {
-    const TextView source = text_view_from_literal("==;");
+    const TextView source = text_view_value_of_literal("==;");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -597,7 +597,7 @@ static void test_lexer_eq_eq_sc(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_empty_char(void) {
-    const TextView source = text_view_from_literal("'' x");
+    const TextView source = text_view_value_of_literal("'' x");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -612,7 +612,7 @@ static void test_lexer_empty_char(void) {
         list_push_last(expected_tokens, test_token_create_ptr(test_token_const_int_create(0, 0, 2, 0)));
         list_push_last(expected_tokens,
                   test_token_create_ptr(
-                      test_token_ident_create(0, 3, 1, expected_context, text_view_from_literal("x"))));
+                      test_token_ident_create(0, 3, 1, expected_context, text_view_value_of_literal("x"))));
         list_push_last(expected_tokens, test_token_create_ptr((Token)
         {
             .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 4}, .length = 0}
@@ -635,7 +635,7 @@ static void test_lexer_empty_char(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_multi_char(void) {
-    const TextView source = text_view_from_literal("'ab' x");
+    const TextView source = text_view_value_of_literal("'ab' x");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -650,7 +650,7 @@ static void test_lexer_multi_char(void) {
         list_push_last(expected_tokens, test_token_create_ptr(test_token_const_int_create(0, 0, 4, 'a')));
         list_push_last(expected_tokens,
                   test_token_create_ptr(
-                      test_token_ident_create(0, 5, 1, expected_context, text_view_from_literal("x"))));
+                      test_token_ident_create(0, 5, 1, expected_context, text_view_value_of_literal("x"))));
         list_push_last(expected_tokens, test_token_create_ptr((Token)
         {
             .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = 6}, .length = 0}
@@ -673,7 +673,7 @@ static void test_lexer_multi_char(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_123abc(void) {
-    const TextView source = text_view_from_literal("123abc;");
+    const TextView source = text_view_value_of_literal("123abc;");
     Context* const lexer_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(lexer_context, 0);
@@ -790,7 +790,7 @@ static void test_lexer_string_4096(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_identifier_interning_a_b_a(void) {
-    const TextView source = text_view_from_literal("a b a");
+    const TextView source = text_view_value_of_literal("a b a");
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(context, 0);
@@ -817,7 +817,7 @@ static void test_lexer_identifier_interning_a_b_a(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_string_interning_with_nul(void) {
-    const TextView source = text_view_from_literal("\"a\\0b\" \"a\" \"a\"");
+    const TextView source = text_view_value_of_literal("\"a\\0b\" \"a\" \"a\"");
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(context, 0);
@@ -895,7 +895,7 @@ static void test_lexer_word_ends_at_non_word_character(void) {
  */
 static void test_lexer_string_all_escapes(void) {
     // the source text:  "\0\a\b\f\n\r\t\v\\\'\"\?"
-    const TextView source = text_view_from_literal("\"\\0\\a\\b\\f\\n\\r\\t\\v\\\\\\'\\\"\\?\"");
+    const TextView source = text_view_value_of_literal("\"\\0\\a\\b\\f\\n\\r\\t\\v\\\\\\'\\\"\\?\"");
     const char expected[] = {0x00, 0x07, 0x08, 0x0C, 0x0A, 0x0D, 0x09, 0x0B, 0x5C, 0x27, 0x22, 0x3F};
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
@@ -956,7 +956,7 @@ static void test_lexer_char_escapes(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_string_unknown_escape(void) {
-    const TextView source = text_view_from_literal("\"a\\qb\" x");
+    const TextView source = text_view_value_of_literal("\"a\\qb\" x");
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
     Lexer* lexer = lexer_create(context, 0);
@@ -1034,7 +1034,7 @@ static void test_lexer_unterminated_literal_at_eof(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_unterminated_literal_at_newline(void) {
-    const TextView string_source = text_view_from_literal("\"abc\nx");
+    const TextView string_source = text_view_value_of_literal("\"abc\nx");
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(string_source.data, string_source.length), "<source>"),
         compilation_flags_basic());
@@ -1056,7 +1056,7 @@ static void test_lexer_unterminated_literal_at_newline(void) {
     lexer_destroy(lexer);
     context_destroy(context);
 
-    const TextView char_source = text_view_from_literal("'a\nx");
+    const TextView char_source = text_view_value_of_literal("'a\nx");
     tokens = test_lexer_lex_buffer(char_source.data, char_source.length);
     if (CHECK(list_get_size(tokens) == 3)) {
         const Token* const first = list_at(tokens, 0);
@@ -1149,7 +1149,7 @@ static void test_lexer_unknown_character(void) {
  * @note Written by Claude on 10-Oct-26, not by Tomer.
  */
 static void test_lexer_identifier_character_class_ends(void) {
-    const TextView source = text_view_from_literal("AZaz_09");
+    const TextView source = text_view_value_of_literal("AZaz_09");
     List* tokens = test_lexer_lex_buffer(source.data, source.length);
 
     if (CHECK(list_get_size(tokens) == 2)) {

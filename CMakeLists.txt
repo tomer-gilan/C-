@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 4.2)
 project(c_compiler C)
 
 set(CMAKE_C_STANDARD 11)
+# -std=c11 instead of -std=gnu11: ISO C only, so -pedantic (below) can flag GNU extensions. POSIX functions need a
+# feature-test macro in the file that uses them (e.g. _POSIX_C_SOURCE in tests/test_source_text.c).
+set(CMAKE_C_EXTENSIONS OFF)
 
 # Lets CTest run the test executables registered below with add_test.
 enable_testing()
@@ -9,9 +12,28 @@ enable_testing()
 # `ctest` or CLion's runner needs the flag / the CTEST_OUTPUT_ON_FAILURE=1 environment variable instead.
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
-# Warning flags, shared by every target that links this.
+# Warning flags, shared by every target that links this. Added one or two at a time, fixing each one's hits first.
+#   -Wcast-qual:            a cast that drops const (conventions.md, "deep const").
+#   -Wshadow:               a local variable or parameter that hides an outer one.
+#   -Wmissing-declarations: a non-static function defined with no earlier declaration (a missing `static`, or a .c file
+#                           that doesn't include its own header).
+#   -Wwrite-strings:        string literals get the type const char[], so `char* s = "x"` warns (deep const again).
+#   -Wformat=2:             stricter printf checking, e.g. a format string that isn't a literal.
+#   -Wundef:                `#if FOO` where FOO isn't defined (it silently counts as 0).
+#   -Wredundant-decls:      the same declaration twice in one scope.
+#   -Wswitch-enum:          an enum value with no `case`, even when the switch has a `default` (plain -Wswitch, in
+#                           -Wall, stays silent then). The __COUNT enumerators need a `case` too.
+#   -pedantic:              everything ISO C11 forbids or requires a diagnostic for, mostly GNU extensions.
+# Errors, because they're always bugs (-Werror=X also turns X on):
+#   return-type, implicit-function-declaration, incompatible-pointer-types, int-conversion, format.
+# Not used, by choice: -Wstrict-prototypes, -Wold-style-definition and -Wmissing-prototypes (empty parameter lists `f()`
+# are allowed, and in C11 `f();` isn't a prototype, so all three would flag them).
 add_library(c_compiler_warnings INTERFACE)
-target_compile_options(c_compiler_warnings INTERFACE -Wall -Wextra)
+target_compile_options(c_compiler_warnings INTERFACE
+        -Wall -Wextra -Wcast-qual -Wshadow -Wmissing-declarations -Wwrite-strings -Wformat=2 -Wundef -Wredundant-decls
+        -Wswitch-enum -pedantic
+        -Werror=return-type -Werror=implicit-function-declaration -Werror=incompatible-pointer-types
+        -Werror=int-conversion -Werror=format)
 
 # Instrumented builds (testing-roadmap.md, steps 6 and 9). The sanitizers are on by default in Debug builds, so every
 # test run checks memory and undefined behavior; -DENABLE_SANITIZERS=OFF turns them off (Release never has them unless
@@ -151,4 +173,30 @@ if (UNIX AND NOT ENABLE_COVERAGE)
                 sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage.sh --fail-on-uncovered-lines src/lexer/Lexer.c)
         set_tests_properties(coverage PROPERTIES TIMEOUT 300)
     endif ()
+endif ()
+
+# -------- Forced full rebuild -------- #
+
+# Recompiles every file on every build, so every file's warnings show each time (otherwise only the recompiled files
+# show theirs). Every object file depends on a stamp file that the force_rebuild target touches before anything is
+# compiled. The sources themselves are never touched. Turn it off with -DFORCE_FULL_REBUILD=OFF, or delete this section.
+# Must stay at the end of this file: it applies to the targets defined above it.
+option(FORCE_FULL_REBUILD "Recompile every file on every build, so every file's warnings show" ON)
+if (FORCE_FULL_REBUILD)
+    set(force_rebuild_stamp ${CMAKE_BINARY_DIR}/force_rebuild.stamp)
+    add_custom_target(force_rebuild
+            COMMAND ${CMAKE_COMMAND} -E touch ${force_rebuild_stamp}
+            BYPRODUCTS ${force_rebuild_stamp}
+            COMMENT "FORCE_FULL_REBUILD: recompiling every file")
+
+    get_directory_property(all_targets BUILDSYSTEM_TARGETS)
+    foreach (target IN LISTS all_targets)
+        get_target_property(target_type ${target} TYPE)
+        # Only targets that compile something: not INTERFACE libraries (the flag groups) or custom targets (coverage).
+        if (target_type MATCHES "^(STATIC_LIBRARY|EXECUTABLE)$")
+            add_dependencies(${target} force_rebuild)
+            get_target_property(target_sources ${target} SOURCES)
+            set_property(SOURCE ${target_sources} APPEND PROPERTY OBJECT_DEPENDS ${force_rebuild_stamp})
+        endif ()
+    endforeach ()
 endif ()

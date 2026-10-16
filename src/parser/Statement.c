@@ -15,13 +15,11 @@
 static Range block_item_get_range(const BlockItem* const block_item) {
     assert(block_item != NULL);
 
-    switch (block_item->kind) {
-        case BLOCK_ITEM_KIND_STATEMENT:
-            return block_item->as.statement->range;
-        case BLOCK_ITEM_KIND_DECLARATION:
-        default:
-            return RANGE_EMPTY; // should never reach this case.
-    }
+    const BlockItemKind kind = block_item->kind;
+    if (kind == BLOCK_ITEM_KIND_STATEMENT)
+        return block_item->as.statement->range;
+    // TODO: deal with declarations
+    return RANGE_EMPTY;
 }
 
 static BlockItem* block_item_parse(Parser* parser) {
@@ -89,14 +87,12 @@ StatementNode* statement_node_parse(Parser* const parser) {
     if (parser_has_error(parser))
         return NULL;
 
-    switch (parser_peek(parser)->kind) {
-        case TOKEN_KW_RETURN: // return-statement
-            return return_statement_parse(parser);
-        case TOKEN_BRACE_LEFT: // compound-statement
-            return compound_statement_parse(parser);
-        default:
-            // TODO: issue diagnostic - invalid statement
-            parser_set_error(parser);
-            return NULL;
-    }
+    const TokenKind kind = parser_peek(parser)->kind;
+    if (kind == TOKEN_KW_RETURN) // return-statement
+        return return_statement_parse(parser);
+    if (kind == TOKEN_BRACE_LEFT) // compound-statement
+        return compound_statement_parse(parser);
+    // TODO: issue a diagnostic - invalid statement
+    parser_set_error(parser);
+    return NULL;
 }

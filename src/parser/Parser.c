@@ -21,7 +21,7 @@ struct Parser {
 Parser* parser_create(const List* const tokens, Context* const context)  {
     assert(tokens != NULL);
     assert(!list_is_empty(tokens));
-    assert(((Token*)list_at_const(tokens, list_get_size(tokens) - 1))->kind == TOKEN_EOF);
+    assert(((const Token*)list_at_const(tokens, list_get_size(tokens) - 1))->kind == TOKEN_EOF);
 
     Parser* const parser = utils_xmalloc(sizeof (Parser));
     *parser = (Parser){

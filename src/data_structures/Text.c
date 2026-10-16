@@ -102,9 +102,8 @@ bool text_list_equals(const void* first, const void* second) {
 }
 void* text_list_duplicate(const void* text) {
     return text_create_from_buffer(
-        ((Text*)text)->data,
-        ((Text*)text)->length
-        );
+        ((const Text*)text)->data,
+        ((const Text*)text)->length);
 }
 void text_list_destroy(void* this) {
     text_destroy(this);

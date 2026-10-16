@@ -23,14 +23,12 @@ static ExpressionNode* primary_expression_parse(Parser* parser) {
     if (parser_has_error(parser))
         return NULL;
 
-    switch (parser_peek(parser)->kind) {
-        case TOKEN_CONST_INT:
-            return expression_int_constant_parse(parser);
-        default:
-            // TODO: issue diagnostic - invalid return expression
-            parser_set_error(parser);
-            return NULL;
-    }
+    const TokenKind kind = parser_peek(parser)->kind;
+    if (kind == TOKEN_CONST_INT)
+        return expression_int_constant_parse(parser);
+    // TODO: issue diagnostic - invalid return expression
+    parser_set_error(parser);
+    return NULL;
 }
 
 ExpressionNode* expression_node_parse(Parser* parser) {

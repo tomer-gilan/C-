@@ -3,12 +3,17 @@
 //
 
 #include "Driver.h"
+
+#include <assert.h>
+
 #include "Context.h"
 #include "Lexer.h"
 #include "Utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "Parser.h"
 
 Driver* driver_create(const int argc, const char* const* argv) {
     if (argc <= 1) {
@@ -40,25 +45,41 @@ static bool driver_encountered_errors(const Driver* const this) {
 void driver_compile(Driver* const this, const int source_text_index) {
     bool continue_pipeline = true;
     driver_preprocess_source_text(this, source_text_index);
+    // Lexing:
+    List* const tokens = NULL;
+    if (continue_pipeline) {
+        Lexer* lexer = lexer_create(this->context, source_text_index);
+        lexer_lex_source_text(lexer);
+        lexer_destroy(lexer);
+        if (driver_encountered_errors(this))
+            continue_pipeline = false;
+    }
+    // Parsing:
+    const TranslationUnitNode* abstract_syntax_tree = NULL;
+    if (continue_pipeline) {
+        Parser* const parser = parser_create(tokens, this->context);
+        abstract_syntax_tree = parser_parse(parser);
+        parser_destroy(parser);
+        if (driver_encountered_errors(this))
+            continue_pipeline = false;
+    }
+    // Sema:
+    if (continue_pipeline) {
 
-    Lexer* lexer = lexer_create(this->context, source_text_index);
-    List* const tokens = lexer_lex_source_text(lexer);
+    }
+    // Code gen:
+    if (continue_pipeline) {
 
-    if (driver_encountered_errors(this))
-        continue_pipeline = false;
+    }
     driver_issue_diagnostics(this);
-
-    // next pipeline stages (parser, semantic, code gen, ...)
-
     list_destroy(tokens);
-    lexer_destroy(lexer);
 }
 DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
     DiagnosticCount report_count = {.error_count = 0, .warning_count = 0};
     const int N = list_get_size(this->context->diagnostic_report_table);
     for (int i = 0; i < N; ++i) {
         const DiagnosticSeverity severity = diagnostic_get_severity(
-            *(Diagnostic *) list_at_const(this->context->diagnostic_report_table, i));
+            *(const Diagnostic*)list_at_const(this->context->diagnostic_report_table, i));
         switch (severity) {
             case DIAGNOSTIC_SEVERITY_ERROR:
                 report_count.error_count++;
@@ -69,7 +90,11 @@ DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
                 else
                     report_count.warning_count++;
                 break;
+            case DIAGNOSTIC_SEVERITY_FATAL: // currently unused
+            case DIAGNOSTIC_SEVERITY_NOTE:  // currently unused
+                break;
             default:
+                assert(false && "invalid input");
                 break;
         }
     }
@@ -87,7 +112,7 @@ void driver_issue_diagnostics(Driver* const this) {
 
     const int N = list_get_size(diagnostic_report_table);
     for (int i = 0; i < N; ++i)
-        diagnostic_print(*(Diagnostic*)list_at_const(diagnostic_report_table, i), this->context);
+        diagnostic_print(*(const Diagnostic*)list_at_const(diagnostic_report_table, i), this->context);
 
     list_clear(diagnostic_report_table);
 }

@@ -10,12 +10,12 @@
 #include "List.h"
 
 // helpers
-bool equals_int(const void* first, const void* second) {
-    return *(int *) first == *(int *) second;
+static bool equals_int(const void* first, const void* second) {
+    return *(const int *) first == *(const int *) second;
 }
-void* duplicate_int(const void* first) {
+static void* duplicate_int(const void* first) {
     int* to_return = malloc(sizeof(int));
-    *to_return = *((int*)first);
+    *to_return = *((const int*)first);
     return to_return;
 }
 // end helpers
