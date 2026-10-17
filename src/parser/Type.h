@@ -6,8 +6,6 @@
 #define C_COMPILER_TYPE_H
 #include <stdbool.h>
 
-#include "Array.h"
-
 typedef struct Type Type;
 
 extern const int CHAR_TYPE_SIZE;

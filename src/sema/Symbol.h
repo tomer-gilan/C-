@@ -5,6 +5,7 @@
 #ifndef C_COMPILER_SYMBOL_H
 #define C_COMPILER_SYMBOL_H
 
+#include "Arena.h"
 #include "Declaration.h"
 
 /**

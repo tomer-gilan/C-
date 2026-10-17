@@ -103,8 +103,6 @@ add_library(c_compiler_core STATIC
         src/parser/Type.h
         src/sema/Symbol.c
         src/sema/Symbol.h
-        src/data_structures/Array.c
-        src/data_structures/Array.h
         src/sema/ScopeStack.c
         src/sema/ScopeStack.h
         src/sema/Sema.c
