@@ -60,10 +60,8 @@ const Token* parser_expect(Parser* const this, const TokenKind kind) {
     }
     return parser_pop(this);
 }
-Arena* parser_get_arena(Parser* const this) {
-    return this->context->arena;
-}
-void parser_set_error(Parser* this) {
+
+static void parser_set_error(Parser* this) {
     this->error = true;
 }
 bool parser_has_error(const Parser* const this) {
@@ -74,15 +72,19 @@ void parser_report_diagnostic(Parser* const this, const DiagnosticCode code, con
     parser_set_error(this);
     context_report_diagnostic(this->context, code, range);
 }
+
 int parser_generate_next_expression_id(Parser* const this) {
     return this->expression_id_counter++;
 }
 int parser_get_expression_id_count(const Parser* const this) {
     return this->expression_id_counter;
 }
+Arena* parser_get_arena(Parser* const this) {
+    return this->context->arena;
+}
 const Type* parser_get_function_type_from_declarators(Parser* const this, const Declarator* const declarators, const int count, const Type* const return_type) {
     assert(count >= 0);
-    const Type** parameters_type = arena_allocate(parser_get_arena(this), (int)sizeof (Type*) * count);
+    const Type** parameters_type = arena_allocate_array(parser_get_arena(this), sizeof(Type*), count);
     for (int i = 0; i < count; ++i) {
         parameters_type[i] = declarators[i].type;
     }
@@ -98,6 +100,7 @@ const Type* parser_get_function_type_from_declarators(Parser* const this, const 
     };
     return to_return;
 }
+
 TranslationUnitNode* parser_parse(Parser* this) {
     if (parser_has_error(this))
         return NULL;

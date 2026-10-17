@@ -450,7 +450,8 @@ AST when the parser reported no errors, and runs codegen only when sema reported
 
 ## ADR-022: The symbol table is a stack of scopes
 
-- **Status:** Accepted, to be implemented in sema Step 1 (file scope) and Step 6 (block scopes)
+- **Status:** Accepted, to be implemented in sema Step 6 (block scopes). Until then (sema Step 1), file scope is the
+  only scope and is a single table indexed by the interned identifier id: no stack and no linear search.
 - **Date:** 2026-10-16
 
 ### Context

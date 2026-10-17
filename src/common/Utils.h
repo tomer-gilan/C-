@@ -23,6 +23,13 @@ void* utils_xmalloc(size_t size);
  * @retval NULL if @b size == 0, may be returned.
  */
 void* utils_xrealloc(void* ptr, size_t size);
+/**
+ * Wrapper of @c calloc.
+ * Only difference is that upon allocation failure, reports to @c stderr and @c abort
+ * @note @c size_t is deliberately used to align with @c malloc
+ * @retval NULL if @b size == 0, may be returned.
+ */
+void* utils_xcalloc(size_t element_sizeof, int element_count);
 
 // --------- abortion utils ------------ //
 /**

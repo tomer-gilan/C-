@@ -6,6 +6,8 @@
 #define C_COMPILER_TYPE_H
 #include <stdbool.h>
 
+#include "Array.h"
+
 typedef struct Type Type;
 
 extern const int CHAR_TYPE_SIZE;
@@ -46,5 +48,8 @@ struct Type {
 bool type_are_equal(const Type* first, const Type* second);
 int type_get_size(const Type* this);
 const Type* type_get_singleton(TypeKind kind);
+const Type* type_get_void(void);
+const Type* type_get_char(void);
+const Type* type_get_int(void);
 
 #endif //C_COMPILER_TYPE_H

@@ -95,3 +95,12 @@ const Type* type_get_singleton(const TypeKind kind) {
             assert(false && "non-singleton type kind");
     }
 }
+const Type* type_get_void(void) {
+    return type_get_singleton(TYPE_KIND_VOID);
+}
+const Type* type_get_char(void) {
+    return type_get_singleton(TYPE_KIND_CHAR);
+}
+const Type* type_get_int(void) {
+    return type_get_singleton(TYPE_KIND_INT);
+}

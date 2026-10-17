@@ -1,5 +1,6 @@
 //
-// Written by Claude on 14-Oct-26. Updated on 15-Oct-26 for the growing (chunked) arena.
+// Written by Claude on 14-Oct-26. Updated on 15-Oct-26 for the growing (chunked) arena, and on 17-Oct-26 for the
+// one-malloc-per-allocation, zeroing arena.
 //
 
 #include <stdint.h>
@@ -8,44 +9,19 @@
 #include "Arena.h"
 #include "Harness.h"
 
-// The alignment the arena promises (_Alignof(max_align_t) on x86-64).
+// The alignment malloc gives every block, so every arena allocation (_Alignof(max_align_t) on x86-64).
 enum { ALIGNMENT = 16 };
-// Total bytes the growth tests allocate: far more than one chunk, whatever the (private) chunk size is.
-enum { MANY_BYTES = 64 * 1024 };
+// How many allocations the many-allocations test makes.
+enum { MANY_ALLOCATIONS = 4096 };
 
 static bool is_aligned(const void* const pointer) {
     return (uintptr_t)pointer % ALIGNMENT == 0;
 }
-
-/**
- * Allocates @b count blocks of @b size bytes and fills block i with the byte i, then checks that every block is
- * aligned and still holds its own byte. Overlapping blocks (also across chunks) show up as a wrong byte, and a block
- * that runs past its chunk's buffer as an ASan report.
- */
-static void allocate_fill_and_check(const int size, const int count) {
-    Arena* const arena = arena_create();
-    char* blocks[MANY_BYTES / ALIGNMENT];
-    if (!CHECK(count <= (int)(sizeof blocks / sizeof blocks[0])))
-        return;
-
-    bool all_allocated_and_aligned = true;
-    for (int i = 0; i < count; i++) {
-        blocks[i] = arena_allocate(arena, size);
-        if (blocks[i] == NULL || !is_aligned(blocks[i]))
-            all_allocated_and_aligned = false;
-        else
-            memset(blocks[i], (char)i, size);
-    }
-    CHECK(all_allocated_and_aligned);
-
-    bool all_unchanged = true;
-    for (int i = 0; all_allocated_and_aligned && i < count; i++)
-        for (int j = 0; j < size; j++)
-            if (blocks[i][j] != (char)i)
-                all_unchanged = false;
-    CHECK(all_unchanged);
-
-    arena_destroy(arena); // LeakSanitizer reports it if a chunk isn't freed
+static bool is_all_zero(const char* const bytes, const int size) {
+    for (int i = 0; i < size; i++)
+        if (bytes[i] != 0)
+            return false;
+    return true;
 }
 
 /** Every allocation starts aligned, whatever the size of the one before it. */
@@ -58,13 +34,35 @@ static void test_arena_allocations_are_aligned(void) {
 
     arena_destroy(arena);
 }
-/** A 1-byte allocation still takes a full alignment slot: the next one starts exactly ALIGNMENT bytes later. */
-static void test_arena_small_allocation_is_padded(void) {
+/**
+ * Every allocation comes back zeroed (Sema's side tables rely on it). Fresh memory from the OS is zero anyway, so the
+ * first arena dirties some blocks and is destroyed, and the second one likely gets them back from malloc. Under ASan,
+ * malloc fills every new block with 0xbe, so the sanitizer run catches a missing memset for sure.
+ */
+static void test_arena_allocations_are_zeroed(void) {
+    enum { SIZE = 64, COUNT = 8 };
+
+    Arena* const dirty = arena_create();
+    for (int i = 0; i < COUNT; i++)
+        memset(arena_allocate(dirty, SIZE), 'x', SIZE);
+    arena_destroy(dirty);
+
+    Arena* const arena = arena_create();
+    bool all_zero = true;
+    for (int i = 0; i < COUNT; i++)
+        if (!is_all_zero(arena_allocate(arena, SIZE), SIZE))
+            all_zero = false;
+    CHECK(all_zero);
+
+    arena_destroy(arena);
+}
+/** arena_allocate_array returns element_count * element_sizeof zeroed bytes. */
+static void test_arena_allocate_array_is_zeroed(void) {
+    enum { COUNT = 10 };
     Arena* const arena = arena_create();
 
-    const char* const first = arena_allocate(arena, 1);
-    const char* const second = arena_allocate(arena, 1);
-    CHECK(second - first == ALIGNMENT);
+    const int* const array = arena_allocate_array(arena, sizeof(int), COUNT);
+    CHECK(is_all_zero((const char*)array, sizeof(int) * COUNT)); // ASan reports it if the block is too small
 
     arena_destroy(arena);
 }
@@ -85,39 +83,63 @@ static void test_arena_allocations_do_not_overlap(void) {
 
     arena_destroy(arena);
 }
-/** A zero-byte allocation returns NULL (Arena.h). */
-static void test_arena_zero_size_returns_null(void) {
+/**
+ * A zero-byte allocation (and a zero-element array) is allowed, and doesn't disturb the allocations after it. The
+ * pointer it returns is unspecified (it may or may not be NULL) and must not be dereferenced, so it isn't checked.
+ */
+static void test_arena_zero_size_allocation_is_allowed(void) {
     Arena* const arena = arena_create();
 
-    CHECK(arena_allocate(arena, 0) == NULL);
+    arena_allocate(arena, 0);
+    arena_allocate_array(arena, sizeof(int), 0);
+    char* const after = arena_allocate(arena, 8);
+    if (CHECK(after != NULL)) {
+        memset(after, 'a', 8);
+        CHECK(after[7] == 'a');
+    }
 
     arena_destroy(arena);
 }
 /**
- * ALIGNMENT-sized blocks fill each chunk exactly (the chunk size is a multiple of ALIGNMENT), so this hits the
- * boundary of the capacity check: the block after the last one that fits must start a new chunk, not run past the
- * end. (A check that's too strict, < instead of <=, only wastes a slot and isn't visible from outside.)
+ * Many allocations of mixed sizes: block i is filled with the byte i, and must still hold it after all the others are
+ * written. Overlapping blocks show up as a wrong byte, and a block that's too small as an ASan report. Destroying the
+ * arena must free every block (LeakSanitizer reports any it misses).
  */
-static void test_arena_grows_with_exactly_fitting_blocks(void) {
-    allocate_fill_and_check(ALIGNMENT, MANY_BYTES / ALIGNMENT);
-}
-/**
- * 100-byte blocks (112 with padding) don't divide the chunk size, so each chunk ends with a gap too small for the next
- * block: the arena must move on to a new chunk instead of writing past the end of the current one.
- */
-static void test_arena_grows_with_leftover_space(void) {
-    allocate_fill_and_check(100, MANY_BYTES / 112);
+static void test_arena_many_allocations(void) {
+    Arena* const arena = arena_create();
+    char* blocks[MANY_ALLOCATIONS];
+    const int max_size = 50;
+
+    bool all_allocated_and_aligned = true;
+    for (int i = 0; i < MANY_ALLOCATIONS; i++) {
+        const int size = 1 + i % max_size;
+        blocks[i] = arena_allocate(arena, size);
+        if (blocks[i] == NULL || !is_aligned(blocks[i]))
+            all_allocated_and_aligned = false;
+        else
+            memset(blocks[i], (char)i, size);
+    }
+    CHECK(all_allocated_and_aligned);
+
+    bool all_unchanged = true;
+    for (int i = 0; all_allocated_and_aligned && i < MANY_ALLOCATIONS; i++)
+        for (int j = 0; j < 1 + i % max_size; j++)
+            if (blocks[i][j] != (char)i)
+                all_unchanged = false;
+    CHECK(all_unchanged);
+
+    arena_destroy(arena);
 }
 
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
 
     RUN_TEST(test_arena_allocations_are_aligned);
-    RUN_TEST(test_arena_small_allocation_is_padded);
+    RUN_TEST(test_arena_allocations_are_zeroed);
+    RUN_TEST(test_arena_allocate_array_is_zeroed);
     RUN_TEST(test_arena_allocations_do_not_overlap);
-    RUN_TEST(test_arena_zero_size_returns_null);
-    RUN_TEST(test_arena_grows_with_exactly_fitting_blocks);
-    RUN_TEST(test_arena_grows_with_leftover_space);
+    RUN_TEST(test_arena_zero_size_allocation_is_allowed);
+    RUN_TEST(test_arena_many_allocations);
 
     return harness_finish();
 }

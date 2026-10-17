@@ -18,7 +18,7 @@ typedef enum {
 } ExpressionKind;
 typedef struct {
     Range range;
-    int id;
+    int id; ///< the identifier that @c Sema uses to intern info about @c ExpressionNode
     ExpressionKind kind;
     union {
         ExpressionIntConstant expression_int_constant;

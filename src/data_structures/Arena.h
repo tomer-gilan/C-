@@ -7,13 +7,13 @@
 
 typedef struct Arena Arena;
 
-Arena* arena_create();
+Arena* arena_create(void);
 void arena_destroy(Arena* this);
 
 /**
  * @attention aborts of run out of memory.
- * @retval NULL if @c element_size is 0
  */
 void* arena_allocate(Arena* this, int allocation_size);
+void* arena_allocate_array(Arena* this, int element_sizeof, int element_count);
 
 #endif //C_COMPILER_ARENA_H

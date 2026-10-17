@@ -15,16 +15,17 @@ typedef struct Context Context;
 
 Parser* parser_create(const List* tokens, Context* context);
 void parser_destroy(Parser* this);
+
 const Token* parser_peek(const Parser* this);
 const Token* parser_pop(Parser* this);
 const Token* parser_expect(Parser* this, TokenKind kind);
-Arena* parser_get_arena(Parser* this);
-void parser_set_error(Parser* this);
+
 bool parser_has_error(const Parser* this);
 void parser_report_diagnostic(Parser* this, DiagnosticCode code, Range range);
+
 int parser_generate_next_expression_id(Parser* this);
 int parser_get_expression_id_count(const Parser* this);
-
+Arena* parser_get_arena(Parser* this);
 /**
  * @attention shares the types with the created function type!
  */

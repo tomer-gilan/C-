@@ -67,14 +67,14 @@ add_library(c_compiler_core STATIC
         src/lexer/Lexer.h
         src/lexer/Token.c
         src/lexer/Token.h
-        src/Diagnostic.c
-        src/Diagnostic.h
-        src/Utils.c
-        src/Utils.h
-        src/Context.c
-        src/Context.h
-        src/Driver.c
-        src/Driver.h
+        src/common/Diagnostic.c
+        src/common/Diagnostic.h
+        src/common/Utils.c
+        src/common/Utils.h
+        src/common/Context.c
+        src/common/Context.h
+        src/driver/Driver.c
+        src/driver/Driver.h
         src/data_structures/List.c
         src/data_structures/List.h
         src/data_structures/FilePosition.c
@@ -102,21 +102,28 @@ add_library(c_compiler_core STATIC
         src/parser/Type.c
         src/parser/Type.h
         src/sema/Symbol.c
-        src/sema/Symbol.h)
+        src/sema/Symbol.h
+        src/data_structures/Array.c
+        src/data_structures/Array.h
+        src/sema/ScopeStack.c
+        src/sema/ScopeStack.h
+        src/sema/Sema.c
+        src/sema/Sema.h)
 # -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
 # only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
 # never hide the system one from #include <x.h>. Propagates to every target that links the library.
 # One directory per stage, so a header is included by its bare name ("Lexer.h") from anywhere, tests included.
 target_compile_options(c_compiler_core PUBLIC
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/common"
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/driver"
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/data_structures"
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/lexer"
-        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/parser")
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/parser"
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/sema")
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings PUBLIC c_compiler_instrumentation)
 
-add_executable(c_compiler src/main.c
-        src/sema/Sema.c
-        src/sema/Sema.h)
+add_executable(c_compiler src/main.c)
 target_link_libraries(c_compiler PRIVATE c_compiler_core c_compiler_warnings)
 
 # -------- Tests -------- #
@@ -157,9 +164,13 @@ add_executable(test_type tests/test_type.c)
 target_link_libraries(test_type PRIVATE c_compiler_core test_harness c_compiler_warnings)
 add_test(NAME type COMMAND test_type)
 
+add_executable(test_scope_stack tests/test_scope_stack.c)
+target_link_libraries(test_scope_stack PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME scope_stack COMMAND test_scope_stack)
+
 if (ENABLE_SANITIZERS)
     # ASan and LeakSanitizer already print a stack trace; UBSan only does on request.
-    set_tests_properties(list text_view lexer source_text arena parser type PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
+    set_tests_properties(list text_view lexer source_text arena parser type scope_stack PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
 endif ()
 
 # Coverage without blocking anything. tests/coverage.sh makes its own instrumented build (in a subdirectory of this

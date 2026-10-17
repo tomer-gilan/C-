@@ -40,6 +40,8 @@ static const DiagnosticDescriptor diagnostics_table[DIAGNOSTIC_CODE__COUNT] = {
     [DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION]                     = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid expression"},
     [DIAGNOSTIC_CODE_PARSER_INVALID_STATEMENT]                      = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "invalid statement"},
     [DIAGNOSTIC_CODE_PARSER_MISSING_EXTERNAL_DEFINITION]            = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "missing external definition(s)"},
+    // Sema:
+    [DIAGNOSTIC_CODE_SEMA_SYMBOL_ALREADY_DEFINED]                     = {.severity = DIAGNOSTIC_SEVERITY_ERROR, .info = "symbol is already defined"},
 };
 
 static LineColumn diagnostic_get_line_column(const Context* const context, const FilePosition file_position) {

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include "Parser.h"
+#include "Sema.h"
 
 Driver* driver_create(const int argc, const char* const* argv) {
     if (argc <= 1) {
@@ -55,19 +56,24 @@ void driver_compile(Driver* const this, const int source_text_index) {
             continue_pipeline = false;
     }
     // Parsing:
-    const TranslationUnitNode* abstract_syntax_tree = NULL;
-    int expression_id_count = 0;
+    const TranslationUnitNode* ast = NULL;
+    int expression_count = 0;
     if (continue_pipeline) {
         Parser* const parser = parser_create(tokens, this->context);
-        abstract_syntax_tree = parser_parse(parser);
-        expression_id_count = parser_get_expression_id_count(parser);
+        ast = parser_parse(parser);
+        expression_count = parser_get_expression_id_count(parser);
         parser_destroy(parser);
         if (driver_encountered_errors(this))
             continue_pipeline = false;
     }
     // Sema:
+    AnalysisData analysis_data;
     if (continue_pipeline) {
-
+        Sema* const sema = sema_create(this->context, ast, expression_count);
+        analysis_data = sema_analyze(sema);
+        sema_destroy(sema);
+        if (driver_encountered_errors(this))
+            continue_pipeline = false;
     }
     // Code gen:
     if (continue_pipeline) {

@@ -30,7 +30,7 @@ CompilationFlags compilation_flags_from_arguments(const int argc, const char* co
         .pedantic = false
     };
 }
-CompilationFlags compilation_flags_basic() {
+CompilationFlags compilation_flags_basic(void) {
     // TODO: reuse 'compilation_flags_from_arguments'
     return (CompilationFlags)
     {

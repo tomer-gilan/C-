@@ -3,7 +3,7 @@
 //
 
 #include "data_structures/Text.h"
-#include "../Utils.h"
+#include "Utils.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -24,7 +24,7 @@ static void text_expand(Text* this) {
     this->data = utils_xrealloc(this->data, sizeof(char) * this->capacity);
 }
 
-Text* text_create_empty() {
+Text* text_create_empty(void) {
     return text_create_from_buffer("", 0);
 }
 

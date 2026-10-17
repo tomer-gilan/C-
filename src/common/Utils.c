@@ -21,6 +21,12 @@ void* utils_xrealloc(void* const ptr, const size_t size) {
         utils_abort_with_message("xrealloc failed");
     return new_ptr;
 }
+void* utils_xcalloc(const size_t element_sizeof, const int element_count) {
+    void* ptr = calloc(element_count, element_sizeof);
+    if (ptr == NULL && element_count != 0) // why element_count != 0? Because calloc can legally return NULL when size == 0
+        utils_abort_with_message("xcalloc failed");
+    return ptr;
+}
 
 // --------- abortion utils ------------ //
 void utils_abort_with_message(const char* const string) {

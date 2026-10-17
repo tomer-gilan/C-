@@ -17,7 +17,7 @@ typedef struct {
 } CompilationFlags;
 
 CompilationFlags compilation_flags_from_arguments(int argc, const char* const* argv);
-CompilationFlags compilation_flags_basic();
+CompilationFlags compilation_flags_basic(void);
 
 typedef struct Context{
     List* identifiers_table;        ///< @c List of @c TextView

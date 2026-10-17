@@ -7,16 +7,13 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "Utils.h"
-
-static const int ARENA_ALIGNMENT_FACTOR = 16;
-static const int ARENA_NODE_SIZE = 1 << 12;
 
 typedef struct ArenaNode{
     int size;
     char* bytes;
-    int allocated; ///< number of bytes allocated
     struct ArenaNode* next;
 } ArenaNode;
 struct Arena {
@@ -25,11 +22,11 @@ struct Arena {
 };
 
 static ArenaNode* arena_node_create(const int size) {
+    assert(size >= 0);
     ArenaNode* to_return = utils_xmalloc(sizeof (ArenaNode));
     *to_return = (ArenaNode){
         .size = size,
         .bytes = utils_xmalloc(sizeof(char) * size),
-        .allocated = 0,
         .next = NULL
     };
     return to_return;
@@ -39,33 +36,14 @@ static void arena_node_destroy(ArenaNode* const this) {
 
     if (this->next != NULL)
         arena_node_destroy(this->next);
-
     free(this->bytes);
     free(this);
 }
-static bool arena_node_can_allocate(const ArenaNode* const this, const int element_size) {
-    return this->allocated + element_size <= this->size;
-}
 
-static void arena_align(Arena* const this) {
-    if (this->tail->allocated % ARENA_ALIGNMENT_FACTOR == 0)
-        return;
-    this->tail->allocated += ARENA_ALIGNMENT_FACTOR - this->tail->allocated % ARENA_ALIGNMENT_FACTOR;
-}
-static void arena_expand(Arena* const this) {
-    if (this->head == NULL)
-        this->tail = this->head = arena_node_create(ARENA_NODE_SIZE);
-    else
-        this->tail = this->tail->next = arena_node_create(ARENA_NODE_SIZE);
-}
-
-Arena* arena_create() {
+Arena* arena_create(void) {
     Arena* to_return = utils_xmalloc(sizeof (Arena));
-    *to_return = (Arena){
-        .head = NULL,
-        .tail = NULL
-    };
-    arena_expand(to_return);
+    to_return->head = arena_node_create(0);
+    to_return->tail = to_return->head;
     return to_return;
 }
 void arena_destroy(Arena* const this) {
@@ -79,15 +57,14 @@ void* arena_allocate(Arena* const this, const int allocation_size) {
     assert(allocation_size >= 0);
 
     if (allocation_size == 0)
-        return NULL;
+        return this->head->bytes; // this trick works because this->head is initialized to a dummy to allocation size 0.
 
-    if (!arena_node_can_allocate(this->tail, allocation_size))
-        arena_expand(this);
-    if (!arena_node_can_allocate(this->tail, allocation_size))
-        utils_abort_with_message("Arena failed to allocated block. Block is too large");
-
-    void* const to_return = this->tail->bytes + this->tail->allocated;
-    this->tail->allocated += allocation_size;
-    arena_align(this); // to avoid mis-aligned access UB
-    return to_return;
+    this->tail = this->tail->next = arena_node_create(allocation_size);
+    memset(this->tail->bytes, 0, allocation_size);
+    return this->tail->bytes;
+}
+void* arena_allocate_array(Arena* const this, const int element_sizeof, const int element_count) {
+    assert(element_count >= 0);
+    assert(element_sizeof >= 0);
+    return arena_allocate(this, element_sizeof * element_count);
 }
