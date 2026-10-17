@@ -1,4 +1,3 @@
-int main() {
-    char c = "\n\\";'
-    ''
+int main(void) {
+    return 42;
 }

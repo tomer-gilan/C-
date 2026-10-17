@@ -6,13 +6,16 @@
 #define C_COMPILER_EXTERNAL_DEFINITION_H
 
 typedef struct Parser Parser;
+#include "Declaration.h"
 #include "Range.h"
 #include "Statement.h"
 
 typedef struct {
-    int name_identifier_id;
-    StatementNode* body; ///< a @c Statement of kind @c STATEMENT_KIND_COMPOUND
-} ExternalFunctionDefinition;
+    Declarator declarator;  ///< e.g. for int main(void) {...} the declarator describes info about the "int main(void)" part.
+    Declarator* parameters;
+    int parameters_count;
+    StatementNode* body;    ///< a @c Statement of kind @c STATEMENT_KIND_COMPOUND
+} ExternalDefinitionFunction;
 
 typedef enum {
     EXTERNAL_DEFINITION_KIND_FUNCTION,
@@ -22,7 +25,7 @@ typedef struct ExternalDefinitionNode {
     Range range;
     ExternalDefinitionKind kind;
     union {
-        ExternalFunctionDefinition external_function_definition;
+        ExternalDefinitionFunction external_function_definition;
     } as;
     struct ExternalDefinitionNode* next;
 } ExternalDefinitionNode;

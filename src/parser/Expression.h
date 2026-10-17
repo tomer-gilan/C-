@@ -18,6 +18,7 @@ typedef enum {
 } ExpressionKind;
 typedef struct {
     Range range;
+    int id;
     ExpressionKind kind;
     union {
         ExpressionIntConstant expression_int_constant;

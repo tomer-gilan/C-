@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 
+#include "Type.h"
 #include "../data_structures/Range.h"
 #include "../data_structures/TextView.h"
 
@@ -94,5 +95,11 @@ TokenKind token_kind_from_spelling(TextView spelling);
 
 bool token_kind_is_keyword(TokenKind kind);
 bool token_kind_is_punctuator(TokenKind kind);
+/**
+ * i.e. if kind is char, int, void, ..., not punc, ident, etc, ...
+ */
+bool token_kind_is_type(TokenKind kind);
+
+TypeKind token_kind_get_type_kind(TokenKind kind);
 
 #endif //C_COMPILER_TOKEN_H

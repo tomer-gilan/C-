@@ -19,8 +19,8 @@ For example, slice 4 is "bitwise and shift operators": parser Step 4 parses them
 codegen Step 4 emits `sal`/`sar`/`and`/`or`/`xor`. A slice is done when Step N is done in every roadmap and its
 end-to-end tests pass. Work slice by slice: N in the parser, then N in sema, then N in codegen, then N+1.
 
-The semantic-analysis and codegen roadmaps aren't written yet. They reuse the slice table below, so the slice list must
-stay identical across all three.
+The semantic-analysis roadmap is [`sema-roadmap.md`](sema-roadmap.md); the codegen roadmap isn't written yet. Both reuse
+the slice table below, so the slice list must stay identical across all three.
 
 ### The slices
 
@@ -53,12 +53,12 @@ holds what's planned after v1.
 Every step adds tests in the same three layers. A step isn't done until all of them are in place and pass, both in the
 normal build and in the sanitizer build (testing roadmap Step 6).
 
-1. **Unit tests: AST dump strings.** `test_parser` parses a small source string, dumps the AST as text (Step 0e), and
-   compares it to an expected string, e.g. `"1 + 2 * 3"` → `(+ 1 (* 2 3))`. One line per case, so dozens of cases cost
-   almost nothing. Expected values are written by hand from `SUBSET.md` and the standard's precedence rules, never
-   copied from the parser's output.
-2. **Error tests.** Each step lists inputs that must be rejected. Check the diagnostic's code and position, and the
-   recovery policy (ADR from Step 0d).
+1. **Unit tests: AST dump strings.** `test_parser` parses a small source string, dumps the AST as text (designed in
+   Step 2), and compares it to an expected string, e.g. `"1 + 2 * 3"` → `(+ 1 (* 2 3))`. One line per case, so dozens
+   of cases cost almost nothing. Expected values are written by hand from `SUBSET.md` and the standard's precedence
+   rules, never copied from the parser's output. Step 1 predates the dump, so its tests check node fields directly.
+2. **Error tests.** Each step lists inputs that must be rejected. Check the diagnostic's code and position, and that
+   it's the only diagnostic (ADR-020).
 3. **Golden files.** One or two realistic programs per step in `tests/golden/parser/`, run through the golden-file
    runner with `--dump-ast`. The runner is the testing roadmap's Step 7, which was deferred out of v1 on 2026-10-12 and
    not started, so the parser roadmap builds it (Step 0f) instead of waiting for it. Until then, 1 and 2 carry the
@@ -142,17 +142,15 @@ Each of these gets an ADR in [`architecture-decisions.md`](../specifications/arc
 
 **Step 0e: The AST dump format**
 
-- [ ] Specify the dump format (S-expressions recommended: `(+ 1 (* 2 3))`, `(return (int 2))`,
-  `(func main int (params) (block ...))`), in the same way as the token dump: deterministic, stable, readable, and
-  complete enough. It's the test oracle for every step after this one, so settle it before Step 1.
-- [ ] Decide which fields are dumped: ranges or not (recommended: not in the unit-test dump, maybe behind a flag), and
-  types or not (sema's dump will add them).
+Moved to Step 2 on 2026-10-16. Slice 1's tree is small enough to test field by field; slice 2's nested unary
+expressions are where that stops scaling.
 
 **Step 0f: Test plumbing** (tooling, so Claude can help directly)
 
-- [ ] `test_parser` executable registered with CTest.
-- [ ] A helper that parses a string, dumps the AST, and compares it to an expected string, printing both on a mismatch.
-- [ ] A helper for error tests: parse a string, check that it fails with a given diagnostic code at a given offset.
+- [x] `test_parser` executable registered with CTest.
+- [x] A helper for error tests: parse a string, check that it fails with a given diagnostic code at a given offset,
+  and that it's the only diagnostic.
+- The dump-compare helper moved to Step 2, together with the dump.
 - [ ] The golden-file runner (testing roadmap, Step 7, deferred out of v1 and not started): build it here, then wire
   `tests/golden/parser/` into it, using `--dump-ast`. This is also when the real `main` and the dump format work
   (`TODO.md`) happen. Optional until the unit tests above are in place; slices 1 to 3 can go ahead without it.
@@ -165,18 +163,26 @@ Each step lists what's parsed, the AST it adds, the tests, and the gotchas.
 
 **Step 1: `return` of a constant**
 
-- [ ] Token cursor: `peek`, `advance`, `expect(kind)` (reports a diagnostic on a mismatch). It relies on the lexer
+- [x] Token cursor: `peek`, `advance`, `expect(kind)` (reports a diagnostic on a mismatch). It relies on the lexer
   always ending the list with an EOF token, so peeking never runs off the end.
-- [ ] Parse exactly `int <ident> ( void ) { return <int-constant> ; }`. The general declarator parser comes in Steps
+- [x] Parse exactly `int <ident> ( void ) { return <int-constant> ; }`. The general declarator parser comes in Steps
   9–12; the narrow form keeps this step about the skeleton.
-- [ ] AST: translation unit, function definition, compound statement, `return` statement, integer constant.
-- [ ] Tests: `int main(void) { return 2; }` dumps correctly; the function name is any identifier, not just `main`.
-- [ ] Error tests: missing `;`, missing `}`, `return` without an expression (in an `int` function that's a sema matter
+- [x] AST: translation unit, function definition, compound statement, `return` statement, integer constant.
+- [x] Tests: `int main(void) { return 2; }` parses into the right nodes (checked field by field: the dump comes in
+  Step 2); the function name is any identifier, not just `main`.
+- [x] Error tests: missing `;`, missing `}`, `return` without an expression (in an `int` function that's a sema matter
   later, so decide where it's caught), trailing tokens after the function.
 - Gotcha: an error at EOF needs a sensible position (the EOF token's range is empty).
 
 **Step 2: Unary operators and parentheses**
 
+- [ ] **The AST dump** (moved here from Step 0e). Specify the format (S-expressions recommended: `(+ 1 (* 2 3))`,
+  `(return (int 2))`, `(func main int (params) (block ...))`): deterministic, stable, readable, and complete enough.
+  Decide which fields are dumped: ranges or not (recommended: not in the unit-test dump, maybe behind a flag), and
+  types or not (sema's dump will add them, see `sema-roadmap.md`). It's the test oracle from this step on.
+- [ ] Test plumbing (Claude): a helper that parses a string, dumps the AST, and compares it to an expected string,
+  printing both on a mismatch. Move slice 1's field-by-field tests to dump strings, keeping ranges in a few dedicated
+  tests.
 - [ ] Unary `- ~ !` and `+` (all of the prefix operators except `*` and `&`, which come in Step 11), and `( expr )`.
 - [ ] AST: unary node.
 - [ ] Tests: `-2`, `~-2`, `!!1`, `-(-(2))`, `(((2)))`.

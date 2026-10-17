@@ -11,11 +11,14 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "Arena.h"
+
 struct Parser {
     const List* tokens; ///< a @c List of @c Token . NOT owned by @c Parser
     int cursor;
     Context* context; ///< NOT owned by @c Parser
     bool error;
+    int expression_id_counter;
 };
 
 Parser* parser_create(const List* const tokens, Context* const context)  {
@@ -28,7 +31,8 @@ Parser* parser_create(const List* const tokens, Context* const context)  {
         .tokens = tokens,
         .cursor = 0,
         .context = context,
-        .error = false
+        .error = false,
+        .expression_id_counter = 0
     };
     return parser;
 }
@@ -69,6 +73,30 @@ void parser_report_diagnostic(Parser* const this, const DiagnosticCode code, con
     assert(this != NULL);
     parser_set_error(this);
     context_report_diagnostic(this->context, code, range);
+}
+int parser_generate_next_expression_id(Parser* const this) {
+    return this->expression_id_counter++;
+}
+int parser_get_expression_id_count(const Parser* const this) {
+    return this->expression_id_counter;
+}
+const Type* parser_get_function_type_from_declarators(Parser* const this, const Declarator* const declarators, const int count, const Type* const return_type) {
+    assert(count >= 0);
+    const Type** parameters_type = arena_allocate(parser_get_arena(this), (int)sizeof (Type*) * count);
+    for (int i = 0; i < count; ++i) {
+        parameters_type[i] = declarators[i].type;
+    }
+
+    Type* const to_return = arena_allocate(parser_get_arena(this), sizeof (Type));
+    *to_return = (Type){
+        .kind = TYPE_KIND_FUNCTION,
+        .as.function = {
+            .return_type = return_type,
+            .parameters_type = parameters_type,
+            .parameters_count = count
+        }
+    };
+    return to_return;
 }
 TranslationUnitNode* parser_parse(Parser* this) {
     if (parser_has_error(this))

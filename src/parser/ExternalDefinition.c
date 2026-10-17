@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-static ExternalDefinitionNode* external_function_definition_parse(Parser* parser, const Token* const type_specifier, const Token* const identifier) {
+static ExternalDefinitionNode* external_definition_function_parse(Parser* parser, const Token* const type_specifier, const Token* const identifier) {
     if (parser_has_error(parser))
         return NULL;
 
@@ -22,16 +22,30 @@ static ExternalDefinitionNode* external_function_definition_parse(Parser* parser
     const Token* const token_pare_right = parser_expect(parser,TOKEN_PARENTHESES_RIGHT);
     if (parser_has_error(parser))
         return NULL;
+
+    const int parameter_count = 0; // TODO: later we dynamically parse this
+    Declarator* parameter_declarators = arena_allocate(parser_get_arena(parser), (int)sizeof (Declarator) * parameter_count);
+    // TODO: populate parameter_declarators when needed.
+    const Type* const return_type = type_get_singleton(token_kind_get_type_kind(type_specifier->kind));
+    const Type* const function_type = parser_get_function_type_from_declarators(parser, parameter_declarators, parameter_count, return_type);
+
+    const Declarator function_declarator = (Declarator){
+        .range = range_union(type_specifier->range, identifier->range, token_pare_left->range, token_void->range, token_pare_right->range),
+        .type = function_type,
+        .identifier = *identifier
+    };
     StatementNode* const body = compound_statement_parse(parser);
     if (parser_has_error(parser))
         return NULL;
 
     ExternalDefinitionNode* to_return = arena_allocate(parser_get_arena(parser), sizeof (ExternalDefinitionNode));
     *to_return = (ExternalDefinitionNode){
-        .range = range_union(type_specifier->range, identifier->range, token_pare_left->range, token_void->range, token_pare_right->range, body->range),
+        .range = range_union(function_declarator.range, body->range),
         .kind = EXTERNAL_DEFINITION_KIND_FUNCTION,
         .as.external_function_definition = {
-            .name_identifier_id = identifier->as.id,
+            .declarator = function_declarator,
+            .parameters = parameter_declarators,
+            .parameters_count = parameter_count,
             .body = body
         },
         .next = NULL
@@ -51,7 +65,7 @@ static ExternalDefinitionNode* external_definition_node_parse(Parser* parser) {
 
     const TokenKind kind = parser_peek(parser)->kind;
     if (kind == TOKEN_PARENTHESES_LEFT)
-        return external_function_definition_parse(parser, type_specifier, identifier);
+        return external_definition_function_parse(parser, type_specifier, identifier);
     parser_report_diagnostic(
         parser,
         DIAGNOSTIC_CODE_PARSER_EXPECTED_EXTERNAL_FUNCTION_DEFINITION, // for now, only function definitions are supported for external definitions

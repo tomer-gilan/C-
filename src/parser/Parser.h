@@ -22,6 +22,13 @@ Arena* parser_get_arena(Parser* this);
 void parser_set_error(Parser* this);
 bool parser_has_error(const Parser* this);
 void parser_report_diagnostic(Parser* this, DiagnosticCode code, Range range);
+int parser_generate_next_expression_id(Parser* this);
+int parser_get_expression_id_count(const Parser* this);
+
+/**
+ * @attention shares the types with the created function type!
+ */
+const Type* parser_get_function_type_from_declarators(Parser* this, const Declarator* declarators, int count, const Type* return_type);
 
 TranslationUnitNode* parser_parse(Parser* this);
 

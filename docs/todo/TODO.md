@@ -70,7 +70,7 @@ scope from the 2026-10-13 quiz (A.2), except for the EBNF:
   `Parser` on the token list, calls `parser_parse`, and stops if the parser's error flag is set. The `Parser` and the
   token list are destroyed after parsing; the AST lives in `Context`'s arena. Related: the "Real `main`" item under
   "Other".
-- [ ] **AST dump, ELI15.** Before designing the dump format (parser roadmap Step 0e), get a from-scratch explanation:
+- [ ] **AST dump, ELI15.** Before designing the dump format (parser roadmap Step 2), get a from-scratch explanation:
   what an AST dump is, why tests compare dump strings instead of node fields, and what the format options look like
   (S-expressions like `(+ 1 (* 2 3))` vs. indented trees, and what to print for ranges and ids).
 

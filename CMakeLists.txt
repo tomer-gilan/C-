@@ -98,7 +98,11 @@ add_library(c_compiler_core STATIC
         src/parser/ExternalDefinition.c
         src/parser/ExternalDefinition.h
         src/data_structures/Arena.c
-        src/data_structures/Arena.h)
+        src/data_structures/Arena.h
+        src/parser/Type.c
+        src/parser/Type.h
+        src/sema/Symbol.c
+        src/sema/Symbol.h)
 # -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
 # only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
 # never hide the system one from #include <x.h>. Propagates to every target that links the library.
@@ -110,7 +114,9 @@ target_compile_options(c_compiler_core PUBLIC
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/parser")
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings PUBLIC c_compiler_instrumentation)
 
-add_executable(c_compiler src/main.c)
+add_executable(c_compiler src/main.c
+        src/sema/Sema.c
+        src/sema/Sema.h)
 target_link_libraries(c_compiler PRIVATE c_compiler_core c_compiler_warnings)
 
 # -------- Tests -------- #
@@ -147,9 +153,13 @@ add_test(NAME parser COMMAND test_parser)
 # A parser loop that never consumes a token hangs instead of failing; CTest's default timeout is 1500 seconds.
 set_tests_properties(parser PROPERTIES TIMEOUT 10)
 
+add_executable(test_type tests/test_type.c)
+target_link_libraries(test_type PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME type COMMAND test_type)
+
 if (ENABLE_SANITIZERS)
     # ASan and LeakSanitizer already print a stack trace; UBSan only does on request.
-    set_tests_properties(list text_view lexer source_text arena parser PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
+    set_tests_properties(list text_view lexer source_text arena parser type PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
 endif ()
 
 # Coverage without blocking anything. tests/coverage.sh makes its own instrumented build (in a subdirectory of this

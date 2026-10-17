@@ -327,7 +327,7 @@ and children.
 - A diagnostic about a node can underline exactly the code the user wrote.
 - Parse functions have to keep the tokens they consume (`(`, `;`, `}`), not only the children, to compute the range.
 - Tests that check ranges by hand-counted offsets are fragile. Keep them in a few dedicated tests once the AST dump
-  exists (parser roadmap Step 0e).
+  exists (parser roadmap Step 2).
 
 ---
 
@@ -424,3 +424,131 @@ half-built nodes and cascades of follow-up errors, which is about as much work a
   (found 2026-10-16, when one stray `}` produced 3 diagnostics). If panic mode is added, the count check is relaxed
   for the tests where resynchronizing legitimately finds more errors.
 - The driver doesn't run later stages after a parser error (ADR-012).
+
+---
+
+## ADR-021: Semantic analysis is a separate pass over the finished AST
+
+- **Status:** Accepted, to be implemented in sema Step 1
+- **Date:** 2026-10-16
+
+### Context
+Name resolution and type checking can happen while parsing (chibicc keeps a symbol table in its parser and types each
+node as it builds it), or in a separate stage that walks the AST once the parser is done (`overview.md`'s pipeline).
+
+### Decision
+Sema is its **own pass**. The parser only builds the AST (ADR-015 to ADR-020). The driver runs sema on the finished
+AST when the parser reported no errors, and runs codegen only when sema reported none (ADR-012).
+
+### Consequences
+- The parser stays purely syntactic: it never needs a symbol table, and every rule that isn't grammar is sema's.
+- Sema sees the whole tree, so a check can look at anything already parsed.
+- A program that parses but breaks a rule (`1 = x`, an undeclared name) reaches sema, and sema gives the diagnostic.
+- `sema-roadmap.md` mirrors `parser-roadmap.md`, step for step.
+
+---
+
+## ADR-022: The symbol table is a stack of scopes
+
+- **Status:** Accepted, to be implemented in sema Step 1 (file scope) and Step 6 (block scopes)
+- **Date:** 2026-10-16
+
+### Context
+Sema needs to know which declaration each name refers to, following C's scope rules: an inner block can shadow an
+outer name, and a name can't be declared twice in the same scope. chibicc uses one flat list and truncates it when a
+block ends; the alternative is a stack of separate scopes.
+
+### Decision
+- A **stack of scopes**: file scope at the bottom, and one scope pushed at each `{` and popped at its `}`.
+- Each scope holds its own symbols, keyed by the interned identifier id (ADR-018), searched linearly.
+- Lookup searches from the innermost scope outwards. "Declared twice in the same scope" checks the top scope only.
+- A symbol records what it is (function, variable, parameter), its `Type` (ADR-019) and the declaration node it came
+  from. Symbols are allocated from `Context`'s arena (ADR-017), because sema's results point at them and outlive the
+  sema pass (ADR-023). The scope stack itself only exists while sema runs.
+
+### Consequences
+- Shadowing and same-scope redeclaration are both direct checks, with no bookkeeping of list lengths.
+- A function's parameters and its body's outermost block must be **one** scope (`int f(int a) { int a; }` is an
+  error), so a function body doesn't push a second scope for its outermost `{`.
+- Linear search is fine at this scale. A hash map per scope is a later optimization, not a design change.
+
+---
+
+## ADR-023: Sema never modifies the AST; its results live in side tables indexed by expression id
+
+- **Status:** Accepted. Needs a parser change before sema Step 1 (expression ids).
+- **Date:** 2026-10-16
+
+### Context
+Sema finds out things the source doesn't spell: the type of every expression and the declaration every identifier
+refers to. Those can be written into the AST (fields the parser leaves empty and sema fills in, as clang does) or kept
+beside it (as *Crafting Interpreters*' resolver does with a map from expression to result). Writing into the AST splits
+responsibility for the tree between two stages and mixes what each stage's tests check.
+
+### Decision
+- **The AST is final once the parser returns.** Sema only reads it.
+- Sema produces a separate result: **side tables indexed by expression id**. The parser numbers every expression node
+  with an `int id` from 0 to n−1 (a counter, which carries no meaning beyond identity), and sema's result holds arrays
+  of length n, such as `Type* types[n]` (ADR-024) and `Symbol* symbols[n]` (for identifiers, ADR-022).
+- Facts that follow from the AST plus those tables aren't stored at all: whether an expression is an lvalue is a
+  function, `sema_is_lvalue`, over the node's kind and (for an identifier) its symbol.
+- Declarations keep the `Type` the parser built for them (ADR-019). Sema adds nothing to them.
+
+### Consequences
+- Each stage owns its own data, and its tests check only that: parser tests check the AST, sema tests check the
+  tables.
+- Lookups are O(1) array indexing. There's no map keyed by pointer, and no new data structure.
+- Codegen reads two things: the AST and sema's result. The typed dump (sema roadmap) prints the AST with each
+  expression's type from the table.
+- The parser change: an `id` field in the expression node, a counter in the parser, and the final count n exposed to
+  sema. Other node families get ids only if a later step needs per-node sema results for them.
+
+---
+
+## ADR-024: Sema decides array decay and pointer scaling; codegen derives widths from types
+
+- **Status:** Accepted, used from sema Step 11 (pointers) and Step 12 (arrays)
+- **Date:** 2026-10-16
+
+### Context
+C converts values implicitly: an array name becomes a pointer to its first element ("decay"), except as the operand of
+`sizeof` or `&`; `p + 1` adds `1 × sizeof *p` bytes; `char` widens to `int` in arithmetic and `int` narrows to `char`
+on assignment. Decay depends on context: the same identifier `a` is `int *` in `a + 1` and `int[3]` in `sizeof a`.
+Sema has to apply that rule anyway to check `int *p = a;`. If codegen applied it again, the rule would live in two
+places, which could disagree.
+
+### Decision
+- Sema records each expression's type **after** decay in its type table (ADR-023): `a` in `a + 1` is recorded as
+  `int *`, and `a` under `sizeof` as `int[3]`. Codegen never re-derives decay.
+- Pointer scaling, and every `char` ↔ `int` width, are derived by codegen from the recorded types: `p + 1` scales by the
+  size of `p`'s pointee type, and a load or store uses the size of the recorded type.
+- No conversion nodes are inserted (the AST is final, ADR-023).
+
+### Consequences
+- The context-dependent rule (decay) lives only in sema. The rules that follow directly from a type (sizes, scaling,
+  sign extension) live in codegen, which needs the types to pick instructions anyway.
+- Codegen tells "address of an array" from "load a scalar" by the recorded type: an identifier recorded as a pointer
+  while its declaration's type is an array means "emit its address".
+- The typed dump shows decay directly (`a:int*` vs `a:int[3]`), so it's testable at the sema level, without assembly.
+
+---
+
+## ADR-025: Sema stops at the first error (v1)
+
+- **Status:** Accepted, from sema Step 1. Narrows ADR-011's "processing continues" for sema, as ADR-020 does for the
+  parser.
+- **Date:** 2026-10-16
+
+### Context
+Sema can keep going after an error more easily than the parser can, but it needs an *error type* to stop one bad
+expression from causing an error at every later use (one undeclared `x`, one error per use of `x`).
+
+### Decision
+Like the parser (ADR-020), sema **stops at the first error** in v1: it reports one diagnostic and checks nothing more.
+Reporting every error, with an error type that silences follow-up errors, is a possible later addition.
+
+### Consequences
+- One run reports at most one semantic error.
+- Sema's error tests check the diagnostic's code, position, and count == 1, with the same kind of helper as the parser's.
+- A note attached to an error (e.g. "previous definition is here") is a second diagnostic. If one is ever added, the
+  count rule has to say whether notes count.

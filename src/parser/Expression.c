@@ -18,6 +18,7 @@ static ExpressionNode* expression_int_constant_parse(Parser* const parser) {
     ExpressionNode* to_return = arena_allocate(parser_get_arena(parser), (sizeof (ExpressionNode)));
     *to_return = (ExpressionNode){
         .range = token_constant_int->range,
+        .id = parser_generate_next_expression_id(parser),
         .kind = EXPRESSION_KIND_INT_CONSTANT,
         .as.expression_int_constant = { .value = token_constant_int->as.value }
     };

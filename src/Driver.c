@@ -56,9 +56,11 @@ void driver_compile(Driver* const this, const int source_text_index) {
     }
     // Parsing:
     const TranslationUnitNode* abstract_syntax_tree = NULL;
+    int expression_id_count = 0;
     if (continue_pipeline) {
         Parser* const parser = parser_create(tokens, this->context);
         abstract_syntax_tree = parser_parse(parser);
+        expression_id_count = parser_get_expression_id_count(parser);
         parser_destroy(parser);
         if (driver_encountered_errors(this))
             continue_pipeline = false;

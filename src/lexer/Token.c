@@ -63,3 +63,17 @@ bool token_kind_is_keyword(const TokenKind kind) {
 bool token_kind_is_punctuator(const TokenKind kind) {
     return TOKEN__PUNC_FIRST <= kind && kind <= TOKEN__PUNC_LAST;
 }
+bool token_kind_is_type(const TokenKind kind) {
+    return kind == TOKEN_KW_VOID || kind == TOKEN_KW_CHAR || kind == TOKEN_KW_INT;
+}
+TypeKind token_kind_get_type_kind(const TokenKind kind) {
+    assert(token_kind_is_type(kind));
+
+    if (kind == TOKEN_KW_VOID)
+        return TYPE_KIND_VOID;
+    if (kind == TOKEN_KW_CHAR)
+        return TYPE_KIND_CHAR;
+    if (kind == TOKEN_KW_INT)
+        return TYPE_KIND_INT;
+    assert(false && "invalid program state"); // should have been caught in the previous assert
+}

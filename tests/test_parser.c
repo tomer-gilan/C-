@@ -243,8 +243,8 @@ static const StatementNode* check_function_definition(
     const char* const name) {
     if (!CHECK(definition != NULL) || !CHECK(definition->kind == EXTERNAL_DEFINITION_KIND_FUNCTION))
         return NULL;
-    const ExternalFunctionDefinition* const function = &definition->as.external_function_definition;
-    CHECK(identifier_is(fixture, function->name_identifier_id, name));
+    const ExternalDefinitionFunction* const function = &definition->as.external_function_definition;
+    CHECK(identifier_is(fixture, function->declarator.identifier.as.id, name));
     if (!CHECK(function->body != NULL) || !CHECK(function->body->kind == STATEMENT_KIND_COMPOUND))
         return NULL;
     return function->body;
