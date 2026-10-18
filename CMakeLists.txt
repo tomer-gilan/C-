@@ -166,9 +166,13 @@ add_executable(test_scope_stack tests/test_scope_stack.c)
 target_link_libraries(test_scope_stack PRIVATE c_compiler_core test_harness c_compiler_warnings)
 add_test(NAME scope_stack COMMAND test_scope_stack)
 
+add_executable(test_sema tests/test_sema.c)
+target_link_libraries(test_sema PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME sema COMMAND test_sema)
+
 if (ENABLE_SANITIZERS)
     # ASan and LeakSanitizer already print a stack trace; UBSan only does on request.
-    set_tests_properties(list text_view lexer source_text arena parser type scope_stack PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
+    set_tests_properties(list text_view lexer source_text arena parser type scope_stack sema PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
 endif ()
 
 # Coverage without blocking anything. tests/coverage.sh makes its own instrumented build (in a subdirectory of this

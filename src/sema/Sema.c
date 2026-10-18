@@ -35,8 +35,7 @@ static void sema_report_diagnostic(Sema* const this, const DiagnosticCode code, 
 }
 
 /**
- * interns an @c ExpressionNode into an @c ExpressionSemantics entry in @c expressions_semantics
- * @attention can only be called once per expression (asserts so)
+ * records an @c ExpressionNode into an @c ExpressionSemantics entry in @c expressions_semantics
  */
 static void sema_record_expression(Sema* const this, int const id, const Type* const type, const Symbol* const identifier_symbol) {
     assert(this != NULL);
@@ -92,10 +91,11 @@ static void sema_analyze_expression(Sema* const this, const ExpressionNode* cons
     if (sema_has_error(this))
         return;
 
-    // finds the expression's Type:
     const Type* type = NULL;
+    const Symbol* identifier_symbol = NULL;
     assert(this->expressions_semantics[expression_node->id].type == NULL);
     switch (expression_node->kind) {
+    // TODO: check that the expression kind is identifier. then assert the symbol is NULL. then fetch the symbol from ScopeStack. if NULL, issue diagnostic (variable used but not declared), else, assign.
         case EXPRESSION_KIND_INT_CONSTANT:
             type = type_get_int();
             break;
@@ -103,11 +103,6 @@ static void sema_analyze_expression(Sema* const this, const ExpressionNode* cons
         default:
             assert(false && "invalid program state");
     }
-
-    // SYMBOL
-    const Symbol* identifier_symbol = NULL;
-    // TODO: check that the expression kind is identifier. then assert the symbol is NULL. then fetch the symbol from ScopeStack. if NULL, issue diagnostic (variable used but not declared), else, assign.
-
     sema_record_expression(this, expression_node->id, type, identifier_symbol);
 }
 static void sema_analyze_block_item(Sema* const this, const BlockItem* const block_item) {
