@@ -27,7 +27,7 @@ static BlockItem* block_item_parse(Parser* parser) {
         return NULL;
 
     // TODO: in the future, add a declaration option
-    BlockItem* const to_return = arena_allocate(parser_get_arena(parser), sizeof (BlockItem));
+    BlockItem* const to_return = arena_malloc(parser_get_arena(parser), sizeof (BlockItem));
     *to_return = (BlockItem){
         .kind = BLOCK_ITEM_KIND_STATEMENT,
         .as.statement = statement_node_parse(parser),
@@ -49,7 +49,7 @@ static StatementNode* return_statement_parse(Parser* const parser) {
     if (parser_has_error(parser))
         return NULL;
 
-    StatementNode* const to_return = arena_allocate(parser_get_arena(parser), sizeof (StatementNode));
+    StatementNode* const to_return = arena_malloc(parser_get_arena(parser), sizeof (StatementNode));
     *to_return = (StatementNode){
         .range = range_union(return_token->range, return_expression->range, token_semicolon->range),
         .kind = STATEMENT_KIND_RETURN,
@@ -79,7 +79,7 @@ StatementNode* compound_statement_parse(Parser* const parser) {
         return NULL;
     node_union_range = range_union(node_union_range, token_brace_right->range);
 
-    StatementNode* const to_return = arena_allocate(parser_get_arena(parser), sizeof (StatementNode));
+    StatementNode* const to_return = arena_malloc(parser_get_arena(parser), sizeof (StatementNode));
     *to_return = (StatementNode){
         .range = node_union_range,
         .kind = STATEMENT_KIND_COMPOUND,

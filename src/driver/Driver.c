@@ -67,7 +67,7 @@ void driver_compile(Driver* const this, const int source_text_index) {
             continue_pipeline = false;
     }
     // Sema:
-    AnalysisData analysis_data;
+    SemaResult analysis_data;
     if (continue_pipeline) {
         Sema* const sema = sema_create(this->context, ast, expression_count);
         analysis_data = sema_analyze(sema);

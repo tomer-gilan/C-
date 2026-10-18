@@ -15,7 +15,7 @@ static ExpressionNode* expression_int_constant_parse(Parser* const parser) {
     const Token* const token_constant_int = parser_expect(parser, TOKEN_CONST_INT);
     if (parser_has_error(parser))
         return NULL;
-    ExpressionNode* to_return = arena_allocate(parser_get_arena(parser), (sizeof (ExpressionNode)));
+    ExpressionNode* to_return = arena_malloc(parser_get_arena(parser), (sizeof (ExpressionNode)));
     *to_return = (ExpressionNode){
         .range = token_constant_int->range,
         .id = parser_generate_next_expression_id(parser),

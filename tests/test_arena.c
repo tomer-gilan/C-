@@ -30,7 +30,7 @@ static void test_arena_allocations_are_aligned(void) {
     const int sizes[] = {1, 5, 16, 17, 3, 8, 31, 1};
 
     for (int i = 0; i < (int)(sizeof sizes / sizeof sizes[0]); i++)
-        CHECK(is_aligned(arena_allocate(arena, sizes[i])));
+        CHECK(is_aligned(arena_malloc(arena, sizes[i])));
 
     arena_destroy(arena);
 }
@@ -44,13 +44,13 @@ static void test_arena_allocations_are_zeroed(void) {
 
     Arena* const dirty = arena_create();
     for (int i = 0; i < COUNT; i++)
-        memset(arena_allocate(dirty, SIZE), 'x', SIZE);
+        memset(arena_malloc(dirty, SIZE), 'x', SIZE);
     arena_destroy(dirty);
 
     Arena* const arena = arena_create();
     bool all_zero = true;
     for (int i = 0; i < COUNT; i++)
-        if (!is_all_zero(arena_allocate(arena, SIZE), SIZE))
+        if (!is_all_zero(arena_malloc(arena, SIZE), SIZE))
             all_zero = false;
     CHECK(all_zero);
 
@@ -61,7 +61,7 @@ static void test_arena_allocate_array_is_zeroed(void) {
     enum { COUNT = 10 };
     Arena* const arena = arena_create();
 
-    const int* const array = arena_allocate_array(arena, sizeof(int), COUNT);
+    const int* const array = arena_calloc(arena, sizeof(int), COUNT);
     CHECK(is_all_zero((const char*)array, sizeof(int) * COUNT)); // ASan reports it if the block is too small
 
     arena_destroy(arena);
@@ -70,8 +70,8 @@ static void test_arena_allocate_array_is_zeroed(void) {
 static void test_arena_allocations_do_not_overlap(void) {
     Arena* const arena = arena_create();
 
-    char* const first = arena_allocate(arena, 20);
-    char* const second = arena_allocate(arena, 20);
+    char* const first = arena_malloc(arena, 20);
+    char* const second = arena_malloc(arena, 20);
     memset(second, 'b', 20);
     memset(first, 'a', 20);
 
@@ -90,9 +90,9 @@ static void test_arena_allocations_do_not_overlap(void) {
 static void test_arena_zero_size_allocation_is_allowed(void) {
     Arena* const arena = arena_create();
 
-    arena_allocate(arena, 0);
-    arena_allocate_array(arena, sizeof(int), 0);
-    char* const after = arena_allocate(arena, 8);
+    arena_malloc(arena, 0);
+    arena_calloc(arena, sizeof(int), 0);
+    char* const after = arena_malloc(arena, 8);
     if (CHECK(after != NULL)) {
         memset(after, 'a', 8);
         CHECK(after[7] == 'a');
@@ -113,7 +113,7 @@ static void test_arena_many_allocations(void) {
     bool all_allocated_and_aligned = true;
     for (int i = 0; i < MANY_ALLOCATIONS; i++) {
         const int size = 1 + i % max_size;
-        blocks[i] = arena_allocate(arena, size);
+        blocks[i] = arena_malloc(arena, size);
         if (blocks[i] == NULL || !is_aligned(blocks[i]))
             all_allocated_and_aligned = false;
         else

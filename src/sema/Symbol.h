@@ -9,6 +9,30 @@
 #include "Declaration.h"
 
 /**
+ * @b Two @b sentence @b explanation:
+ *
+ * A @c Declarator creates a @c Symbol* and puts it in the @c ScopeStack.
+ *
+ * An @b identifier-expression looks up the @c Symbol* in the @c ScopeStack , and puts it in @c expressions_symbols.
+ *
+ *
+ * @b In @b short:
+ *
+ * Problem:
+ *
+ * every identifier may appear more than once. So @c identifier.id alone cannot uniquely identify each @c Symbol.
+ *
+ * Solution:
+ * 1. during @c Sema 's analysis, the @c ScopeStack tracks each @c identifier.id, updating the @c Symbol* when it's
+ * shadowed by another. The size of the stack is identifier_count * scope redundancy
+ * 2. meanwhile, an @c expressions_symbols table is populated with @c Symbol* from the @c ScopeStack
+ * (for @c Codegen to use later).
+ * It is a flat 1d array, keyed by each identifier-expression's id. The point is to have O(1) access from any
+ * identifier-expression to its @c Declarator , for @c Codegen to use.
+ * The size is: expression_count (though only identifier-expressions are populated, the rest are NULL)
+ *
+ * @b More @b info:
+ *
  * @c Symbol is @c Arena allocated, but shows up in two different places:
  * 1. during @c Sema 's analysis, for every declaration, a @c Symbol is generated (pointing at the declarator),
  * and interned in @c ScopeStack by its identifier id. This is the only place were symbols are generated.

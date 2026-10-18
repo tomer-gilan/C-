@@ -84,12 +84,12 @@ Arena* parser_get_arena(Parser* const this) {
 }
 const Type* parser_get_function_type_from_declarators(Parser* const this, const Declarator* const declarators, const int count, const Type* const return_type) {
     assert(count >= 0);
-    const Type** parameters_type = arena_allocate_array(parser_get_arena(this), sizeof(Type*), count);
+    const Type** parameters_type = arena_calloc(parser_get_arena(this), sizeof(Type*), count);
     for (int i = 0; i < count; ++i) {
         parameters_type[i] = declarators[i].type;
     }
 
-    Type* const to_return = arena_allocate(parser_get_arena(this), sizeof (Type));
+    Type* const to_return = arena_malloc(parser_get_arena(this), sizeof (Type));
     *to_return = (Type){
         .kind = TYPE_KIND_FUNCTION,
         .as.function = {
@@ -101,7 +101,7 @@ const Type* parser_get_function_type_from_declarators(Parser* const this, const 
     return to_return;
 }
 
-TranslationUnitNode* parser_parse(Parser* this) {
+const TranslationUnitNode* parser_parse(Parser* this) {
     if (parser_has_error(this))
         return NULL;
 

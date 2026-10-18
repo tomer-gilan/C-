@@ -52,7 +52,7 @@ void arena_destroy(Arena* const this) {
     arena_node_destroy(this->head); // recursively destroys all nodes in the linked list
     free(this);
 }
-void* arena_allocate(Arena* const this, const int allocation_size) {
+void* arena_malloc(Arena* const this, const int allocation_size) {
     assert(this != NULL);
     assert(allocation_size >= 0);
 
@@ -63,8 +63,8 @@ void* arena_allocate(Arena* const this, const int allocation_size) {
     memset(this->tail->bytes, 0, allocation_size);
     return this->tail->bytes;
 }
-void* arena_allocate_array(Arena* const this, const int element_sizeof, const int element_count) {
+void* arena_calloc(Arena* const this, const int element_sizeof, const int element_count) {
     assert(element_count >= 0);
     assert(element_sizeof >= 0);
-    return arena_allocate(this, element_sizeof * element_count);
+    return arena_malloc(this, element_sizeof * element_count);
 }

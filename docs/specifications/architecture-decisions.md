@@ -475,9 +475,10 @@ block ends; the alternative is a stack of separate scopes.
 
 ---
 
-## ADR-023: Sema never modifies the AST; its results live in side tables indexed by expression id
+## ADR-023: Sema never modifies the AST; its results live in a side table indexed by expression id
 
-- **Status:** Accepted. Needs a parser change before sema Step 1 (expression ids).
+- **Status:** Accepted. Needs a parser change before sema Step 1 (expression ids). Revised 2026-10-18: one array of
+  `ExpressionSemantics` instead of one array per fact.
 - **Date:** 2026-10-16
 
 ### Context
@@ -488,16 +489,24 @@ responsibility for the tree between two stages and mixes what each stage's tests
 
 ### Decision
 - **The AST is final once the parser returns.** Sema only reads it.
-- Sema produces a separate result: **side tables indexed by expression id**. The parser numbers every expression node
-  with an `int id` from 0 to n−1 (a counter, which carries no meaning beyond identity), and sema's result holds arrays
-  of length n, such as `Type* types[n]` (ADR-024) and `Symbol* symbols[n]` (for identifiers, ADR-022).
-- Facts that follow from the AST plus those tables aren't stored at all: whether an expression is an lvalue is a
-  function, `sema_is_lvalue`, over the node's kind and (for an identifier) its symbol.
+- Sema produces a separate result: **a side table indexed by expression id**. The parser numbers every expression node
+  with an `int id` from 0 to n−1 (a counter, which carries no meaning beyond identity), and sema's result, a
+  `SemaResult`, holds one array of length n, `expressions_semantics`, with `expressions_count` = n. Each entry, an
+  `ExpressionSemantics`, is what sema learned about that expression:
+  - `const Type* type`: every expression's type, after decay (ADR-024).
+  - `const Symbol* identifier_symbol`: for an identifier expression, the declaration it refers to (ADR-022); `NULL`
+    for every other expression.
+- One array of entries, not one array per fact: sema and codegen always ask about one expression at a time, so its
+  facts sit together, with one allocation and one count. A later fact (e.g. the value of a `sizeof`, sema Step 14) is
+  a new field, not a new array.
+- Facts that follow from the AST plus that table aren't stored at all: whether an expression is an identifier is its
+  node's kind (no `is_identifier` field), and whether it is an lvalue is a function, `sema_is_lvalue`, over the node's
+  kind and (for an identifier) its `identifier_symbol`.
 - Declarations keep the `Type` the parser built for them (ADR-019). Sema adds nothing to them.
 
 ### Consequences
 - Each stage owns its own data, and its tests check only that: parser tests check the AST, sema tests check the
-  tables.
+  table.
 - Lookups are O(1) array indexing. There's no map keyed by pointer, and no new data structure.
 - Codegen reads two things: the AST and sema's result. The typed dump (sema roadmap) prints the AST with each
   expression's type from the table.

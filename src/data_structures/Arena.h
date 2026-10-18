@@ -13,7 +13,7 @@ void arena_destroy(Arena* this);
 /**
  * @attention aborts of run out of memory.
  */
-void* arena_allocate(Arena* this, int allocation_size);
-void* arena_allocate_array(Arena* this, int element_sizeof, int element_count);
+void* arena_malloc(Arena* this, int allocation_size);
+void* arena_calloc(Arena* this, int element_sizeof, int element_count);
 
 #endif //C_COMPILER_ARENA_H

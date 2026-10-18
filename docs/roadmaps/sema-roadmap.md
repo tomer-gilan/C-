@@ -1,6 +1,6 @@
 # Semantic Analysis Roadmap
 
-The step-by-step plan for C~~'s semantic analysis ("sema"): the parser's AST in; a verdict and side tables out, with
+The step-by-step plan for C~~'s semantic analysis ("sema"): the parser's AST in; a verdict and a side table out, with
 the AST itself untouched (ADR-023). Sema enforces the rules the grammar can't express: every name is declared, types
 fit together, the left side of `=` is something that can be assigned to. It also records what later stages need:
 which declaration each name refers to, and the type of every expression.
@@ -107,8 +107,9 @@ Decided 2026-10-16:
 - [x] **Symbol table:** a stack of scopes (file scope at the bottom, one per block on top), each mapping an interned
   identifier id (ADR-018) to a symbol: what it is, its `Type`, and its declaration node. Lookup goes innermost-out.
   *(ADR-022)*
-- [x] **Sema never modifies the AST.** Its results are side tables indexed by a parser-assigned expression id: each
-  expression's `Type`, each identifier's symbol. Lvalue-ness is a function (`sema_is_lvalue`), not stored. *(ADR-023)*
+- [x] **Sema never modifies the AST.** Its results are a side table indexed by a parser-assigned expression id: one
+  `ExpressionSemantics` per expression, holding its `Type` and, for an identifier, its symbol. Lvalue-ness is a
+  function (`sema_is_lvalue`), not stored. *(ADR-023)*
 - [x] **Implicit conversions:** sema records each expression's type *after* array decay, so decay is decided only in
   sema. Codegen derives pointer scaling and `char` ↔ `int` widths from the recorded types. No conversion nodes.
   *(ADR-024)*

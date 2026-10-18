@@ -24,7 +24,7 @@ static ExternalDefinitionNode* external_definition_function_parse(Parser* parser
         return NULL;
 
     const int parameter_count = 0; // TODO: later we dynamically parse this
-    Declarator* parameter_declarators = arena_allocate(parser_get_arena(parser), (int)sizeof (Declarator) * parameter_count);
+    Declarator* parameter_declarators = arena_malloc(parser_get_arena(parser), (int)sizeof (Declarator) * parameter_count);
     // TODO: populate parameter_declarators when needed.
     const Type* const return_type = type_get_singleton(token_kind_get_type_kind(type_specifier->kind));
     const Type* const function_type = parser_get_function_type_from_declarators(parser, parameter_declarators, parameter_count, return_type);
@@ -38,7 +38,7 @@ static ExternalDefinitionNode* external_definition_function_parse(Parser* parser
     if (parser_has_error(parser))
         return NULL;
 
-    ExternalDefinitionNode* to_return = arena_allocate(parser_get_arena(parser), sizeof (ExternalDefinitionNode));
+    ExternalDefinitionNode* to_return = arena_malloc(parser_get_arena(parser), sizeof (ExternalDefinitionNode));
     *to_return = (ExternalDefinitionNode){
         .range = range_union(function_declarator.range, body->range),
         .kind = EXTERNAL_DEFINITION_KIND_FUNCTION,
@@ -100,7 +100,7 @@ TranslationUnitNode* translation_unit_node_parse(Parser* parser) {
             node_union_range = range_union(node_union_range, curr->next->range);
     }
 
-    TranslationUnitNode* to_return = arena_allocate(parser_get_arena(parser), sizeof (TranslationUnitNode));
+    TranslationUnitNode* to_return = arena_malloc(parser_get_arena(parser), sizeof (TranslationUnitNode));
     *to_return = (TranslationUnitNode){
         .range = node_union_range,
         .head = dummy.next

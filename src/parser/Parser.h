@@ -31,6 +31,6 @@ Arena* parser_get_arena(Parser* this);
  */
 const Type* parser_get_function_type_from_declarators(Parser* this, const Declarator* declarators, int count, const Type* return_type);
 
-TranslationUnitNode* parser_parse(Parser* this);
+const TranslationUnitNode* parser_parse(Parser* this);
 
 #endif //C_COMPILER_PARSER_H

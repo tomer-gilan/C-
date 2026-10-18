@@ -5,7 +5,7 @@
 #include "Symbol.h"
 
 const Symbol* symbol_allocate(Arena* const arena, const Declarator* const declarator) {
-    Symbol* const to_return = arena_allocate(arena, sizeof (Symbol));
+    Symbol* const to_return = arena_malloc(arena, sizeof (Symbol));
     *to_return = (Symbol){
         .declarator = declarator
     };
