@@ -19,8 +19,9 @@ For example, slice 4 is "bitwise and shift operators": parser Step 4 parses them
 codegen Step 4 emits `sal`/`sar`/`and`/`or`/`xor`. A slice is done when Step N is done in every roadmap and its
 end-to-end tests pass. Work slice by slice: N in the parser, then N in sema, then N in codegen, then N+1.
 
-The semantic-analysis roadmap is [`sema-roadmap.md`](sema-roadmap.md); the codegen roadmap isn't written yet. Both reuse
-the slice table below, so the slice list must stay identical across all three.
+The semantic-analysis roadmap is [`sema-roadmap.md`](sema-roadmap.md) and the codegen roadmap is
+[`codegen-roadmap.md`](codegen-roadmap.md). Both reuse the slice table below, so the slice list must stay identical
+across all three.
 
 ### The slices
 
