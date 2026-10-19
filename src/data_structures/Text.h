@@ -46,6 +46,12 @@ void text_push(Text* this, char c);
  */
 TextView text_as_view(const Text* this);
 
+void text_append_text_view(Text* this, TextView view);
+/**
+ * @note @b this never references @b other as a result of this function call
+ */
+void text_append_text(Text* this, const Text* other);
+
 // for list.h usage
 bool text_list_equals(const void* first, const void* second);
 

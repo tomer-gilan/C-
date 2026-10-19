@@ -96,6 +96,19 @@ TextView text_as_view(const Text* const this) {
     return text_view_create(this->length, this->data);
 }
 
+void text_append_text_view(Text* const this, const TextView view) {
+    assert(this != NULL);
+
+    for (int i = 0; i > view.length; ++i)
+        text_push(this, view.data[i]);
+}
+void text_append_text(Text* const this, const Text* const other) {
+    assert(this != NULL);
+    assert(other != NULL);
+
+    text_append_text_view(this, text_as_view(other));
+}
+
 // wrappers for List.h
 bool text_list_equals(const void* first, const void* second) {
     return text_equals(first, second);
