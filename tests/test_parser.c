@@ -18,6 +18,12 @@
 #include "Statement.h"
 #include "Text.h"
 
+/** The compiler's arguments for a test, as if run as `c_compiler <source> <output>`. Tests never write the output. */
+static CompilationArguments test_compilation_arguments(void) {
+    static const char* const argv[] = {"c_compiler", "<source>", "<unused>.s"};
+    return compilation_flags_from_arguments((int)(sizeof argv / sizeof argv[0]), argv);
+}
+
 /** Everything one parse needs. The AST lives in @c context 's arena, so it's valid until the fixture is destroyed. */
 typedef struct {
     Context* context;
@@ -29,7 +35,7 @@ typedef struct {
 static ParseFixture parse_fixture_create(const char* const source) {
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(source, (int)strlen(source)), "<source>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     Lexer* const lexer = lexer_create(context, 0);
     List* const tokens = lexer_lex_source_text(lexer);
     lexer_destroy(lexer);
@@ -234,7 +240,7 @@ static const ExternalDefinitionNode* external_definition_at(const TranslationUni
 /** @return true iff the interned identifier @b id is spelled @b name . */
 static bool identifier_is(const ParseFixture* const fixture, const int id, const char* const name) {
     const TextView* const spelling = list_at_const(fixture->context->identifiers_table, id);
-    return text_view_equals(*spelling, text_view_create((int)strlen(name), name));
+    return text_view_equals(*spelling, text_view_make((int)strlen(name), name));
 }
 /** @return the body of @b definition if it's a function definition named @b name with a block body, @c NULL otherwise. */
 static const StatementNode* check_function_definition(

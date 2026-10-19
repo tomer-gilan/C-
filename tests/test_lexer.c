@@ -16,6 +16,12 @@
 #include "Text.h"
 #include "TextView.h"
 
+/** The compiler's arguments for a test, as if run as `c_compiler <source> <output>`. Tests never write the output. */
+static CompilationArguments test_compilation_arguments(void) {
+    static const char* const argv[] = {"c_compiler", "<source>", "<unused>.s"};
+    return compilation_flags_from_arguments((int)(sizeof argv / sizeof argv[0]), argv);
+}
+
 /**
  * returns the @c Token @c List which was lexed from @b buffer.
  * @attention ownership of @b buffer remains with the caller.
@@ -27,7 +33,7 @@ static List* test_lexer_lex_buffer(const char* const buffer, const int length) {
                 buffer,
                 length),
             "<source>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
     lexer_destroy(lexer);
@@ -306,7 +312,7 @@ static void test_lexer_single_string(void) {
 
         Context* context = context_create(
             source_text_create(text_create_from_buffer(test.source.data, test.source.length), "<source>"),
-            compilation_flags_basic());
+            test_compilation_arguments());
         Lexer* lexer = lexer_create(context, 0);
         List* tokens = lexer_lex_source_text(lexer);
 
@@ -346,7 +352,7 @@ static void test_lexer_single_identifier(void) {
 
         Context* context = context_create(
             source_text_create(text_create_from_buffer(test.spelling.data, test.spelling.length), "<source>"),
-            compilation_flags_basic());
+            test_compilation_arguments());
         Lexer* lexer = lexer_create(context, 0);
         List* tokens = lexer_lex_source_text(lexer);
 
@@ -368,13 +374,13 @@ static void test_lexer_single_identifier(void) {
 static void test_lexer_int_x_eq_5_sc(void) {
     const TextView source = text_view_value_of_literal("int x = 5;");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     { // builds the list
         list_push_last(expected_tokens, test_token_create_ptr(test_token_punc_keyword_create(0, 0, 3, TOKEN_KW_INT)));
@@ -399,13 +405,13 @@ static void test_lexer_int_x_eq_5_sc(void) {
 static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
     const TextView source = text_view_value_of_literal("if (num_int == 1234) printf(\"hello\");");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     { // builds the list
         // if
@@ -456,13 +462,13 @@ static void test_lexer_if_num_int_eq_eq_1234_printf_hello_sc(void) {
 static void test_lexer_space_x(void) {
     const TextView source = text_view_value_of_literal(" x");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
@@ -492,13 +498,13 @@ static void test_lexer_space_x(void) {
 static void test_lexer_x_newline(void) {
     const TextView source = text_view_value_of_literal("x\n");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
@@ -529,13 +535,13 @@ static void test_lexer_x_newline(void) {
 static void test_lexer_plus(void) {
     const TextView source = text_view_value_of_literal("+");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
@@ -563,13 +569,13 @@ static void test_lexer_plus(void) {
 static void test_lexer_eq_eq_sc(void) {
     const TextView source = text_view_value_of_literal("==;");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
@@ -599,13 +605,13 @@ static void test_lexer_eq_eq_sc(void) {
 static void test_lexer_empty_char(void) {
     const TextView source = text_view_value_of_literal("'' x");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
@@ -637,13 +643,13 @@ static void test_lexer_empty_char(void) {
 static void test_lexer_multi_char(void) {
     const TextView source = text_view_value_of_literal("'ab' x");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
@@ -675,13 +681,13 @@ static void test_lexer_multi_char(void) {
 static void test_lexer_123abc(void) {
     const TextView source = text_view_value_of_literal("123abc;");
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
         source_text_create(text_create_from_buffer(source.data, source.length), "<expected>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
@@ -716,18 +722,18 @@ static void test_lexer_string_4095(void) {
     buffer[SOURCE_LENGTH - 1] = '\"';
 
     Context* const lexer_context = context_create(
-        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(lexer_context, 0);
     List* lexer_tokens = lexer_lex_source_text(lexer);
 
     Context* const expected_context = context_create(
-        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<expected>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<expected>"), test_compilation_arguments());
     List* expected_tokens = list_create(free);
     {
         // builds the list
         list_push_last(expected_tokens,
                   test_token_create_ptr(test_token_string_literal_create(
-                      0, 0, SOURCE_LENGTH, expected_context, text_view_create(CONTENT_LENGTH, buffer + 1))));
+                      0, 0, SOURCE_LENGTH, expected_context, text_view_make(CONTENT_LENGTH, buffer + 1))));
         list_push_last(expected_tokens, test_token_create_ptr((Token)
         {
             .kind = TOKEN_EOF, .range = {.position = {.source_text_index = 0, .offset = SOURCE_LENGTH}, .length = 0}
@@ -760,7 +766,7 @@ static void test_lexer_string_4096(void) {
     buffer[SOURCE_LENGTH - 1] = ';';
 
     Context* const context = context_create(
-        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(buffer, SOURCE_LENGTH), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
 
@@ -792,7 +798,7 @@ static void test_lexer_string_4096(void) {
 static void test_lexer_identifier_interning_a_b_a(void) {
     const TextView source = text_view_value_of_literal("a b a");
     Context* const context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
 
@@ -819,7 +825,7 @@ static void test_lexer_identifier_interning_a_b_a(void) {
 static void test_lexer_string_interning_with_nul(void) {
     const TextView source = text_view_value_of_literal("\"a\\0b\" \"a\" \"a\"");
     Context* const context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
 
@@ -898,7 +904,7 @@ static void test_lexer_string_all_escapes(void) {
     const TextView source = text_view_value_of_literal("\"\\0\\a\\b\\f\\n\\r\\t\\v\\\\\\'\\\"\\?\"");
     const char expected[] = {0x00, 0x07, 0x08, 0x0C, 0x0A, 0x0D, 0x09, 0x0B, 0x5C, 0x27, 0x22, 0x3F};
     Context* const context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
 
@@ -958,7 +964,7 @@ static void test_lexer_char_escapes(void) {
 static void test_lexer_string_unknown_escape(void) {
     const TextView source = text_view_value_of_literal("\"a\\qb\" x");
     Context* const context = context_create(
-        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), compilation_flags_basic());
+        source_text_create(text_create_from_buffer(source.data, source.length), "<source>"), test_compilation_arguments());
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
 
@@ -1003,7 +1009,7 @@ static void test_lexer_unterminated_literal_at_eof(void) {
         const int length = (int) strlen(cases[i].source);
         Context* const context = context_create(
             source_text_create(text_create_from_buffer(cases[i].source, length), "<source>"),
-            compilation_flags_basic());
+            test_compilation_arguments());
         Lexer* lexer = lexer_create(context, 0);
         List* tokens = lexer_lex_source_text(lexer);
 
@@ -1037,7 +1043,7 @@ static void test_lexer_unterminated_literal_at_newline(void) {
     const TextView string_source = text_view_value_of_literal("\"abc\nx");
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(string_source.data, string_source.length), "<source>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     Lexer* lexer = lexer_create(context, 0);
     List* tokens = lexer_lex_source_text(lexer);
 
@@ -1200,7 +1206,7 @@ static void print_source_escaped(const char* const source) {
 static void check_diagnostics(const char* const source, const Diagnostic* const expected, const int expected_count) {
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(source, (int) strlen(source)), "<source>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     Lexer* const lexer = lexer_create(context, 0);
     List* const tokens = lexer_lex_source_text(lexer);
 

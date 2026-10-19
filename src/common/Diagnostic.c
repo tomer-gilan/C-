@@ -112,7 +112,7 @@ void diagnostic_print(const Diagnostic report, const Context* const context) {
     assert(diagnostic_is_valid_code(report.code) && "Unknown diagnostic code!");
 
     const char* const file_name = context_source_text_at_const(context, report.range.position.source_text_index)->name;
-    printf("%s:%d:%d: [%s] %s.\n",
+    fprintf(stderr, "%s:%d:%d: [%s] %s.\n",
             file_name,
             report.line_column.line,
             report.line_column.column,

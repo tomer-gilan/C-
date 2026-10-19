@@ -19,6 +19,12 @@
 #include "Statement.h"
 #include "Text.h"
 
+/** The compiler's arguments for a test, as if run as `c_compiler <source> <output>`. Tests never write the output. */
+static CompilationArguments test_compilation_arguments(void) {
+    static const char* const argv[] = {"c_compiler", "<source>", "<unused>.s"};
+    return compilation_flags_from_arguments((int)(sizeof argv / sizeof argv[0]), argv);
+}
+
 /**
  * Everything one analysis needs. The AST, the symbols and sema's table live in @c context 's arena, so they're valid
  * until the fixture is destroyed. If the source didn't parse, @c parsed is false, @c ast is @c NULL and sema didn't run.
@@ -36,7 +42,7 @@ typedef struct {
 static SemaFixture sema_fixture_create(const char* const source) {
     Context* const context = context_create(
         source_text_create(text_create_from_buffer(source, (int)strlen(source)), "<source>"),
-        compilation_flags_basic());
+        test_compilation_arguments());
     Lexer* const lexer = lexer_create(context, 0);
     List* const tokens = lexer_lex_source_text(lexer);
     lexer_destroy(lexer);

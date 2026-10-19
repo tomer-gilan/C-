@@ -23,31 +23,29 @@
     }                                                       \
     while (false)                                           \
 
-CompilationFlags compilation_flags_from_arguments(const int argc, const char* const* const argv) {
+CompilationArguments compilation_flags_from_arguments(const int argc, const char* const* const argv) {
     // TODO: implement argv parsing
-    return (CompilationFlags)
-    {
-        .pedantic = false
+    assert(argc == 3);
+    return (CompilationArguments){
+        .pedantic = false,
+        .destination_file = argv[2]
     };
 }
-CompilationFlags compilation_flags_basic(void) {
-    // TODO: reuse 'compilation_flags_from_arguments'
-    return (CompilationFlags)
-    {
-        .pedantic = false
-    };
-}
-Context* context_create(SourceText * const source, const CompilationFlags flags) {
+//CompilationArguments compilation_flags_basic(void) {
+//    // TODO: reuse 'compilation_flags_from_arguments'
+//    return compilation_flags_from_arguments(0, NULL);
+//}
+Context* context_create(SourceText * const source, const CompilationArguments flags) {
     assert(source != NULL && "Invalid source!");
 
     Context* context = utils_xmalloc(sizeof (Context));
     *context = (Context){
-        .identifiers_table      = list_create(free),
-        .string_literals_table  = list_create(text_list_destroy),
-        .source_text_table = list_create(source_text_list_destroy),
-        .diagnostic_report_table = list_create(free),
-        .arena = arena_create(),
-        .flags = flags
+        .identifiers_table          = list_create(free),
+        .string_literals_table      = list_create(text_list_destroy),
+        .source_text_table          = list_create(source_text_list_destroy),
+        .diagnostic_report_table    = list_create(free),
+        .arena                      = arena_create(),
+        .compilation_arguments                      = flags
     };
     list_push_last(context->source_text_table, source);
     return context;

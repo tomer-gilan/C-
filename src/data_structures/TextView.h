@@ -32,17 +32,18 @@ typedef struct {
 /**
  * @attention @b data must outlive the return value, since the returned @c TextView points to @b data.
  */
-TextView text_view_create(int length, const char* data);
+TextView text_view_make(int length, const char* data);
+bool text_view_is_empty(TextView this);
 /**
  * predicate, checks if both are equal
  */
 bool text_view_equals(TextView first, TextView second);
+void text_view_print(TextView this);
 // for list.h usage
 bool text_view_list_equals(const void* first, const void* second);
 /**
  * @attention this is shallow duplication
  */
 void* text_view_list_duplicate(const void* text_view);
-void text_view_print(TextView this);
 
 #endif //C_COMPILER_TEXTVIEW_H

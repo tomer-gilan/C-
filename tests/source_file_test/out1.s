@@ -1,0 +1,8 @@
+.text
+.globl main
+.text
+
+main:
+    movl $42, %eax
+    ret
+.section .note.GNU-stack,"",@progbits

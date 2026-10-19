@@ -1,0 +1,4 @@
+# Written by Claude on 20-Oct-26. Expected exit status of return_256.c (see tests/run_e2e.sh).
+# 256 doesn't fit in the 8-bit exit status: the parent sees only the low 8 bits (POSIX, wait), so 256 mod 256 = 0.
+# The compiler still returns the whole int; the truncation happens outside the program.
+0

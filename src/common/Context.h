@@ -14,20 +14,21 @@ typedef struct Arena Arena;
 
 typedef struct {
     bool pedantic; ///< interpret every warning as an error
-} CompilationFlags;
+    const char* destination_file;
+} CompilationArguments;
 
-CompilationFlags compilation_flags_from_arguments(int argc, const char* const* argv);
-CompilationFlags compilation_flags_basic(void);
+CompilationArguments compilation_flags_from_arguments(int argc, const char* const* argv);
+//CompilationArguments compilation_flags_basic(void);
 
 typedef struct Context{
     List* identifiers_table;        ///< @c List of @c TextView
     List* string_literals_table;    ///< @c List of @c Text
     List* source_text_table;        ///< @c List of @c SourceText
-    List* diagnostic_report_table; ///< @c List of @c Diagnostic
+    List* diagnostic_report_table;  ///< @c List of @c Diagnostic
 
     Arena* arena;
 
-    CompilationFlags flags;
+    CompilationArguments compilation_arguments;
 } Context;
 
 /**
@@ -37,7 +38,7 @@ typedef struct Context{
  * @param flags the flags needed for the compilation process.
  * @return a @c Context handle
  */
-Context* context_create(SourceText* source, CompilationFlags flags);
+Context* context_create(SourceText* source, CompilationArguments flags);
 /**
  * Destroys the @c Context .
  * @param this handle to the @c Context

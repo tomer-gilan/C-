@@ -1,0 +1,29 @@
+//
+// Created by tomer on 19-Oct-26.
+//
+
+#ifndef C_COMPILER_EMITTER_H
+#define C_COMPILER_EMITTER_H
+#include "Operand.h"
+#include "Text.h"
+#include "TextView.h"
+
+typedef struct Emitter Emitter;
+
+Emitter* emitter_create(void);
+void emitter_destroy(Emitter* this);
+
+void emitter_indent(Emitter* this);
+void emitter_dedent(Emitter* this);
+
+/**
+ * @attention gives ownership of the assembly @c Text .
+ */
+Text* emitter_detach_text(Emitter* this);
+
+void emitter_emit_label(Emitter* this, Label label);
+// instruction emissions:
+void emitter_emit_mov(Emitter* this, Width width, Operand source, Operand destination);
+void emitter_emit_ret(Emitter* this);
+
+#endif //C_COMPILER_EMITTER_H

@@ -83,11 +83,10 @@ void sema_destroy(Sema* const this) {
     free(this);
 }
 
-static void sema_analyze_statement(Sema* this, const StatementNode* statement_node); // forward declaration
+static void sema_analyze_statement(                     Sema*       this, const StatementNode*                    statement_node); // forward declaration
 // analyzing logic:
-static void sema_analyze_expression(Sema* const this, const ExpressionNode* const expression_node) {
+static void sema_analyze_expression(                    Sema* const this, const ExpressionNode*             const expression_node) {
     assert(this != NULL);
-
     if (sema_has_error(this))
         return;
 
@@ -105,7 +104,7 @@ static void sema_analyze_expression(Sema* const this, const ExpressionNode* cons
     }
     sema_record_expression(this, expression_node->id, type, identifier_symbol);
 }
-static void sema_analyze_block_item(Sema* const this, const BlockItem* const block_item) {
+static void sema_analyze_block_item(                    Sema* const this, const BlockItem*                  const block_item) {
     assert(this != NULL);
 
     if (sema_has_error(this))
@@ -120,7 +119,7 @@ static void sema_analyze_block_item(Sema* const this, const BlockItem* const blo
             assert(false && "invalid program state");
     }
 }
-static void sema_analyze_compound_statement(Sema* const this, const CompoundStatement* const compound_statement) {
+static void sema_analyze_compound_statement(            Sema* const this, const CompoundStatement*          const compound_statement) {
     assert(this != NULL);
 
     if (sema_has_error(this))
@@ -129,7 +128,7 @@ static void sema_analyze_compound_statement(Sema* const this, const CompoundStat
         sema_analyze_block_item(this, curr);
     }
 }
-static void sema_analyze_statement(Sema* const this, const StatementNode* const statement_node) {
+static void sema_analyze_statement(                     Sema* const this, const StatementNode*              const statement_node) {
     assert(this != NULL);
 
     if (sema_has_error(this))
@@ -146,7 +145,7 @@ static void sema_analyze_statement(Sema* const this, const StatementNode* const 
             assert(false && "invalid program state");
     }
 }
-static void sema_analyze_external_definition_function(Sema* const this, const ExternalDefinitionFunction* const external_definition_function) {
+static void sema_analyze_external_definition_function(  Sema* const this, const ExternalDefinitionFunction* const external_definition_function) {
     assert(this != NULL);
 
     if (sema_has_error(this))
@@ -162,7 +161,7 @@ static void sema_analyze_external_definition_function(Sema* const this, const Ex
 
     sema_analyze_statement(this, external_definition_function->body);
 }
-static void sema_analyze_external_definition(Sema* const this, const ExternalDefinitionNode* external_definition_node) {
+static void sema_analyze_external_definition(           Sema* const this, const ExternalDefinitionNode*     const external_definition_node) {
     assert(this != NULL);
 
     if (sema_has_error(this))

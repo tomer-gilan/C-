@@ -69,6 +69,31 @@ Text* text_create_from_path(const char* const path) {
     };
     return text;
 }
+bool text_write_to_path(const Text* const this, const char* const path) {
+    // this helper was written by Claude:
+    assert(this != NULL);
+    assert(path != NULL);
+
+    FILE* const file = fopen(path, "wb");   // "wb": creates or truncates; no '\n' translation on any platform
+    if (file == NULL)
+        return false;
+
+    const size_t written = fwrite(this->data, 1, (size_t)this->length, file);
+    const bool closed = fclose(file) == 0;  // buffered data is only flushed here, so a full disk can show up here only
+    if (written != (size_t)this->length || !closed) {
+        remove(path);                       // don't leave a truncated file behind
+        return false;
+    }
+    return true;
+}
+Text* text_create_from_int(const int number) {
+    // this helper was written by Claude:
+    char buffer[12];   // "-2147483648" is 11 characters, plus the '\0'
+    const int written = snprintf(buffer, sizeof (buffer), "%d", number);
+    assert(0 <= written && written < (int)(sizeof (buffer)));   // < size means nothing was cut off
+    return text_create_from_buffer(buffer, written);
+}
+
 void text_destroy(Text* const this){
     assert(this != NULL);
 
@@ -77,7 +102,7 @@ void text_destroy(Text* const this){
 }
 bool text_is_empty(const Text* this) {
     assert(this != NULL);
-    return this->length == 0;
+    return text_view_is_empty(text_as_view(this));
 }
 bool text_equals(const Text* const first, const Text* const second) {
     assert(first != NULL && second != NULL);
@@ -86,27 +111,34 @@ bool text_equals(const Text* const first, const Text* const second) {
     const int length = first->length;
     return memcmp(first->data, second->data, length) == 0;
 }
-void text_push(Text* const this, const char c) {
+TextView text_as_view(const Text* const this) {
+    return text_view_make(this->length, this->data);
+}
+
+void text_append_char(Text* const this, const char c) {
     assert(this != NULL);
     if (text_has_met_capacity(this))
         text_expand(this);
     this->data[this->length++] = c;
 }
-TextView text_as_view(const Text* const this) {
-    return text_view_create(this->length, this->data);
-}
-
 void text_append_text_view(Text* const this, const TextView view) {
     assert(this != NULL);
 
-    for (int i = 0; i > view.length; ++i)
-        text_push(this, view.data[i]);
+    for (int i = 0; i < view.length; ++i)
+        text_append_char(this, view.data[i]);
 }
 void text_append_text(Text* const this, const Text* const other) {
     assert(this != NULL);
     assert(other != NULL);
 
     text_append_text_view(this, text_as_view(other));
+}
+void text_append_int(Text* const this, const int number) {
+    assert(this != NULL);
+
+    Text* const to_append = text_create_from_int(number);
+    text_append_text(this, to_append);
+    text_destroy(to_append);
 }
 
 // wrappers for List.h

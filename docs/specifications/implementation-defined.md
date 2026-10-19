@@ -22,6 +22,16 @@ C~~ follows the System V AMD64 ABI (see ADR-001), the same as gcc on x86-64 Linu
 
 - Plain `char` is signed (J.3.4). Gotcha: a byte ≥ 0x80 in a string literal reads back as a **negative** `char`.
 
+## Code model
+
+| Behavior | C~~ choice | Status |
+|---|---|---|
+| Reach of code and static data | The **small code model**, gcc's default (`-mcmodel=small`): the program's code and static data (globals, string literals) together fit within 2 GB, so every global is reached as `symbol(%rip)`, whose displacement is a signed 32 bits (±2 GB from the instruction). | ⏳ |
+
+Gotcha: a program that breaks the assumption, e.g. a global array larger than about 2 GB, compiles and assembles, then
+fails at **link** time with a relocation-overflow error. Stack frames have the same ±2 GB limit, since frame offsets are
+32-bit displacements too (`-8(%rbp)`). Whether sema rejects such objects up front with a diagnostic is still open.
+
 ## Translation environment
 
 | Behavior | C~~ choice | Status |

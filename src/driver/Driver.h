@@ -12,7 +12,6 @@ typedef struct {
     const char* const* argv;
     Context* context;
 } Driver;
-
 typedef struct {
     int error_count;
     int warning_count;
@@ -35,11 +34,5 @@ void driver_destroy(Driver* this);
  * compiles the source code
  */
 void driver_compile(Driver* this, int source_text_index);
-DiagnosticCount driver_get_diagnostic_count(const Driver* this);
-/**
- * @attention clears @c Context 's diagnostic table
- */
-void driver_issue_diagnostics(Driver* this);
-void driver_preprocess_source_text(Driver* this, int source_text_index);
 
 #endif //C_COMPILER_DRIVER_H

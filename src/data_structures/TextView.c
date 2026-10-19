@@ -9,8 +9,12 @@
 #include <stdio.h>
 #include <string.h>
 
-TextView text_view_create(const int length, const char* const data) {
+TextView text_view_make(const int length, const char* const data) {
     return (TextView){.length = length, .data = data};
+}
+
+bool text_view_is_empty(const TextView this) {
+    return this.length == 0;
 }
 bool text_view_equals(const TextView first, const TextView second) {
     return  first.length == second.length &&

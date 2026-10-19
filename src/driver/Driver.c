@@ -3,18 +3,81 @@
 //
 
 #include "Driver.h"
-
-#include <assert.h>
-
 #include "Context.h"
 #include "Lexer.h"
 #include "Utils.h"
+#include "Codegen.h"
+#include "Parser.h"
+#include "Sema.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "Parser.h"
-#include "Sema.h"
+
+static void driver_preprocess_source_text(Driver* const this, const int source_text_index) {
+    SourceText* const source_text = context_source_text_at(this->context, source_text_index);
+    Text* const processed = text_create_empty();
+
+    for (int i = 0; i < source_text->data->length; ++i) {
+        const char c = source_text->data->data[i];
+        if (c == '\r') {
+            if (i + 1 == source_text->data->length) {
+                // TODO: issue a diagnostic and return
+            }
+        }
+        else
+            text_append_char(processed, c);
+    }
+    text_destroy(source_text->data);
+    source_text->data = processed;
+}
+static DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
+    DiagnosticCount report_count = {.error_count = 0, .warning_count = 0};
+    const int N = list_get_size(this->context->diagnostic_report_table);
+    for (int i = 0; i < N; ++i) {
+        const DiagnosticSeverity severity = diagnostic_get_severity(
+            *(const Diagnostic*)list_at_const(this->context->diagnostic_report_table, i));
+        switch (severity) {
+            case DIAGNOSTIC_SEVERITY_ERROR:
+                report_count.error_count++;
+                break;
+            case DIAGNOSTIC_SEVERITY_WARNING:
+                if (this->context->compilation_arguments.pedantic)
+                    report_count.error_count++;
+                else
+                    report_count.warning_count++;
+                break;
+            case DIAGNOSTIC_SEVERITY_FATAL: // currently unused
+            case DIAGNOSTIC_SEVERITY_NOTE:  // currently unused
+                break;
+            case DIAGNOSTIC_SEVERITY__COUNT:
+            default:
+                assert(false && "invalid input");
+                break;
+        }
+    }
+    return report_count;
+}
+static void driver_print_diagnostic_count(const Driver* const this) {
+    const DiagnosticCount count = driver_get_diagnostic_count(this);
+    printf("Encountered %d errors, %d warnings.\n", count.error_count, count.warning_count);
+}
+/**
+ * @attention clears @c Context 's diagnostic table
+ */
+static void driver_issue_diagnostics(Driver* const this) {
+    driver_print_diagnostic_count(this);
+
+    List* const diagnostic_report_table = this->context->diagnostic_report_table;
+    list_sort(diagnostic_report_table, diagnostic_list_compare, true);
+
+    const int N = list_get_size(diagnostic_report_table);
+    for (int i = 0; i < N; ++i)
+        diagnostic_print(*(const Diagnostic*)list_at_const(diagnostic_report_table, i), this->context);
+
+    list_clear(diagnostic_report_table);
+}
 
 Driver* driver_create(const int argc, const char* const* argv) {
     if (argc <= 1) {
@@ -67,79 +130,23 @@ void driver_compile(Driver* const this, const int source_text_index) {
             continue_pipeline = false;
     }
     // Sema:
-    SemaResult analysis_data;
+    SemaResult sema_result;
     if (continue_pipeline) {
         Sema* const sema = sema_create(this->context, ast, expression_count);
-        analysis_data = sema_analyze(sema);
+        sema_result = sema_analyze(sema);
         sema_destroy(sema);
         if (driver_encountered_errors(this))
             continue_pipeline = false;
     }
     // Code gen:
     if (continue_pipeline) {
-
+        Codegen* codegen = codegen_create(this->context, ast, sema_result);
+        Text* assembly = codegen_generate(codegen);
+        text_write_to_path(assembly, this->context->compilation_arguments.destination_file);
+        text_destroy(assembly);
+        codegen_destroy(codegen);
     }
+
     driver_issue_diagnostics(this);
     list_destroy(tokens);
-}
-DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
-    DiagnosticCount report_count = {.error_count = 0, .warning_count = 0};
-    const int N = list_get_size(this->context->diagnostic_report_table);
-    for (int i = 0; i < N; ++i) {
-        const DiagnosticSeverity severity = diagnostic_get_severity(
-            *(const Diagnostic*)list_at_const(this->context->diagnostic_report_table, i));
-        switch (severity) {
-            case DIAGNOSTIC_SEVERITY_ERROR:
-                report_count.error_count++;
-                break;
-            case DIAGNOSTIC_SEVERITY_WARNING:
-                if (this->context->flags.pedantic)
-                    report_count.error_count++;
-                else
-                    report_count.warning_count++;
-                break;
-            case DIAGNOSTIC_SEVERITY_FATAL: // currently unused
-            case DIAGNOSTIC_SEVERITY_NOTE:  // currently unused
-                break;
-            case DIAGNOSTIC_SEVERITY__COUNT:
-            default:
-                assert(false && "invalid input");
-                break;
-        }
-    }
-    return report_count;
-}
-static void driver_print_diagnostic_count(const Driver* const this) {
-    const DiagnosticCount count = driver_get_diagnostic_count(this);
-    printf("Encountered %d errors, %d warnings.\n", count.error_count, count.warning_count);
-}
-void driver_issue_diagnostics(Driver* const this) {
-    driver_print_diagnostic_count(this);
-
-    List* const diagnostic_report_table = this->context->diagnostic_report_table;
-    list_sort(diagnostic_report_table, diagnostic_list_compare, true);
-
-    const int N = list_get_size(diagnostic_report_table);
-    for (int i = 0; i < N; ++i)
-        diagnostic_print(*(const Diagnostic*)list_at_const(diagnostic_report_table, i), this->context);
-
-    list_clear(diagnostic_report_table);
-}
-
-void driver_preprocess_source_text(Driver* const this, const int source_text_index) {
-    SourceText* const source_text = context_source_text_at(this->context, source_text_index);
-    Text* const processed = text_create_empty();
-
-    for (int i = 0; i < source_text->data->length; ++i) {
-        const char c = source_text->data->data[i];
-        if (c == '\r') {
-            if (i + 1 == source_text->data->length) {
-                // TODO: issue a diagnostic and return
-            }
-        }
-        else
-            text_push(processed, c);
-    }
-    text_destroy(source_text->data);
-    source_text->data = processed;
 }

@@ -1,0 +1,3 @@
+# Written by Claude on 20-Oct-26. Expected exit status of return_42.c (see tests/run_e2e.sh).
+# A non-zero value, so a program that always exits 0 can't pass.
+42

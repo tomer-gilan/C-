@@ -245,7 +245,7 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter, 
                     range_from_file_positions(invalid_sequence_start, this->cursor));
                 *reported = true;
             }
-            text_push(literal_text, (char)c);
+            text_append_char(literal_text, (char)c);
             should_escape_character = false;
         }
         else if (c == '\\') { // i.e. if we encounter a non-escaped backslash, the next character SHOULD be escaped.
@@ -255,7 +255,7 @@ static Text *lexer_lex_literal_to_text(Lexer* const this, const char delimiter, 
             return literal_text;
         }
         else
-            text_push(literal_text, (char)c);
+            text_append_char(literal_text, (char)c);
     }
     // if we got here something went wrong.
     // sanity check:

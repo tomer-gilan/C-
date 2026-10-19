@@ -106,7 +106,13 @@ add_library(c_compiler_core STATIC
         src/sema/ScopeStack.c
         src/sema/ScopeStack.h
         src/sema/Sema.c
-        src/sema/Sema.h)
+        src/sema/Sema.h
+        src/codegen/Codegen.c
+        src/codegen/Codegen.h
+        src/codegen/Emitter.c
+        src/codegen/Emitter.h
+        src/codegen/Operand.c
+        src/codegen/Operand.h)
 # -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
 # only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
 # never hide the system one from #include <x.h>. Propagates to every target that links the library.
@@ -118,7 +124,8 @@ target_compile_options(c_compiler_core PUBLIC
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/data_structures"
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/lexer"
         "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/parser"
-        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/sema")
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/sema"
+        "SHELL:-iquote ${CMAKE_CURRENT_SOURCE_DIR}/src/codegen")
 target_link_libraries(c_compiler_core PRIVATE c_compiler_warnings PUBLIC c_compiler_instrumentation)
 
 add_executable(c_compiler src/main.c)
@@ -170,9 +177,39 @@ add_executable(test_sema tests/test_sema.c)
 target_link_libraries(test_sema PRIVATE c_compiler_core test_harness c_compiler_warnings)
 add_test(NAME sema COMMAND test_sema)
 
+add_executable(test_operand tests/test_operand.c)
+target_link_libraries(test_operand PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME operand COMMAND test_operand)
+
+add_executable(test_emitter tests/test_emitter.c)
+target_link_libraries(test_emitter PRIVATE c_compiler_core test_harness c_compiler_warnings)
+add_test(NAME emitter COMMAND test_emitter)
+
 if (ENABLE_SANITIZERS)
     # ASan and LeakSanitizer already print a stack trace; UBSan only does on request.
-    set_tests_properties(list text_view lexer source_text arena parser type scope_stack sema PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
+    set_tests_properties(list text_view lexer source_text arena parser type scope_stack sema operand emitter PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
+endif ()
+
+# End-to-end tests (codegen-roadmap.md, Step 0d): one CTest test per tests/e2e/<slice>/<name>.c, named
+# e2e/<slice>/<name>. tests/run_e2e.sh compiles, assembles, links and runs it, and checks the exit status against
+# <name>.exit next to it.
+# CONFIGURE_DEPENDS: a new program is picked up on the next build, without re-running CMake by hand. Run only
+# these with: ctest -L e2e. Needs a POSIX shell and gcc.
+if (UNIX)
+    file(GLOB_RECURSE e2e_programs CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/e2e/*.c)
+    foreach (program IN LISTS e2e_programs)
+        file(RELATIVE_PATH relative_path ${CMAKE_CURRENT_SOURCE_DIR}/tests/e2e ${program}) # slice01/return_42.c
+        string(REGEX REPLACE "\\.c$" "" test_name ${relative_path})                         # slice01/return_42
+        get_filename_component(test_directory ${test_name} DIRECTORY)                       # slice01
+        add_test(NAME e2e/${test_name}
+                COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_e2e.sh $<TARGET_FILE:c_compiler> ${program}
+                        ${CMAKE_CURRENT_BINARY_DIR}/e2e/${test_directory})
+        # The script's own timeout (5 s) covers the program; this one covers a compiler that hangs.
+        set_tests_properties(e2e/${test_name} PROPERTIES TIMEOUT 30 LABELS e2e)
+        if (ENABLE_SANITIZERS)
+            set_tests_properties(e2e/${test_name} PROPERTIES ENVIRONMENT "UBSAN_OPTIONS=print_stacktrace=1")
+        endif ()
+    endforeach ()
 endif ()
 
 # Coverage without blocking anything. tests/coverage.sh makes its own instrumented build (in a subdirectory of this
