@@ -22,7 +22,7 @@ typedef enum {
     TOKEN_KW_IF,                // if
     TOKEN_KW_ELSE,              // else
     TOKEN_KW_RETURN,            // return
-    // Punctuators              //
+    // Punctuators
     TOKEN_BRACKET_LEFT,         // [
     TOKEN_BRACKET_RIGHT,        // ]
     TOKEN_PARENTHESES_LEFT,     // (
@@ -52,7 +52,9 @@ typedef enum {
     TOKEN_AMPERSAND_AMPERSAND,  // &&
     TOKEN_BAR_BAR,              // ||
     TOKEN_SEMICOLON,            // ;
-    // sentinel                 //
+    TOKEN_PLUS_PLUS,            // ++
+    TOKEN_MINUS_MINUS,          // --
+    // sentinel
     TOKEN__SPELLABLE_COUNT,
     // Then non-spellable token kinds:
     // Identifiers
@@ -70,7 +72,7 @@ typedef enum {
     TOKEN__KW_LAST = TOKEN_KW_RETURN,
 
     TOKEN__PUNC_FIRST = TOKEN_BRACKET_LEFT,
-    TOKEN__PUNC_LAST = TOKEN_SEMICOLON,
+    TOKEN__PUNC_LAST = TOKEN_MINUS_MINUS,
 
     TOKEN__SPELLABLE_FIRST = TOKEN__KW_FIRST,
     TOKEN__SPELLABLE_LAST = TOKEN__PUNC_LAST

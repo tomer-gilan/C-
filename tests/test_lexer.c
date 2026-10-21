@@ -1405,6 +1405,133 @@ static void test_lexer_diag_several_in_order(void) {
     check_diagnostics("@ 123abc $", expected, 3);
 }
 
+// ++ and -- (written by Claude on 21-Oct-26, not by Tomer)
+// The lexer has ++ and -- tokens (maximal munch, SUBSET.md "v2 candidates"), so "a+++b" is a ++ + b. In v1 the parser
+// rejects them (slice 2); the lexer reports nothing.
+
+/** One expected token in source text 0: its kind and its range. */
+typedef struct {
+    TokenKind kind;
+    int offset;
+    int length;
+} ExpectedToken;
+
+/**
+ * Lexes @b source and checks that its tokens are exactly @b expected : same count, and the same kind and range for each
+ * (values and identifier spellings aren't compared). @b expected ends with the EOF token. On a mismatch it also prints
+ * the source and the tokens the lexer actually produced, each as kind@offset+length (the kind is the number from
+ * @c TokenKind ).
+ * @param source a '\0'-terminated string
+ */
+static void check_tokens(const char* const source, const ExpectedToken* const expected, const int expected_count) {
+    List* const tokens = test_lexer_lex_buffer(source, (int) strlen(source));
+
+    const int actual_count = list_get_size(tokens);
+    bool passed = CHECK(actual_count == expected_count);
+    if (passed) {
+        for (int i = 0; i < expected_count; ++i) {
+            const Token* const got = list_at_const(tokens, i);
+            passed = CHECK(got->kind == expected[i].kind) && passed;
+            passed = CHECK(got->range.position.offset == expected[i].offset) && passed;
+            passed = CHECK(got->range.length == expected[i].length) && passed;
+        }
+    }
+    if (!passed) {
+        fputs("  token mismatch for source ", stderr);
+        print_source_escaped(source);
+        fputs(", expected", stderr);
+        for (int i = 0; i < expected_count; ++i)
+            fprintf(stderr, " %d@%d+%d", (int) expected[i].kind, expected[i].offset, expected[i].length);
+        fputs(", got", stderr);
+        for (int i = 0; i < actual_count; ++i) {
+            const Token* const got = list_at_const(tokens, i);
+            fprintf(stderr, " %d@%d+%d", (int) got->kind, got->range.position.offset, got->range.length);
+        }
+        fputc('\n', stderr);
+    }
+
+    list_destroy(tokens);
+}
+
+/** "++" and "--" are one token each, not two '+' or two '-'. */
+static void test_lexer_plus_plus_and_minus_minus(void) {
+    const ExpectedToken plus_plus[] = {{TOKEN_PLUS_PLUS, 0, 2}, {TOKEN_EOF, 2, 0}};
+    check_tokens("++", plus_plus, 2);
+
+    const ExpectedToken minus_minus[] = {{TOKEN_MINUS_MINUS, 0, 2}, {TOKEN_EOF, 2, 0}};
+    check_tokens("--", minus_minus, 2);
+}
+/** Maximal munch: "+++" is ++ then +, "---" is -- then -, and "++++" is ++ ++ (never + ++ +). */
+static void test_lexer_maximal_munch_of_signs(void) {
+    const ExpectedToken three_pluses[] = {{TOKEN_PLUS_PLUS, 0, 2}, {TOKEN_PLUS, 2, 1}, {TOKEN_EOF, 3, 0}};
+    check_tokens("+++", three_pluses, 3);
+
+    const ExpectedToken three_minuses[] = {{TOKEN_MINUS_MINUS, 0, 2}, {TOKEN_MINUS, 2, 1}, {TOKEN_EOF, 3, 0}};
+    check_tokens("---", three_minuses, 3);
+
+    const ExpectedToken four_pluses[] = {{TOKEN_PLUS_PLUS, 0, 2}, {TOKEN_PLUS_PLUS, 2, 2}, {TOKEN_EOF, 4, 0}};
+    check_tokens("++++", four_pluses, 3);
+}
+/** "a+++b" is a ++ + b (SUBSET.md's example), and "x--;" is x -- ;. */
+static void test_lexer_plus_plus_between_words(void) {
+    const ExpectedToken a_plus_plus_plus_b[] = {
+        {TOKEN_IDENT, 0, 1}, {TOKEN_PLUS_PLUS, 1, 2}, {TOKEN_PLUS, 3, 1}, {TOKEN_IDENT, 4, 1}, {TOKEN_EOF, 5, 0}
+    };
+    check_tokens("a+++b", a_plus_plus_plus_b, 5);
+
+    const ExpectedToken x_minus_minus_sc[] = {
+        {TOKEN_IDENT, 0, 1}, {TOKEN_MINUS_MINUS, 1, 2}, {TOKEN_SEMICOLON, 3, 1}, {TOKEN_EOF, 4, 0}
+    };
+    check_tokens("x--;", x_minus_minus_sc, 4);
+}
+/** "--2" is -- then 2: the input slice 2's parser rejects (SUBSET.md A.2.1), as a single token. */
+static void test_lexer_minus_minus_2(void) {
+    const ExpectedToken expected[] = {{TOKEN_MINUS_MINUS, 0, 2}, {TOKEN_CONST_INT, 2, 1}, {TOKEN_EOF, 3, 0}};
+    check_tokens("--2", expected, 3);
+}
+/** Whitespace splits: "- -2", "+ +2" and "-\n-2" are two separate signs, which slice 2 accepts. */
+static void test_lexer_signs_split_by_whitespace(void) {
+    const ExpectedToken minus_space_minus[] = {
+        {TOKEN_MINUS, 0, 1}, {TOKEN_MINUS, 2, 1}, {TOKEN_CONST_INT, 3, 1}, {TOKEN_EOF, 4, 0}
+    };
+    check_tokens("- -2", minus_space_minus, 4);
+
+    const ExpectedToken plus_space_plus[] = {
+        {TOKEN_PLUS, 0, 1}, {TOKEN_PLUS, 2, 1}, {TOKEN_CONST_INT, 3, 1}, {TOKEN_EOF, 4, 0}
+    };
+    check_tokens("+ +2", plus_space_plus, 4);
+
+    const ExpectedToken minus_newline_minus[] = {
+        {TOKEN_MINUS, 0, 1}, {TOKEN_MINUS, 2, 1}, {TOKEN_CONST_INT, 3, 1}, {TOKEN_EOF, 4, 0}
+    };
+    check_tokens("-\n-2", minus_newline_minus, 4);
+}
+/** Different signs never merge: "+-" is + -, "-+" is - +, and "-+-+" is four tokens. */
+static void test_lexer_mixed_signs(void) {
+    const ExpectedToken plus_minus[] = {{TOKEN_PLUS, 0, 1}, {TOKEN_MINUS, 1, 1}, {TOKEN_EOF, 2, 0}};
+    check_tokens("+-", plus_minus, 3);
+
+    const ExpectedToken minus_plus[] = {{TOKEN_MINUS, 0, 1}, {TOKEN_PLUS, 1, 1}, {TOKEN_EOF, 2, 0}};
+    check_tokens("-+", minus_plus, 3);
+
+    const ExpectedToken alternating[] = {
+        {TOKEN_MINUS, 0, 1}, {TOKEN_PLUS, 1, 1}, {TOKEN_MINUS, 2, 1}, {TOKEN_PLUS, 3, 1}, {TOKEN_EOF, 4, 0}
+    };
+    check_tokens("-+-+", alternating, 5);
+}
+/** There's no compound assignment in C~~, so "+=" and "-=" are a sign then '='. */
+static void test_lexer_sign_equals(void) {
+    const ExpectedToken plus_equals[] = {{TOKEN_PLUS, 0, 1}, {TOKEN_EQUALS, 1, 1}, {TOKEN_EOF, 2, 0}};
+    check_tokens("+=", plus_equals, 3);
+
+    const ExpectedToken minus_equals[] = {{TOKEN_MINUS, 0, 1}, {TOKEN_EQUALS, 1, 1}, {TOKEN_EOF, 2, 0}};
+    check_tokens("-=", minus_equals, 3);
+}
+/** ++ and -- are valid tokens, so the lexer reports nothing for them: rejecting them is the parser's job. */
+static void test_lexer_diag_plus_plus_minus_minus(void) {
+    check_diagnostics("++ -- +++ --- a+++b x--; --2", NULL, 0);
+}
+
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
     RUN_TEST(test_lexer_empty_buffer);
@@ -1453,5 +1580,14 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_lexer_diag_unterminated_at_eof);
     RUN_TEST(test_lexer_diag_no_cascade);
     RUN_TEST(test_lexer_diag_several_in_order);
+    // ++ and -- tests (written by Claude)
+    RUN_TEST(test_lexer_plus_plus_and_minus_minus);
+    RUN_TEST(test_lexer_maximal_munch_of_signs);
+    RUN_TEST(test_lexer_plus_plus_between_words);
+    RUN_TEST(test_lexer_minus_minus_2);
+    RUN_TEST(test_lexer_signs_split_by_whitespace);
+    RUN_TEST(test_lexer_mixed_signs);
+    RUN_TEST(test_lexer_sign_equals);
+    RUN_TEST(test_lexer_diag_plus_plus_minus_minus);
     return harness_finish();
 }

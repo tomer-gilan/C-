@@ -44,7 +44,9 @@ const TextView token_kind_spelling_table[TOKEN__SPELLABLE_COUNT] = {
     [TOKEN_AMPERSAND]           = TEXT_VIEW_INITIALIZER_OF_LITERAL("&"),
     [TOKEN_AMPERSAND_AMPERSAND] = TEXT_VIEW_INITIALIZER_OF_LITERAL("&&"),
     [TOKEN_BAR_BAR]             = TEXT_VIEW_INITIALIZER_OF_LITERAL("||"),
-    [TOKEN_SEMICOLON]           = TEXT_VIEW_INITIALIZER_OF_LITERAL(";")
+    [TOKEN_SEMICOLON]           = TEXT_VIEW_INITIALIZER_OF_LITERAL(";"),
+    [TOKEN_PLUS_PLUS]           = TEXT_VIEW_INITIALIZER_OF_LITERAL("++"),
+    [TOKEN_MINUS_MINUS]         = TEXT_VIEW_INITIALIZER_OF_LITERAL("--")
 };
 
 TextView token_kind_get_spelling(const TokenKind kind) {
