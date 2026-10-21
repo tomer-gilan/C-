@@ -29,6 +29,6 @@ void* text_view_list_duplicate(const void* const text_view) {
     *new = *(const TextView*)text_view;
     return new;
 }
-void text_view_print(const TextView this) {
-    printf("%.*s\n", this.length, this.data);
+void text_view_print(const TextView this, FILE* const output) {
+    fprintf(output, "%.*s\n", this.length, this.data);
 }

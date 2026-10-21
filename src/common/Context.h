@@ -74,6 +74,6 @@ int context_intern_string_literal(Context* this, const Text * text);
  * caches the diagnostic.
  */
 void context_report_diagnostic(Context* this, DiagnosticCode code, Range range);
-void context_print_range(const Context* this, Range to_print);
+void context_print_range(const Context* this, Range to_print, FILE* output);
 
 #endif //C_COMPILER_CONTEXT_H

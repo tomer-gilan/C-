@@ -79,15 +79,15 @@ const char *diagnostic_get_info(const Diagnostic report) {
 }
 static void diagnostic_print_marker(const Diagnostic report) {
     for (int i = 0; i < report.line_column.column; ++i)
-        printf(" ");
+        fprintf(stderr, " ");
     bool first = true;
     for (int i = 0; i < report.range.length; ++i)
         if (first) {
             first = false;
-            printf("^");
+            fprintf(stderr, "^");
         }
         else
-            printf("~");
+            fprintf(stderr, "~");
 }
 static void diagnostic_print_source_text_row(const Diagnostic report, const Context* const context) {
     // get beg of line pos
@@ -106,7 +106,7 @@ static void diagnostic_print_source_text_row(const Diagnostic report, const Cont
         range_extend(&range_to_print, 1);
 
     // print range
-    context_print_range(context, range_to_print);
+    context_print_range(context, range_to_print, stderr);
 }
 void diagnostic_print(const Diagnostic report, const Context* const context) {
     assert(diagnostic_is_valid_code(report.code) && "Unknown diagnostic code!");
@@ -118,11 +118,11 @@ void diagnostic_print(const Diagnostic report, const Context* const context) {
             report.line_column.column,
             diagnostic_get_severity_string(report),
             diagnostic_get_info(report));
-    printf("|");
+    fprintf(stderr, "|");
     diagnostic_print_source_text_row(report, context);
-    printf("|");
+    fprintf(stderr, "|");
     diagnostic_print_marker(report);
-    printf("\n");
+    fprintf(stderr, "\n");
 }
 
 /*

@@ -61,7 +61,7 @@ static DiagnosticCount driver_get_diagnostic_count(const Driver* this) {
 }
 static void driver_print_diagnostic_count(const Driver* const this) {
     const DiagnosticCount count = driver_get_diagnostic_count(this);
-    printf("Encountered %d errors, %d warnings.\n", count.error_count, count.warning_count);
+    fprintf(stderr,"Encountered %d errors, %d warnings.\n", count.error_count, count.warning_count);
 }
 /**
  * @attention clears @c Context 's diagnostic table
@@ -106,40 +106,40 @@ static bool driver_encountered_errors(const Driver* const this) {
     const DiagnosticCount count = driver_get_diagnostic_count(this);
     return count.error_count > 0;
 }
-void driver_compile(Driver* const this, const int source_text_index) {
-    bool continue_pipeline = true;
+bool driver_compile(Driver* const this, const int source_text_index) {
+    bool encountered_errors = false;
     driver_preprocess_source_text(this, source_text_index);
     // Lexing:
     List* tokens = NULL;
-    if (continue_pipeline) {
+    if (!encountered_errors) {
         Lexer* lexer = lexer_create(this->context, source_text_index);
         tokens = lexer_lex_source_text(lexer);
         lexer_destroy(lexer);
         if (driver_encountered_errors(this))
-            continue_pipeline = false;
+            encountered_errors = true;
     }
     // Parsing:
     const TranslationUnitNode* ast = NULL;
     int expression_count = 0;
-    if (continue_pipeline) {
+    if (!encountered_errors) {
         Parser* const parser = parser_create(tokens, this->context);
         ast = parser_parse(parser);
         expression_count = parser_get_expression_id_count(parser);
         parser_destroy(parser);
         if (driver_encountered_errors(this))
-            continue_pipeline = false;
+            encountered_errors = true;
     }
     // Sema:
     SemaResult sema_result;
-    if (continue_pipeline) {
+    if (!encountered_errors) {
         Sema* const sema = sema_create(this->context, ast, expression_count);
         sema_result = sema_analyze(sema);
         sema_destroy(sema);
         if (driver_encountered_errors(this))
-            continue_pipeline = false;
+            encountered_errors = true;
     }
     // Code gen:
-    if (continue_pipeline) {
+    if (!encountered_errors) {
         Codegen* codegen = codegen_create(this->context, ast, sema_result);
         Text* assembly = codegen_generate(codegen);
         text_write_to_path(assembly, this->context->compilation_arguments.destination_file);
@@ -149,4 +149,6 @@ void driver_compile(Driver* const this, const int source_text_index) {
 
     driver_issue_diagnostics(this);
     list_destroy(tokens);
+
+    return !encountered_errors;
 }

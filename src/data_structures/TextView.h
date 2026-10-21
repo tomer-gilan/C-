@@ -6,6 +6,7 @@
 #define C_COMPILER_TEXTVIEW_H
 
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef struct {
     int length; ///< length of @b data.
@@ -38,7 +39,7 @@ bool text_view_is_empty(TextView this);
  * predicate, checks if both are equal
  */
 bool text_view_equals(TextView first, TextView second);
-void text_view_print(TextView this);
+void text_view_print(TextView this, FILE* output);
 // for list.h usage
 bool text_view_list_equals(const void* first, const void* second);
 /**

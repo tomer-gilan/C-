@@ -101,6 +101,6 @@ void context_report_diagnostic(Context* const this, const DiagnosticCode code, c
     const Diagnostic report = diagnostic_make(this, code, range);
     list_push_last(this->diagnostic_report_table, diagnostic_list_duplicate(&report));
 }
-void context_print_range(const Context* const this, const Range to_print) {
-    text_view_print(context_range_to_text_view(this, to_print));
+void context_print_range(const Context* const this, const Range to_print, FILE* const output) {
+    text_view_print(context_range_to_text_view(this, to_print), output);
 }
