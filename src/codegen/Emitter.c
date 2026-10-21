@@ -343,10 +343,6 @@ static void emitter_emit_operand(                       Emitter* const this, con
 static void emitter_emit_sections_headers(              Emitter* const this) {
     text_append_text_view(this->emissions, text_view_value_of_literal(".text"));
     emitter_emit_new_line(this);
-    text_append_text_view(this->emissions, text_view_value_of_literal(".globl main"));
-    emitter_emit_new_line(this);
-    text_append_text_view(this->emissions, text_view_value_of_literal(".text"));
-    emitter_emit_new_line(this);
 }
 static void emitter_emit_footers(                       Emitter* const this) {
     emitter_emit_new_line(this);
@@ -375,6 +371,20 @@ Text* emitter_detach_text(Emitter* const this) {
     this->emissions = NULL;
     return to_return;
 }
+
+void emitter_emit_external_linkage(Emitter* const this, const Label label) {
+    assert(this != NULL);
+    assert(this->emissions != NULL);
+
+    Text* const spelling = label_get_spelling(label);
+    assert(spelling != NULL);
+
+    emitter_emit_new_line(this);
+    text_append_text_view(this->emissions, text_view_value_of_literal(".globl "));
+    text_append_text_view(this->emissions, text_as_view(spelling));
+
+    text_destroy(spelling);
+}
 void emitter_emit_label(Emitter* const this, const Label label) {
     assert(this != NULL);
     assert(this->emissions != NULL);
@@ -383,8 +393,11 @@ void emitter_emit_label(Emitter* const this, const Label label) {
 
     // e.g.: ".L_1_while:"
     Text* const spelling = label_get_spelling(label);
+    assert(spelling != NULL);
+
     text_append_text(this->emissions, spelling);
     text_append_char(this->emissions, ':');
+    
     text_destroy(spelling);
 }
 /**

@@ -503,6 +503,138 @@ static void test_parser_error_trailing_token(void) {
     check_parse_fails("int main(void) { return 2; } 5", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 29);
 }
 
+// ---------------- Slice 2: unary operators and parentheses ---------------- //
+// Written ahead by Claude on 21-Oct-26, before slice 2 exists, so they use only what slice 1 has: the unary node's
+// kind and fields don't exist yet, so a unary expression is checked as "parsed, not a constant, with this range".
+// They move to dump strings once the AST dump exists (parser Step 2). Off in main until slice 2 is implemented.
+
+/**
+ * Checks that the expression at the start of @b source parses with no error, stops at the ';' after it, and gives a
+ * node that isn't a constant (so a unary node) spanning the first @b length bytes: the operator and its operand.
+ */
+static void check_unary_expression(const char* const source, const int length) {
+    const ParseFixture fixture = parse_fixture_create(source);
+
+    const ExpressionNode* const expression = expression_node_parse(fixture.parser);
+    if (CHECK(expression != NULL)) {
+        CHECK(expression->kind != EXPRESSION_KIND_INT_CONSTANT);
+        CHECK(range_is(expression->range, 0, length));
+    }
+    CHECK(!parser_has_error(fixture.parser));
+    CHECK(next_token_is(&fixture, TOKEN_SEMICOLON));
+
+    parse_fixture_destroy(fixture);
+}
+/**
+ * Checks that the expression at the start of @b source parses with no error, stops at the ';' after it, and gives the
+ * integer constant @b value : parentheses produce no node.
+ */
+static void check_parenthesized_constant(const char* const source, const int value) {
+    const ParseFixture fixture = parse_fixture_create(source);
+
+    const ExpressionNode* const expression = expression_node_parse(fixture.parser);
+    if (CHECK(expression != NULL)) {
+        CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
+        CHECK(expression->as.expression_int_constant.value == value);
+    }
+    CHECK(!parser_has_error(fixture.parser));
+    CHECK(next_token_is(&fixture, TOKEN_SEMICOLON));
+
+    parse_fixture_destroy(fixture);
+}
+
+/** "-2;", "+2;", "~2;", "!2;": each prefix operator of slice 2 on a constant. */
+static void test_parser_slice_2_each_unary_operator(void) {
+    check_unary_expression("-2;", 2);
+    check_unary_expression("+2;", 2);
+    check_unary_expression("~2;", 2);
+    check_unary_expression("!2;", 2);
+}
+/** "~-2;", "!!1;", "- -2;", "-+2;", "+-2;": unary operators nest. "- -2" and "-+2" are allowed (SUBSET.md A.2.1). */
+static void test_parser_slice_2_nested_unary(void) {
+    check_unary_expression("~-2;", 3);
+    check_unary_expression("!!1;", 3);
+    check_unary_expression("- -2;", 4);
+    check_unary_expression("-+2;", 3);
+    check_unary_expression("+-2;", 3);
+    check_unary_expression("-~!+2;", 5);
+}
+/**
+ * "-(-(2));", "-(2);": a unary operator on a parenthesized operand. The range isn't checked: whether it reaches the
+ * closing ')' depends on the parentheses' range, which is still open (parser-roadmap.md, Step 2 gotchas).
+ */
+static void test_parser_slice_2_unary_on_parentheses(void) {
+    const char* const sources[] = {"-(-(2));", "-(2);", "~(!(+(1)));"};
+    for (int i = 0; i < (int)(sizeof sources / sizeof sources[0]); i++) {
+        const ParseFixture fixture = parse_fixture_create(sources[i]);
+
+        const ExpressionNode* const expression = expression_node_parse(fixture.parser);
+        if (CHECK(expression != NULL))
+            CHECK(expression->kind != EXPRESSION_KIND_INT_CONSTANT);
+        CHECK(!parser_has_error(fixture.parser));
+        CHECK(next_token_is(&fixture, TOKEN_SEMICOLON));
+
+        parse_fixture_destroy(fixture);
+    }
+}
+/** "(2);", "(((2)));": parentheses produce no node, so both are just the constant. */
+static void test_parser_slice_2_parentheses(void) {
+    check_parenthesized_constant("(2);", 2);
+    check_parenthesized_constant("(((2)));", 2);
+}
+/** "int main(void) { return -(~2); }": slice 2's example program, through parser_parse. */
+static void test_parser_slice_2_program(void) {
+    const ParseFixture fixture = parse_fixture_create("int main(void) { return -(~2); }");
+
+    const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
+    if (CHECK(translation_unit != NULL)) {
+        const StatementNode* const body =
+            check_function_definition(&fixture, external_definition_at(translation_unit, 0), "main");
+        if (body != NULL) {
+            const StatementNode* const statement = block_item_statement_at(body, 0);
+            if (CHECK(statement != NULL) && CHECK(statement->kind == STATEMENT_KIND_RETURN))
+                CHECK(statement->as.return_statement.expression != NULL);
+        }
+    }
+    CHECK(!parser_has_error(fixture.parser));
+    CHECK(next_token_is(&fixture, TOKEN_EOF));
+
+    parse_fixture_destroy(fixture);
+}
+
+// Errors. "int main(void) { return " is 24 bytes, so the returned expression starts at offset 24.
+
+/** "int main(void) { return (); }": empty parentheses. An expression is expected at the ')', offset 25. */
+static void test_parser_slice_2_error_empty_parentheses(void) {
+    check_parse_fails("int main(void) { return (); }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 25);
+}
+/** "int main(void) { return (2; }": the ')' is missing. Reported at the ';', offset 26. */
+static void test_parser_slice_2_error_unclosed_parenthesis(void) {
+    check_parse_fails("int main(void) { return (2; }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 26);
+}
+/** "int main(void) { return 2); }": a ')' with no '('. A ';' is expected at the ')', offset 25. */
+static void test_parser_slice_2_error_stray_right_parenthesis(void) {
+    check_parse_fails("int main(void) { return 2); }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 25);
+}
+/** "int main(void) { return -; }" and "... !; }": an operator with no operand. Reported at the ';', offset 25. */
+static void test_parser_slice_2_error_missing_operand(void) {
+    check_parse_fails("int main(void) { return -; }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 25);
+    check_parse_fails("int main(void) { return !; }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 25);
+}
+/**
+ * "int main(void) { return --2; }" and "... ++2; }": SUBSET.md A.2.1, no -- or ++ spelled without a space. The lexer
+ * gives one -- (or ++) token, which can't start an expression. Reported at it, offset 24.
+ */
+static void test_parser_slice_2_error_minus_minus_and_plus_plus(void) {
+    check_parse_fails("int main(void) { return --2; }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 24);
+    check_parse_fails("int main(void) { return ++2; }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 24);
+}
+/** "int main(void) { return - --2; }" and "... -(--2); }": a -- after a valid '-' or '('. Reported at the --. */
+static void test_parser_slice_2_error_nested_minus_minus(void) {
+    check_parse_fails("int main(void) { return - --2; }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 26);
+    check_parse_fails("int main(void) { return -(--2); }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 26);
+}
+
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
 
@@ -535,6 +667,22 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_parser_error_unnamed_parameter);
     RUN_TEST(test_parser_error_stray_right_brace);
     RUN_TEST(test_parser_error_trailing_token);
+
+    // Slice 2 (written ahead by Claude): off until slice 2 is implemented. Delete this return to run them.
+    return harness_finish();
+
+    RUN_TEST(test_parser_slice_2_each_unary_operator);
+    RUN_TEST(test_parser_slice_2_nested_unary);
+    RUN_TEST(test_parser_slice_2_unary_on_parentheses);
+    RUN_TEST(test_parser_slice_2_parentheses);
+    RUN_TEST(test_parser_slice_2_program);
+
+    RUN_TEST(test_parser_slice_2_error_empty_parentheses);
+    RUN_TEST(test_parser_slice_2_error_unclosed_parenthesis);
+    RUN_TEST(test_parser_slice_2_error_stray_right_parenthesis);
+    RUN_TEST(test_parser_slice_2_error_missing_operand);
+    RUN_TEST(test_parser_slice_2_error_minus_minus_and_plus_plus);
+    RUN_TEST(test_parser_slice_2_error_nested_minus_minus);
 
     return harness_finish();
 }

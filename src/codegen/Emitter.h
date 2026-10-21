@@ -21,6 +21,7 @@ void emitter_dedent(Emitter* this);
  */
 Text* emitter_detach_text(Emitter* this);
 
+void emitter_emit_external_linkage(Emitter* this, Label label);
 void emitter_emit_label(Emitter* this, Label label);
 // instruction emissions:
 void emitter_emit_mov(Emitter* this, Width width, Operand source, Operand destination);

@@ -119,14 +119,14 @@ static void codegen_generate_external_definition_function(  Codegen* const this,
     assert(this != NULL);
     assert(external_definition_function != NULL);
 
-    // the label:
-    {
-        const int identifier_id = external_definition_function->declarator.identifier.as.id;
-        const Label label = label_make_symbol(this->context, identifier_id);
-        emitter_emit_label(this->emitter, label);
-    }
+    const int identifier_id = external_definition_function->declarator.identifier.as.id;
 
-    // body:
+    const Label label = label_make_symbol(this->context, identifier_id);
+    // External Linkage:
+    emitter_emit_external_linkage(this->emitter, label);
+    // Entry Point:
+    emitter_emit_label(this->emitter, label);
+    // Body:
     codegen_generate_statement(this, external_definition_function->body);
 }
 static void codegen_generate_external_definition(           Codegen* const this, const ExternalDefinitionNode*      const external_definition_node) {

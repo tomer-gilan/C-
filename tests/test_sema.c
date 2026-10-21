@@ -203,6 +203,47 @@ static void test_sema_error_function_defined_three_times(void) {
                      DIAGNOSTIC_CODE_SEMA_SYMBOL_ALREADY_DEFINED, 27);
 }
 
+// ---------------- Slice 2: unary operators and parentheses ---------------- //
+// Written ahead by Claude on 21-Oct-26, before slice 2 exists. Off in main until slice 2 is implemented.
+// No error tests: every operand is an int until pointers (slice 11).
+
+/**
+ * Checks that sema accepts @b source , a single @c main whose first statement returns an expression, that the program
+ * has @b expression_count expressions (parentheses produce no node), and that the returned expression has type @c int
+ * (C11 6.5.3.3: @c - @c + @c ~ give the promoted operand's type, @c int here; @c ! always gives @c int ).
+ */
+static void check_returns_int(const char* const source, const int expression_count) {
+    const SemaFixture fixture = sema_fixture_create(source);
+
+    if (check_sema_passes(&fixture)) {
+        CHECK(fixture.result.expressions_count == expression_count);
+        const ExpressionNode* const returned = first_return_expression(function_at(fixture.ast, 0));
+        if (CHECK(returned != NULL))
+            CHECK(semantics_of(&fixture, returned)->type == type_get_int());
+    }
+
+    sema_fixture_destroy(fixture);
+}
+
+/** "-2", "+2", "~2", "!2": each operator on a constant is an int, and the program has two expressions. */
+static void test_sema_slice_2_each_unary_operator(void) {
+    check_returns_int("int main(void) { return -2; }", 2);
+    check_returns_int("int main(void) { return +2; }", 2);
+    check_returns_int("int main(void) { return ~2; }", 2);
+    check_returns_int("int main(void) { return !2; }", 2);
+}
+/** "~-2", "!!1", "-(-(2))", "-(~2)": nested operators. Every node has a type (check_sema_passes), the outer one int. */
+static void test_sema_slice_2_nested_unary(void) {
+    check_returns_int("int main(void) { return ~-2; }", 3);
+    check_returns_int("int main(void) { return !!1; }", 3);
+    check_returns_int("int main(void) { return -(-(2)); }", 3);
+    check_returns_int("int main(void) { return -(~2); }", 3);
+}
+/** "(((2)))": parentheses produce no node, so the program has one expression, the constant. */
+static void test_sema_slice_2_parentheses(void) {
+    check_returns_int("int main(void) { return (((2))); }", 1);
+}
+
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
 
@@ -212,6 +253,13 @@ int main(const int argc, char** const argv) {
 
     RUN_TEST(test_sema_error_function_defined_twice);
     RUN_TEST(test_sema_error_function_defined_three_times);
+
+    // Slice 2 (written ahead by Claude): off until slice 2 is implemented. Delete this return to run them.
+    return harness_finish();
+
+    RUN_TEST(test_sema_slice_2_each_unary_operator);
+    RUN_TEST(test_sema_slice_2_nested_unary);
+    RUN_TEST(test_sema_slice_2_parentheses);
 
     return harness_finish();
 }

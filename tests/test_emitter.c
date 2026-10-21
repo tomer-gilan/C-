@@ -31,8 +31,8 @@ static Context* emitter_context_create(void) {
                           test_compilation_arguments());
 }
 
-/** What every output starts with: the code section, and main made visible to the linker. */
-static const TextView output_header = TEXT_VIEW_INITIALIZER_OF_LITERAL(".text\n.globl main\n.text\n");
+/** What every output starts with: the code section. Which symbols are global is codegen's call (.globl per function). */
+static const TextView output_header = TEXT_VIEW_INITIALIZER_OF_LITERAL(".text\n");
 /**
  * What every output ends with: an empty .note.GNU-stack section, so the linker marks the stack non-executable. Spelled
  * the way gcc -S spells it: the flags argument is the empty string "", quotes included.
@@ -142,6 +142,60 @@ static void test_emitter_nested_indentation(void) {
     emitter_dedent(emitter);
 
     CHECK(emitter_output_is(emitter, "\nmain:\n    .L_1_while:\n        movl $1, %eax\n    ret\n"));
+    context_destroy(context);
+}
+
+// -------- External linkage -------- //
+
+/** ".globl main" on its own line, the way codegen emits it right before the function's label. */
+static void test_emitter_external_linkage(void) {
+    Context* const context = emitter_context_create();
+    const int main_id = context_intern_identifier(context, text_view_value_of_literal("main"));
+    Emitter* const emitter = emitter_create();
+    emitter_emit_external_linkage(emitter, label_make_symbol(context, main_id));
+
+    CHECK(emitter_output_is(emitter, "\n.globl main\n"));
+    context_destroy(context);
+}
+/**
+ * The slice 1 shape with linkage: .globl, then the label, both at level 0, then the indented body. One Label feeds
+ * both, as in codegen, so the two spellings can't drift apart.
+ */
+static void test_emitter_external_linkage_before_function(void) {
+    Context* const context = emitter_context_create();
+    const int main_id = context_intern_identifier(context, text_view_value_of_literal("main"));
+    const Label main_label = label_make_symbol(context, main_id);
+    Emitter* const emitter = emitter_create();
+
+    emitter_emit_external_linkage(emitter, main_label);
+    emitter_emit_label(emitter, main_label);
+    emitter_indent(emitter);
+    emitter_emit_ret(emitter);
+    emitter_dedent(emitter);
+
+    CHECK(emitter_output_is(emitter, "\n.globl main\nmain:\n    ret\n"));
+    context_destroy(context);
+}
+/** Two functions: each gets its own .globl right before its label, not one list of them in the header. */
+static void test_emitter_external_linkage_per_function(void) {
+    Context* const context = emitter_context_create();
+    const Label f_label = label_make_symbol(context, context_intern_identifier(context, text_view_value_of_literal("f")));
+    const Label main_label =
+        label_make_symbol(context, context_intern_identifier(context, text_view_value_of_literal("main")));
+    Emitter* const emitter = emitter_create();
+
+    emitter_emit_external_linkage(emitter, f_label);
+    emitter_emit_label(emitter, f_label);
+    emitter_indent(emitter);
+    emitter_emit_ret(emitter);
+    emitter_dedent(emitter);
+    emitter_emit_external_linkage(emitter, main_label);
+    emitter_emit_label(emitter, main_label);
+    emitter_indent(emitter);
+    emitter_emit_ret(emitter);
+    emitter_dedent(emitter);
+
+    CHECK(emitter_output_is(emitter, "\n.globl f\nf:\n    ret\n.globl main\nmain:\n    ret\n"));
     context_destroy(context);
 }
 
@@ -339,6 +393,10 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_emitter_function_body_is_indented);
     RUN_TEST(test_emitter_two_functions);
     RUN_TEST(test_emitter_nested_indentation);
+
+    RUN_TEST(test_emitter_external_linkage);
+    RUN_TEST(test_emitter_external_linkage_before_function);
+    RUN_TEST(test_emitter_external_linkage_per_function);
 
     RUN_TEST(test_emitter_symbol_label);
     RUN_TEST(test_emitter_auto_label);

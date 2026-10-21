@@ -195,12 +195,19 @@ endif ()
 # <name>.exit next to it.
 # CONFIGURE_DEPENDS: a new program is picked up on the next build, without re-running CMake by hand. Run only
 # these with: ctest -L e2e. Needs a POSIX shell and gcc.
+# e2e_pending_slices: slices whose tests are written ahead of the compiler. They aren't registered at all, so no test
+# runner (CTest or CLion's) can count them as failed. Not the DISABLED property: CLion reports a disabled test as a
+# failure. Remove a slice from the list once it's implemented.
+set(e2e_pending_slices slice02)
 if (UNIX)
     file(GLOB_RECURSE e2e_programs CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/e2e/*.c)
     foreach (program IN LISTS e2e_programs)
         file(RELATIVE_PATH relative_path ${CMAKE_CURRENT_SOURCE_DIR}/tests/e2e ${program}) # slice01/return_42.c
         string(REGEX REPLACE "\\.c$" "" test_name ${relative_path})                         # slice01/return_42
         get_filename_component(test_directory ${test_name} DIRECTORY)                       # slice01
+        if (test_directory IN_LIST e2e_pending_slices)
+            continue()
+        endif ()
         add_test(NAME e2e/${test_name}
                 COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_e2e.sh $<TARGET_FILE:c_compiler> ${program}
                         ${CMAKE_CURRENT_BINARY_DIR}/e2e/${test_directory})
