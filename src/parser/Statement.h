@@ -17,13 +17,14 @@ typedef struct {
     BlockItem* head;
 } CompoundStatement;
 typedef struct {
-    ExpressionNode* expression;
+    const ExpressionNode* expression;
 } ReturnStatement;
 
 // the parent node that unions all the different statement kinds:
 typedef enum {
     STATEMENT_KIND_RETURN,
     STATEMENT_KIND_COMPOUND,
+
     STATEMENT_KIND__COUNT,
 } StatementKind;
 typedef struct {
@@ -45,7 +46,7 @@ typedef enum {
 struct BlockItem{
     BlockItemKind kind;
     union {
-        StatementNode* statement;
+        const StatementNode* statement;
         // TODO: add declarations later
     } as;
     BlockItem* next;

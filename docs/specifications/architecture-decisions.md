@@ -286,7 +286,8 @@ Keep the one-character-at-a-time munch, and treat "the punctuator set is prefix-
 
 ## ADR-015: The AST has one node type per family, each a tagged union
 
-- **Status:** Accepted, implemented in slice 1
+- **Status:** Accepted, implemented in slice 1. The name `ExternalDefinitionNode` is superseded by ADR-026
+  (`ExternalDeclarationItem`, `FunctionDefinitionNode`), which also defines what counts as a node.
 - **Date:** 2026-10-16 (recorded; decided in parser roadmap Step 0d)
 
 ### Context
@@ -377,7 +378,8 @@ Nodes store the **interned `int` id** (e.g. `name_identifier_id`), never a strin
 
 ## ADR-019: The parser builds `Type`s for declarations
 
-- **Status:** Accepted, to be implemented in slice 6 (slice 1 only has the `int` keyword)
+- **Status:** Accepted, to be implemented in slice 6 (slice 1 only has the `int` keyword). Clarified by ADR-026: a
+  `DeclaratorNode` holds the declared name, its range and its `Type`, not declarator syntax.
 - **Date:** 2026-10-16
 
 ### Context
@@ -562,3 +564,101 @@ Reporting every error, with an error type that silences follow-up errors, is a p
 - Sema's error tests check the diagnostic's code, position, and count == 1, with the same kind of helper as the parser's.
 - A note attached to an error (e.g. "previous definition is here") is a second diagnostic. If one is ever added, the
   count rule has to say whether notes count.
+
+---
+
+## ADR-026: What an AST node is, and what a node may contain
+
+- **Status:** Accepted, to be applied before slice 6. Refines ADR-015 and ADR-017, supersedes ADR-015's
+  `ExternalDefinitionNode` name, and clarifies ADR-019's "no declarator nodes".
+- **Date:** 2026-10-21
+
+### Context
+ADR-015 names the node families but not what makes something a node, and slice 1 drifted in two ways:
+- `ExternalDefinitionNode` is a list wrapper, yet it carries the `Range` and the `Node` name, while the function
+  definition it wraps (`ExternalDefinitionFunction`) has no range.
+- That wrapper holds the function definition **by value**, while `BlockItem` holds its statement **by pointer**.
+
+From slice 6 (block declarations) and slice 10 (file-scope declarations) the same `DeclarationNode` sits under both
+wrappers, so the two have to agree. This ADR is the rule to check every new AST type against.
+
+### Decision
+**A node** is a construct that a diagnostic or sema can point at. A node:
+- has its own `Range` (ADR-016),
+- is what a parse function returns,
+- has an `int id` if sema keeps per-node results for it (ADR-023),
+- has a type name ending in `Node`. Only node types end in `Node`.
+
+**A wrapper** is a list cell, possibly also an "X or Y" choice (`BlockItem`: a statement or a declaration). It is not
+a node: no range, no id. Its type name ends in `Item`, and only wrapper types end in `Item`. A choice wrapper is `kind`,
+an `as` union of node pointers, and `next`; a plain list cell (`ArgumentItem`) is its node pointer(s) and `next`.
+
+**A node's layout:** `range`, `id` (if any), `kind`, and an `as` union with one payload struct per kind. Payload structs
+are inline: they are the node's own content, not children, and have no range of their own.
+
+**The child rule.** Every field of a payload struct or a wrapper is one of:
+1. **a terminal:** a scalar (`int`, `bool`), an interned identifier id (ADR-018), or a handle into a shared table such
+   as `const Type*` (ADR-019);
+2. **a pointer to a node**, where `NULL` means the child is absent (e.g. a declarator without an initializer);
+3. **a pointer to the head of a list of wrappers** (ADR-017's intrusive `next`).
+
+A node or a wrapper is **never held by value** inside another node or wrapper.
+
+**Names.** Names say what a type is, even when that makes them long: someone re-reading the code months later shouldn't
+have to guess.
+- `ExternalDefinitionNode` becomes `ExternalDeclarationItem` (a wrapper) and `ExternalDefinitionFunction` becomes
+  `FunctionDefinitionNode`. The standard's grammar is `external-declaration: function-definition | declaration`, and a
+  prototype or a global (slice 10) is a declaration, not a definition.
+- `InitDeclarator` becomes `DeclaratorItem` (see below).
+- A call's arguments (slice 9) are a list of `ArgumentItem`: an `ExpressionNode*` and `next`.
+
+**The AST stores what was declared, not how it was spelled.** `int a, b;` (one shared specifier) and a parameter list
+`(int a, int b)` (one specifier each) differ only in syntax. The parser checks the syntax and builds each name's `Type`
+(ADR-019); after that both are a list of declared names. So both use the same list cell, `DeclaratorItem`: a
+`DeclaratorNode*`, an optional `initializer` (`ExpressionNode*`, `NULL` = none), and `next`. A parameter's `initializer`
+is always `NULL`; the parser guarantees it (C has no default arguments). How a list is treated (variables in a block,
+parameters filled from registers) belongs to the code that walks it, not to the list's type.
+
+**Declarators are nodes.** `Declarator` becomes `DeclaratorNode`: the declared name, its range and its `Type`. It's held
+by pointer, and a function's parameters are a list of `DeclaratorItem` instead of an array plus a count.
+- Why: it has a range that diagnostics point at ("redefinition of `x`"), and codegen needs the `Symbol` behind
+  `int x = 3;`, which is a per-declarator sema result.
+- It gets an `id` when sema first needs that result (slice 6), per ADR-023's "other node families get ids only if a
+  later step needs per-node sema results".
+- This doesn't contradict ADR-019's "no declarator nodes": that's about declarator **syntax** (`*`, `[3]`, `()`), which
+  still becomes a `Type` in the parser. A `DeclaratorNode` holds no syntax.
+
+### The AST under this rule
+
+| Type                      | Kind    | Contents                                                                                    |
+|---------------------------|---------|---------------------------------------------------------------------------------------------|
+| `TranslationUnitNode`     | node    | `range`; `head` → list of `ExternalDeclarationItem`                                         |
+| `ExternalDeclarationItem` | wrapper | `FunctionDefinitionNode*`, or `DeclarationNode*` (slice 10); `next`                         |
+| `FunctionDefinitionNode`  | node    | `range` (`int` to `}`); `DeclaratorNode*`; parameters → list of `DeclaratorItem`; `body` → `StatementNode*` (compound) |
+| `DeclaratorNode`          | node    | `range`; `id` (from slice 6); `const Type*`; interned identifier id and its range           |
+| `DeclaratorItem`          | wrapper | `DeclaratorNode*`; `initializer` → `ExpressionNode*` (`NULL` = none, always for parameters); `next` |
+| `StatementNode`           | node    | `range`; compound (`head` → list of `BlockItem`) or return (`ExpressionNode*`)              |
+| `BlockItem`               | wrapper | `StatementNode*`, or `DeclarationNode*` (slice 6); `next`                                   |
+| `DeclarationNode`         | node    | `range`; `head` → list of `DeclaratorItem`                                                  |
+| `ExpressionNode`          | node    | `range`; `id`; int constant (terminal), later unary/binary (`ExpressionNode*` each), call (slice 9: `callee` → `ExpressionNode*`, arguments → list of `ArgumentItem`) |
+| `ArgumentItem`            | wrapper | `ExpressionNode*`; `next` (slice 9)                                                         |
+
+### Consequences
+- Drift in the code today, to fix before slice 6:
+  - The renames above.
+  - `ExternalDefinitionNode.as` holds the function definition by value: make it a pointer.
+  - The `Range` moves from `ExternalDefinitionNode` down into the function definition.
+  - `Declarator` held by value in `ExternalDefinitionFunction.declarator` and `InitDeclarator.declarator`: make it a
+    `DeclaratorNode*`.
+  - `ExternalDefinitionFunction.parameters` is an array plus `parameters_count`: make it a list of `DeclaratorItem`.
+- Once the function definition has its own range, a function declarator's range can go back to covering the declarator
+  only (`*f(void)`), instead of starting at the type specifier as the note in `Declaration.h` says today.
+- One parse function and one serializer function per node type. `serialize_declaration` is shared by both list walkers,
+  and one `DeclaratorItem` list walker serves both declarations and parameters.
+- **Review check:** any of these is drift from this ADR:
+  - a field whose type is a node or a wrapper, held by value;
+  - a `Range` on a type whose name doesn't end in `Node`, or a `Node` type without a `Range`;
+  - a wrapper with a `Range` or an `id`, or a wrapper whose name doesn't end in `Item`;
+  - a `next` field in a node;
+  - two wrappers with the same content (they should be one type);
+  - a sequence that isn't a `next` list (an array plus a count).

@@ -77,16 +77,16 @@ static const ExpressionSemantics* semantics_of(const SemaFixture* const fixture,
     return &fixture->result.expressions_semantics[expression->id];
 }
 /** @return the @b index 'th external definition's function, or @c NULL if there's no such definition. */
-static const ExternalDefinitionFunction* function_at(const TranslationUnitNode* const translation_unit, const int index) {
-    const ExternalDefinitionNode* definition = translation_unit->head;
+static const FunctionDefinitionNode* function_at(const TranslationUnitNode* const translation_unit, const int index) {
+    const ExternalDeclarationItem* definition = translation_unit->head;
     for (int i = 0; i < index && definition != NULL; i++)
         definition = definition->next;
-    if (definition == NULL || definition->kind != EXTERNAL_DEFINITION_KIND_FUNCTION)
+    if (definition == NULL || definition->kind != EXTERNAL_DECLARATION_ITEM_KIND_FUNCTION)
         return NULL;
-    return &definition->as.external_function_definition;
+    return definition->as.external_function_definition;
 }
 /** @return the expression of @b function 's first statement, if it's a @c return , @c NULL otherwise (also for a @c NULL @b function ). */
-static const ExpressionNode* first_return_expression(const ExternalDefinitionFunction* const function) {
+static const ExpressionNode* first_return_expression(const FunctionDefinitionNode* const function) {
     if (function == NULL)
         return NULL;
     const BlockItem* const item = function->body->as.compound_statement.head;

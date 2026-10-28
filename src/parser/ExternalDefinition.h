@@ -11,30 +11,31 @@ typedef struct Parser Parser;
 #include "Statement.h"
 
 typedef struct {
-    Declarator declarator;  ///< e.g. for int main(void) {...} the declarator describes info about the "int main(void)" part.
-    Declarator* parameters;
-    int parameters_count;
-    StatementNode* body;    ///< a @c Statement of kind @c STATEMENT_KIND_COMPOUND
-} ExternalDefinitionFunction;
+    Range range;                        ///< from return type specifier to }
+    const DeclaratorNode* declarator;   ///< e.g. "main(void)"
+    const DeclaratorItem* parameters;   ///< e.g. list of parameter declarations.
+    const StatementNode* body;                ///< a @c Statement of kind @c STATEMENT_KIND_COMPOUND
+} FunctionDefinitionNode;
 
 typedef enum {
-    EXTERNAL_DEFINITION_KIND_FUNCTION,
-    EXTERNAL_DEFINITION_KIND__COUNT
-} ExternalDefinitionKind;
-typedef struct ExternalDefinitionNode {
-    Range range;
-    ExternalDefinitionKind kind;
+    EXTERNAL_DECLARATION_ITEM_KIND_FUNCTION,
+    EXTERNAL_DECLARATION_ITEM_KIND_DECLARATION,
+
+    EXTERNAL_DECLARATION_ITEM_KIND__COUNT
+} ExternalDeclarationItemKind;
+typedef struct ExternalDeclarationItem {
+    ExternalDeclarationItemKind kind;
     union {
-        ExternalDefinitionFunction external_function_definition;
+        const FunctionDefinitionNode* external_function_definition;
     } as;
-    struct ExternalDefinitionNode* next;
-} ExternalDefinitionNode;
+    struct ExternalDeclarationItem* next;
+} ExternalDeclarationItem;
 
 typedef struct {
     Range range;
-    ExternalDefinitionNode* head;
+    const ExternalDeclarationItem* head;
 } TranslationUnitNode;
 
-TranslationUnitNode* translation_unit_node_parse(Parser* parser);
+const TranslationUnitNode* translation_unit_node_parse(Parser* parser);
 
 #endif //C_COMPILER_EXTERNAL_DEFINITION_H

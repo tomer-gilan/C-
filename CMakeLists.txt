@@ -87,15 +87,11 @@ add_library(c_compiler_core STATIC
         src/data_structures/Text.h
         src/data_structures/TextView.c
         src/data_structures/TextView.h
-        src/parser/Expression.c
         src/parser/Expression.h
-        src/parser/Statement.c
         src/parser/Statement.h
-        src/parser/Declaration.c
         src/parser/Declaration.h
         src/parser/Parser.c
         src/parser/Parser.h
-        src/parser/ExternalDefinition.c
         src/parser/ExternalDefinition.h
         src/data_structures/Arena.c
         src/data_structures/Arena.h
@@ -112,7 +108,11 @@ add_library(c_compiler_core STATIC
         src/codegen/Emitter.c
         src/codegen/Emitter.h
         src/codegen/Operand.c
-        src/codegen/Operand.h)
+        src/codegen/Operand.h
+        src/parser/AstSerializer.c
+        src/parser/AstSerializer.h
+        src/data_structures/Printer.h
+        src/data_structures/Printer.c)
 # -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
 # only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
 # never hide the system one from #include <x.h>. Propagates to every target that links the library.

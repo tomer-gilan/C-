@@ -15,7 +15,6 @@ void emitter_destroy(Emitter* this);
 
 void emitter_indent(Emitter* this);
 void emitter_dedent(Emitter* this);
-
 /**
  * @attention gives ownership of the assembly @c Text .
  */

@@ -54,7 +54,7 @@ static void codegen_generate_statement(Codegen* this, const StatementNode* state
 /**
  * generates code that leads the expression to be saved in %rax.
  */
-static Width codegen_generate_expression(                    Codegen* const this, const ExpressionNode*              const expression_node) {
+static Width codegen_generate_expression(               Codegen* const this, const ExpressionNode*          const expression_node) {
     assert(this != NULL);
     assert(expression_node != NULL);
 
@@ -74,31 +74,25 @@ static Width codegen_generate_expression(                    Codegen* const this
     }
     return rax_width;
 }
-static void codegen_generate_block_item(                    Codegen* const this, const BlockItem*                   const block_item) {
-    assert(this != NULL);
-    assert(block_item != NULL);
-
-    switch (block_item->kind) {
-        case BLOCK_ITEM_KIND_STATEMENT:
-            codegen_generate_statement(this, block_item->as.statement);
-            break;
-        case BLOCK_ITEM_KIND_DECLARATION: // TODO: implement when the implementing the relevant slices
-        case BLOCK_ITEM_KIND__COUNT:
-        default:
-            assert(false && "invalid program state");
-    }
-}
-static void codegen_generate_compound_statement(            Codegen* const this, const CompoundStatement*           const compound_statement) {
+static void codegen_generate_compound_statement(        Codegen* const this, const CompoundStatement*       const compound_statement) {
     assert(this != NULL);
     assert(compound_statement != NULL);
 
     emitter_indent(this->emitter);
     for (const BlockItem* curr = compound_statement->head; curr != NULL; curr = curr->next) {
-        codegen_generate_block_item(this, curr);
+        switch (curr->kind) {
+            case BLOCK_ITEM_KIND_STATEMENT:
+                codegen_generate_statement(this, curr->as.statement);
+                break;
+            case BLOCK_ITEM_KIND_DECLARATION: // TODO: implement when the implementing the relevant slices
+            case BLOCK_ITEM_KIND__COUNT:
+            default:
+                assert(false && "invalid program state");
+        }
     }
     emitter_dedent(this->emitter);
 }
-static void codegen_generate_statement(                     Codegen* const this, const StatementNode*               const statement_node) {
+static void codegen_generate_statement(                 Codegen* const this, const StatementNode*           const statement_node) {
     assert(this != NULL);
     assert(statement_node != NULL);
 
@@ -115,11 +109,11 @@ static void codegen_generate_statement(                     Codegen* const this,
             assert(false && "invalid program state");
     }
 }
-static void codegen_generate_external_definition_function(  Codegen* const this, const ExternalDefinitionFunction*  const external_definition_function) {
+static void codegen_generate_function_definition_node(  Codegen* const this, const FunctionDefinitionNode*  const function_definition_node) {
     assert(this != NULL);
-    assert(external_definition_function != NULL);
+    assert(function_definition_node != NULL);
 
-    const int identifier_id = external_definition_function->declarator.identifier.as.id;
+    const int identifier_id = function_definition_node->declarator->identifier.as.id;
 
     const Label label = label_make_symbol(this->context, identifier_id);
     // External Linkage:
@@ -127,20 +121,24 @@ static void codegen_generate_external_definition_function(  Codegen* const this,
     // Entry Point:
     emitter_emit_label(this->emitter, label);
     // Body:
-    codegen_generate_statement(this, external_definition_function->body);
+    codegen_generate_statement(this, function_definition_node->body);
 }
-static void codegen_generate_external_definition(           Codegen* const this, const ExternalDefinitionNode*      const external_definition_node) {
+static void codegen_generate_external_definition(       Codegen* const this, const ExternalDeclarationItem* const external_definition_node) {
     assert(this != NULL);
     assert(external_definition_node != NULL);
 
     // TODO: in the future this function will have more meat. currently, only external FUNCTION definitions are supported.
-    codegen_generate_external_definition_function(this, &(external_definition_node->as.external_function_definition));
+    codegen_generate_function_definition_node(this, external_definition_node->as.external_function_definition);
 }
-Text* codegen_generate(Codegen* const this) {
-    assert(this != NULL);
-
-    for (const ExternalDefinitionNode* curr = this->ast->head; curr != NULL; curr = curr->next) {
+static Text* codegen_generate_translation_unit_node(    Codegen* const this, const TranslationUnitNode*     const translation_unit_node) {
+    for (const ExternalDeclarationItem* curr = translation_unit_node->head; curr != NULL; curr = curr->next) {
         codegen_generate_external_definition(this, curr);
     }
     return emitter_detach_text(this->emitter);
+}
+
+Text* codegen_generate(Codegen* const this) {
+    assert(this != NULL);
+
+    return codegen_generate_translation_unit_node(this, this->ast);
 }

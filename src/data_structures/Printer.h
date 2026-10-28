@@ -2,8 +2,8 @@
 // Created by tomer on 21-Oct-26.
 //
 
-#ifndef C_COMPILER_PRINTER
-#define C_COMPILER_PRINTER
+#ifndef C_COMPILER_PRINTER_H
+#define C_COMPILER_PRINTER_H
 #include "Text.h"
 
 typedef struct Printer Printer;
@@ -27,4 +27,4 @@ void printer_print_char(Printer* this, char c);
 void printer_print_int(Printer* this, int n);
 void printer_print_new_line(Printer* this);
 
-#endif //C_COMPILER_PRINTER
+#endif //C_COMPILER_PRINTER_H

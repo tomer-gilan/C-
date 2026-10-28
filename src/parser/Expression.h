@@ -16,6 +16,7 @@ typedef enum {
     EXPRESSION_KIND_INT_CONSTANT,
     EXPRESSION_KIND__COUNT
 } ExpressionKind;
+
 typedef struct {
     Range range;
     int id; ///< the identifier that @c Sema uses to intern info about @c ExpressionNode
@@ -25,6 +26,6 @@ typedef struct {
     } as;
 } ExpressionNode;
 
-ExpressionNode* expression_node_parse(Parser* parser);
+const ExpressionNode* expression_node_parse(Parser* parser);
 
 #endif //C_COMPILER_EXPRESSION_H

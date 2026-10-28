@@ -7,23 +7,22 @@
 
 #include "Emitter.h"
 
+#include "Printer.h"
 #include "Text.h"
 #include "TextView.h"
 #include "Utils.h"
 
 struct Emitter {
     int label_counter;
-    int indentation_counter;
-    Text* emissions;    ///< the total assembly output so far.
+    Printer* printer;
 }; ///< append only, assembly stream (for instructions, labels, etc.)
 
-static void emitter_emit_sections_headers(Emitter* const this);
+static void emitter_emit_sections_headers(Emitter* this);
 Emitter* emitter_create(void) {
     Emitter* to_return = utils_xmalloc(sizeof (Emitter));
     *to_return = (Emitter){
         .label_counter = 0,
-        .indentation_counter = 0,
-        .emissions = text_create_empty()
+        .printer = printer_create()
     };
 
     emitter_emit_sections_headers(to_return);
@@ -32,46 +31,28 @@ Emitter* emitter_create(void) {
 void emitter_destroy(                                   Emitter* const this) {
     assert(this != NULL);
 
-    if (this->emissions != NULL) // might have been detached.
-        text_destroy(this->emissions);
+    printer_destroy(this->printer);
     free(this);
 }
 
 static void emitter_emit_separation(                    Emitter* const this) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
-    text_append_char(this->emissions, ',');
-    text_append_char(this->emissions, ' ');
-}
-static void emitter_emit_indentations(                  Emitter* const this) {
-    assert(this != NULL);
-    assert(this->emissions != NULL);
-    assert(this->indentation_counter >= 0);
-
-    for (int i = 0; i < this->indentation_counter; ++i)
-        text_append_text_view(this->emissions, text_view_value_of_literal("    "));
-}
-static void emitter_emit_new_line(                      Emitter* const this) {
-    assert(this != NULL);
-    assert(this->emissions != NULL);
-
-    text_append_char(this->emissions, '\n');
-    emitter_emit_indentations(this);
+    printer_print_char(this->printer, ',');
+    printer_print_char(this->printer, ' ');
 }
 static void emitter_emit_instruction_suffix(            Emitter* const this, const Width width) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     switch (width) {
         case WIDTH_BYTE:
-            text_append_char(this->emissions, 'b');
+            printer_print_char(this->printer, 'b');
             break;
         case WIDTH_LONG:
-            text_append_char(this->emissions, 'l');
+            printer_print_char(this->printer, 'l');
             break;
         case WIDTH_QUAD:
-            text_append_char(this->emissions, 'q');
+            printer_print_char(this->printer, 'q');
             break;
         default:
             assert(false && "invalid program state");
@@ -79,17 +60,16 @@ static void emitter_emit_instruction_suffix(            Emitter* const this, con
 }
 static void emitter_emit_displacement(                  Emitter* const this, const Displacement displacement) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     switch (displacement.kind) {
         case DISPLACEMENT_KIND_LABEL: {
             Text* const label_spelling = label_get_spelling(displacement.as.label);
-            text_append_text(this->emissions, label_spelling);
+            printer_print_text(this->printer, label_spelling);
             text_destroy(label_spelling);
             break;
         }
         case DISPLACEMENT_KIND_NUMBER:
-            text_append_int(this->emissions, displacement.as.number);
+            printer_print_int(this->printer, displacement.as.number);
             break;
         case DISPLACEMENT_KIND__COUNT:
         default:
@@ -98,61 +78,60 @@ static void emitter_emit_displacement(                  Emitter* const this, con
 }
 static void emitter_emit_register_name(                 Emitter* const this, const RegisterKind kind) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     switch (kind) {
         case REGISTER_KIND_RAX:
-            text_append_char(this->emissions, 'a');
+            printer_print_char(this->printer, 'a');
             break;
         case REGISTER_KIND_RBX:
-            text_append_char(this->emissions, 'b');
+            printer_print_char(this->printer, 'b');
             break;
         case REGISTER_KIND_RCX:
-            text_append_char(this->emissions, 'c');
+            printer_print_char(this->printer, 'c');
             break;
         case REGISTER_KIND_RDX:
-            text_append_char(this->emissions, 'd');
+            printer_print_char(this->printer, 'd');
             break;
 
         case REGISTER_KIND_RBP:
-            text_append_text_view(this->emissions, text_view_value_of_literal("bp"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("bp"));
             break;
         case REGISTER_KIND_RSI:
-            text_append_text_view(this->emissions, text_view_value_of_literal("si"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("si"));
             break;
         case REGISTER_KIND_RDI:
-            text_append_text_view(this->emissions, text_view_value_of_literal("di"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("di"));
             break;
         case REGISTER_KIND_RSP:
-            text_append_text_view(this->emissions, text_view_value_of_literal("sp"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("sp"));
             break;
         case REGISTER_KIND_RIP:
-            text_append_text_view(this->emissions, text_view_value_of_literal("ip"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("ip"));
             break;
 
         case REGISTER_KIND_R8:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r8"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r8"));
             break;
         case REGISTER_KIND_R9:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r9"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r9"));
             break;
         case REGISTER_KIND_R10:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r10"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r10"));
             break;
         case REGISTER_KIND_R11:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r11"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r11"));
             break;
         case REGISTER_KIND_R12:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r12"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r12"));
             break;
         case REGISTER_KIND_R13:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r13"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r13"));
             break;
         case REGISTER_KIND_R14:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r14"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r14"));
             break;
         case REGISTER_KIND_R15:
-            text_append_text_view(this->emissions, text_view_value_of_literal("r15"));
+            printer_print_text_view(this->printer, text_view_value_of_literal("r15"));
             break;
         case REGISTER_KIND_NONE:
         case REGISTER_KIND__COUNT:
@@ -162,9 +141,8 @@ static void emitter_emit_register_name(                 Emitter* const this, con
 }
 static void emitter_emit_operand_register(              Emitter* const this, const Register register_) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
-    text_append_char(this->emissions, '%');
+    printer_print_char(this->printer, '%');
     switch (register_.width) {
         case WIDTH_BYTE:
             emitter_emit_register_name(this, register_.kind);
@@ -177,7 +155,7 @@ static void emitter_emit_operand_register(              Emitter* const this, con
                 case REGISTER_KIND_RSI:
                 case REGISTER_KIND_RDI:
                 case REGISTER_KIND_RSP:
-                    text_append_char(this->emissions, 'l');
+                    printer_print_char(this->printer, 'l');
                     break;
                 case REGISTER_KIND_R8:
                 case REGISTER_KIND_R9:
@@ -187,7 +165,7 @@ static void emitter_emit_operand_register(              Emitter* const this, con
                 case REGISTER_KIND_R13:
                 case REGISTER_KIND_R14:
                 case REGISTER_KIND_R15:
-                    text_append_char(this->emissions, 'b');
+                    printer_print_char(this->printer, 'b');
                     break;
                 case REGISTER_KIND_RIP:
                 case REGISTER_KIND_NONE:
@@ -202,15 +180,15 @@ static void emitter_emit_operand_register(              Emitter* const this, con
                 case REGISTER_KIND_RBX:
                 case REGISTER_KIND_RCX:
                 case REGISTER_KIND_RDX:
-                    text_append_char(this->emissions, 'e');
+                    printer_print_char(this->printer, 'e');
                     emitter_emit_register_name(this, register_.kind);
-                    text_append_char(this->emissions, 'x');
+                    printer_print_char(this->printer, 'x');
                     break;
                 case REGISTER_KIND_RBP:
                 case REGISTER_KIND_RSI:
                 case REGISTER_KIND_RDI:
                 case REGISTER_KIND_RSP:
-                    text_append_char(this->emissions, 'e');
+                    printer_print_char(this->printer, 'e');
                     emitter_emit_register_name(this, register_.kind);
                     break;
                 case REGISTER_KIND_R8:
@@ -222,7 +200,7 @@ static void emitter_emit_operand_register(              Emitter* const this, con
                 case REGISTER_KIND_R14:
                 case REGISTER_KIND_R15:
                     emitter_emit_register_name(this, register_.kind);
-                    text_append_char(this->emissions, 'd');
+                    printer_print_char(this->printer, 'd');
                     break;
                 case REGISTER_KIND_RIP:
                 case REGISTER_KIND_NONE:
@@ -237,16 +215,16 @@ static void emitter_emit_operand_register(              Emitter* const this, con
                 case REGISTER_KIND_RBX:
                 case REGISTER_KIND_RCX:
                 case REGISTER_KIND_RDX:
-                    text_append_char(this->emissions, 'r');
+                    printer_print_char(this->printer, 'r');
                     emitter_emit_register_name(this, register_.kind);
-                    text_append_char(this->emissions, 'x');
+                    printer_print_char(this->printer, 'x');
                     break;
                 case REGISTER_KIND_RBP:
                 case REGISTER_KIND_RSI:
                 case REGISTER_KIND_RDI:
                 case REGISTER_KIND_RSP:
                 case REGISTER_KIND_RIP:
-                    text_append_char(this->emissions, 'r');
+                    printer_print_char(this->printer, 'r');
                     emitter_emit_register_name(this, register_.kind);
                     break;
                 case REGISTER_KIND_R8:
@@ -272,10 +250,9 @@ static void emitter_emit_operand_register(              Emitter* const this, con
 }
 static void emitter_emit_operand_memory_sib(            Emitter* const this, const EffectiveAddressSib effective_address_sib) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     emitter_emit_displacement(this, effective_address_sib.displacement);
-    text_append_char(this->emissions, '(');
+    printer_print_char(this->printer, '(');
     // Base
     emitter_emit_operand_register(this, effective_address_sib.base);
     if (effective_address_sib.index.kind != REGISTER_KIND_NONE) {
@@ -284,22 +261,20 @@ static void emitter_emit_operand_memory_sib(            Emitter* const this, con
         emitter_emit_operand_register(this, effective_address_sib.index);
         emitter_emit_separation(this);
         // Scale
-        text_append_int(this->emissions, effective_address_sib.scale); // no leading '$', since it is not an immediate.
+        printer_print_int(this->printer, effective_address_sib.scale); // no leading '$', since it is not an immediate.
     }
-    text_append_char(this->emissions, ')');
+    printer_print_char(this->printer, ')');
 }
 static void emitter_emit_operand_memory_rip_relative(   Emitter* const this, const EffectiveAddressRipRelative effective_address_rip_relative) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     emitter_emit_displacement(this, effective_address_rip_relative.displacement); // no leading '$', since it is not an immediate.
-    text_append_char(this->emissions, '(');
+    printer_print_char(this->printer, '(');
     emitter_emit_operand_register(this, effective_address_rip_relative.rip);
-    text_append_char(this->emissions, ')');
+    printer_print_char(this->printer, ')');
 }
 static void emitter_emit_operand_memory(                Emitter* const this, const EffectiveAddress effective_address) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     switch (effective_address.kind) {
         case EFFECTIVE_ADDRESS_KIND_SIB:
@@ -316,14 +291,12 @@ static void emitter_emit_operand_memory(                Emitter* const this, con
 }
 static void emitter_emit_operand_immediate(             Emitter* const this, const int immediate) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
-    text_append_char(this->emissions, '$');
-    text_append_int(this->emissions, immediate);
+    printer_print_char(this->printer, '$');
+    printer_print_int(this->printer, immediate);
 }
 static void emitter_emit_operand(                       Emitter* const this, const Operand operand) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     switch (operand.kind) {
         case OPERAND_KIND_REGISTER:
@@ -341,63 +314,60 @@ static void emitter_emit_operand(                       Emitter* const this, con
     }
 }
 static void emitter_emit_sections_headers(              Emitter* const this) {
-    text_append_text_view(this->emissions, text_view_value_of_literal(".text"));
-    emitter_emit_new_line(this);
+    assert(this != NULL);
+
+    printer_print_text_view(this->printer, text_view_value_of_literal(".text"));
+    printer_print_new_line(this->printer);
 }
 static void emitter_emit_footers(                       Emitter* const this) {
-    emitter_emit_new_line(this);
-    text_append_text_view(this->emissions, text_view_value_of_literal(".section .note.GNU-stack,\"\",@progbits"));
-    emitter_emit_new_line(this);
+    assert(this != NULL);
+
+    printer_print_new_line(this->printer);
+    printer_print_text_view(this->printer, text_view_value_of_literal(".section .note.GNU-stack,\"\",@progbits"));
+    printer_print_new_line(this->printer);
 }
 
 void emitter_indent(Emitter* const this) {
     assert(this != NULL);
 
-    this->indentation_counter++;
+    printer_indent(this->printer);
 }
 void emitter_dedent(Emitter* const this) {
     assert(this != NULL);
 
-    this->indentation_counter--;
+    printer_dedent(this->printer);
 }
 Text* emitter_detach_text(Emitter* const this) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
-    assert(this->indentation_counter == 0);
     emitter_emit_footers(this);
-
-    Text* const to_return = this->emissions;
-    this->emissions = NULL;
-    return to_return;
+    return printer_detach_text(this->printer);
 }
 
 void emitter_emit_external_linkage(Emitter* const this, const Label label) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     Text* const spelling = label_get_spelling(label);
     assert(spelling != NULL);
 
-    emitter_emit_new_line(this);
-    text_append_text_view(this->emissions, text_view_value_of_literal(".globl "));
-    text_append_text_view(this->emissions, text_as_view(spelling));
+    printer_print_new_line(this->printer);
+    printer_print_text_view(this->printer, text_view_value_of_literal(".globl "));
+    printer_print_text_view(this->printer, text_as_view(spelling));
 
     text_destroy(spelling);
 }
 void emitter_emit_label(Emitter* const this, const Label label) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
-    emitter_emit_new_line(this);
+    printer_print_new_line(this->printer);
 
     // e.g.: ".L_1_while:"
     Text* const spelling = label_get_spelling(label);
     assert(spelling != NULL);
 
-    text_append_text(this->emissions, spelling);
-    text_append_char(this->emissions, ':');
-    
+    printer_print_text(this->printer, spelling);
+    printer_print_char(this->printer, ':');
+
     text_destroy(spelling);
 }
 /**
@@ -428,19 +398,18 @@ void emitter_emit_label(Emitter* const this, const Label label) {
  */
 void emitter_emit_mov(Emitter* const this, const Width width, const Operand source, const Operand destination) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
     assert(destination.kind != OPERAND_KIND_IMMEDIATE);                                             // #3, #6, #9
     assert(!(source.kind == OPERAND_KIND_MEMORY && destination.kind == OPERAND_KIND_MEMORY));       // #1
     assert(source.kind      != OPERAND_KIND_REGISTER || source.as.register_.width       == width);  // #4, #5
     assert(destination.kind != OPERAND_KIND_REGISTER || destination.as.register_.width  == width);  // #2, #5, #8
 
-    emitter_emit_new_line(this);
+    printer_print_new_line(this->printer);
 
     // e.g.: "movq "
-    text_append_text_view(this->emissions, text_view_value_of_literal("mov"));
+    printer_print_text_view(this->printer, text_view_value_of_literal("mov"));
     emitter_emit_instruction_suffix(this, width);
-    text_append_char(this->emissions, ' ');
+    printer_print_char(this->printer, ' ');
 
     // e.g.: "$5, %rax"
     emitter_emit_operand(this, source);
@@ -449,9 +418,8 @@ void emitter_emit_mov(Emitter* const this, const Width width, const Operand sour
 }
 void emitter_emit_ret(Emitter* const this) {
     assert(this != NULL);
-    assert(this->emissions != NULL);
 
-    emitter_emit_new_line(this);
-    text_append_text_view(this->emissions, text_view_value_of_literal("ret"));
+    printer_print_new_line(this->printer);
+    printer_print_text_view(this->printer, text_view_value_of_literal("ret"));
 }
 

@@ -78,4 +78,5 @@ TypeKind token_kind_get_type_kind(const TokenKind kind) {
     if (kind == TOKEN_KW_INT)
         return TYPE_KIND_INT;
     assert(false && "invalid program state"); // should have been caught in the previous assert
+    return TYPE_KIND_NONE;
 }

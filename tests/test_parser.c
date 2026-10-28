@@ -1,14 +1,17 @@
 //
-// Written by Claude on 16-Oct-26.
+// Written by Claude on 16-Oct-26. Moved to parser_parse on 28-Oct-26.
 //
-// Parser tests for slice 1: expressions, statements, function definitions, the translation unit, whole programs
-// through parser_parse, and inputs that must be rejected. Each valid-input test lexes a source string, calls one parse
-// function and checks the nodes it returns, the parser's error flag (parser_has_error), and the next token (what the
-// parse function left unconsumed). Each error test checks that parser_parse returns NULL, sets the error flag and
-// reports exactly one diagnostic, with the expected code and offset.
+// Parser tests for slice 1: expressions, statements, function definitions, the translation unit, whole programs, and
+// inputs that must be rejected. parser_parse is the parser's only parse function outside Parser.c, so every test parses
+// a whole program: expressions and statements are tested inside main's body ("int main(void) { ... }"), and their
+// offsets count from the start of that program. Each valid-input test checks the nodes and that no diagnostic was
+// reported. Each error test checks that parser_parse returns NULL and reports exactly one diagnostic, with the expected
+// code and offset.
 // Expected values come from SUBSET.md, not from the parser's output.
 //
 
+#include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "Harness.h"
@@ -52,8 +55,25 @@ static void parse_fixture_destroy(const ParseFixture fixture) {
     context_destroy(fixture.context);
 }
 
-static bool next_token_is(const ParseFixture* const fixture, const TokenKind kind) {
-    return parser_peek(fixture->parser)->kind == kind;
+/** The program text before main's first block item. */
+#define MAIN_BODY_PREFIX "int main(void) { "
+/** The program text before the expression that main's first statement returns. */
+#define RETURN_PREFIX MAIN_BODY_PREFIX "return "
+/** The offset of main's first block item: 17. */
+static const int MAIN_BODY_OFFSET = (int)sizeof MAIN_BODY_PREFIX - 1;
+/** The offset of the expression that main's first statement returns: 24. */
+static const int RETURNED_EXPRESSION_OFFSET = (int)sizeof RETURN_PREFIX - 1;
+
+/** Creates a fixture for "int main(void) { return <expression_source>; }". */
+static ParseFixture parse_fixture_create_returning(const char* const expression_source) {
+    char source[256];
+    const int length = snprintf(source, sizeof source, RETURN_PREFIX "%s; }", expression_source);
+    assert(0 < length && length < (int)sizeof source);
+    return parse_fixture_create(source);
+}
+
+static bool has_no_diagnostics(const ParseFixture* const fixture) {
+    return list_get_size(fixture->context->diagnostic_report_table) == 0;
 }
 static bool range_is(const Range range, const int offset, const int length) {
     return range.position.offset == offset && range.length == length;
@@ -86,194 +106,222 @@ static void check_return_of_int_constant(const StatementNode* const statement, c
     CHECK(expression->as.expression_int_constant.value == value);
 }
 
-// ---------------- Expressions ---------------- //
-
-/** "42;": an integer constant. The ';' isn't part of the expression, so it's left as the next token. */
-static void test_parser_expression_42_sc(void) {
-    const ParseFixture fixture = parse_fixture_create("42;");
-
-    const ExpressionNode* const expression = expression_node_parse(fixture.parser);
-    if (CHECK(expression != NULL)) {
-        CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
-        CHECK(expression->as.expression_int_constant.value == 42);
-        CHECK(range_is(expression->range, 0, 2));
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_SEMICOLON));
-
-    parse_fixture_destroy(fixture);
-}
-/** "0": the smallest constant, and the whole input. */
-static void test_parser_expression_0(void) {
-    const ParseFixture fixture = parse_fixture_create("0");
-
-    const ExpressionNode* const expression = expression_node_parse(fixture.parser);
-    if (CHECK(expression != NULL)) {
-        CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
-        CHECK(expression->as.expression_int_constant.value == 0);
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
-
-    parse_fixture_destroy(fixture);
-}
-
-// ---------------- Statements ---------------- //
-
-/** "return 42;" */
-static void test_parser_statement_return_42_sc(void) {
-    const ParseFixture fixture = parse_fixture_create("return 42;");
-
-    check_return_of_int_constant(statement_node_parse(fixture.parser), 42);
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
-
-    parse_fixture_destroy(fixture);
-}
-/** "{}": an empty block. Its range spans both braces. */
-static void test_parser_statement_empty_block(void) {
-    const ParseFixture fixture = parse_fixture_create("{}");
-
-    const StatementNode* const block = statement_node_parse(fixture.parser);
-    if (CHECK(block != NULL) && CHECK(block->kind == STATEMENT_KIND_COMPOUND)) {
-        CHECK(block_item_count(block) == 0);
-        CHECK(range_is(block->range, 0, 2));
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
-
-    parse_fixture_destroy(fixture);
-}
-/** "{{}}": a block whose only item is an empty block. */
-static void test_parser_statement_nested_empty_block(void) {
-    const ParseFixture fixture = parse_fixture_create("{{}}");
-
-    const StatementNode* const outer = statement_node_parse(fixture.parser);
-    if (CHECK(outer != NULL) && CHECK(outer->kind == STATEMENT_KIND_COMPOUND)) {
-        CHECK(range_is(outer->range, 0, 4));
-        CHECK(block_item_count(outer) == 1);
-
-        const StatementNode* const inner = block_item_statement_at(outer, 0);
-        if (CHECK(inner != NULL) && CHECK(inner->kind == STATEMENT_KIND_COMPOUND)) {
-            CHECK(block_item_count(inner) == 0);
-            CHECK(range_is(inner->range, 1, 2));
-        }
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
-
-    parse_fixture_destroy(fixture);
-}
-/** "{}{}": one call parses one statement, so the second block is left as the next tokens, and a second call parses it. */
-static void test_parser_statement_two_blocks(void) {
-    const ParseFixture fixture = parse_fixture_create("{}{}");
-
-    const StatementNode* const first = statement_node_parse(fixture.parser);
-    if (CHECK(first != NULL) && CHECK(first->kind == STATEMENT_KIND_COMPOUND)) {
-        CHECK(block_item_count(first) == 0);
-        CHECK(range_is(first->range, 0, 2));
-    }
-    CHECK(next_token_is(&fixture, TOKEN_BRACE_LEFT));
-
-    const StatementNode* const second = statement_node_parse(fixture.parser);
-    if (CHECK(second != NULL) && CHECK(second->kind == STATEMENT_KIND_COMPOUND)) {
-        CHECK(block_item_count(second) == 0);
-        CHECK(range_is(second->range, 2, 2));
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
-
-    parse_fixture_destroy(fixture);
-}
-/** "{return 42;}": a block with one statement. */
-static void test_parser_statement_block_with_return(void) {
-    const ParseFixture fixture = parse_fixture_create("{return 42;}");
-
-    const StatementNode* const block = statement_node_parse(fixture.parser);
-    if (CHECK(block != NULL) && CHECK(block->kind == STATEMENT_KIND_COMPOUND)) {
-        CHECK(block_item_count(block) == 1);
-        check_return_of_int_constant(block_item_statement_at(block, 0), 42);
-        CHECK(range_is(block->range, 0, 12));
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
-
-    parse_fixture_destroy(fixture);
-}
-/** "{{return 1;} return 2;}": block items keep their source order. */
-static void test_parser_statement_block_items_in_order(void) {
-    const ParseFixture fixture = parse_fixture_create("{{return 1;} return 2;}");
-
-    const StatementNode* const block = statement_node_parse(fixture.parser);
-    if (CHECK(block != NULL) && CHECK(block->kind == STATEMENT_KIND_COMPOUND)) {
-        CHECK(block_item_count(block) == 2);
-
-        const StatementNode* const inner = block_item_statement_at(block, 0);
-        if (CHECK(inner != NULL) && CHECK(inner->kind == STATEMENT_KIND_COMPOUND)) {
-            CHECK(block_item_count(inner) == 1);
-            check_return_of_int_constant(block_item_statement_at(inner, 0), 1);
-        }
-        check_return_of_int_constant(block_item_statement_at(block, 1), 2);
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
-
-    parse_fixture_destroy(fixture);
-}
-
-// ---------------- External definitions and the translation unit ---------------- //
-// external_definition_node_parse is static, so function definitions are tested through translation_unit_node_parse.
-
-static int external_definition_count(const TranslationUnitNode* const translation_unit) {
+static int external_declaration_count(const TranslationUnitNode* const translation_unit) {
     int count = 0;
-    for (const ExternalDefinitionNode* definition = translation_unit->head; definition != NULL; definition = definition->next)
+    for (const ExternalDeclarationItem* item = translation_unit->head; item != NULL; item = item->next)
         count++;
     return count;
 }
-/** @return the @b index 'th external definition, or @c NULL if there's no such definition. */
-static const ExternalDefinitionNode* external_definition_at(const TranslationUnitNode* const translation_unit, const int index) {
-    const ExternalDefinitionNode* definition = translation_unit->head;
-    for (int i = 0; i < index && definition != NULL; i++)
-        definition = definition->next;
-    return definition;
+/** @return the @b index 'th external declaration, or @c NULL if there's no such declaration. */
+static const ExternalDeclarationItem* external_declaration_at(const TranslationUnitNode* const translation_unit, const int index) {
+    const ExternalDeclarationItem* item = translation_unit->head;
+    for (int i = 0; i < index && item != NULL; i++)
+        item = item->next;
+    return item;
 }
 /** @return true iff the interned identifier @b id is spelled @b name . */
 static bool identifier_is(const ParseFixture* const fixture, const int id, const char* const name) {
     const TextView* const spelling = list_at_const(fixture->context->identifiers_table, id);
     return text_view_equals(*spelling, text_view_make((int)strlen(name), name));
 }
-/** @return the body of @b definition if it's a function definition named @b name with a block body, @c NULL otherwise. */
-static const StatementNode* check_function_definition(
+/** @return the function definition in @b item if it's named @b name and has a block body, @c NULL otherwise. */
+static const FunctionDefinitionNode* check_function_definition(
     const ParseFixture* const fixture,
-    const ExternalDefinitionNode* const definition,
+    const ExternalDeclarationItem* const item,
     const char* const name) {
-    if (!CHECK(definition != NULL) || !CHECK(definition->kind == EXTERNAL_DEFINITION_KIND_FUNCTION))
+    if (!CHECK(item != NULL) || !CHECK(item->kind == EXTERNAL_DECLARATION_ITEM_KIND_FUNCTION))
         return NULL;
-    const ExternalDefinitionFunction* const function = &definition->as.external_function_definition;
-    CHECK(identifier_is(fixture, function->declarator.identifier.as.id, name));
+    const FunctionDefinitionNode* const function = item->as.external_function_definition;
+    if (!CHECK(function != NULL) || !CHECK(function->declarator != NULL))
+        return NULL;
+    CHECK(identifier_is(fixture, function->declarator->identifier.as.id, name));
     if (!CHECK(function->body != NULL) || !CHECK(function->body->kind == STATEMENT_KIND_COMPOUND))
         return NULL;
-    return function->body;
+    return function;
 }
+/**
+ * Parses the fixture's source, which must be one function, main, with no diagnostics.
+ * @return main's body, or @c NULL (after a failed CHECK) if the program isn't that.
+ */
+static const StatementNode* parse_main_body(const ParseFixture* const fixture) {
+    const TranslationUnitNode* const translation_unit = parser_parse(fixture->parser);
+    CHECK(has_no_diagnostics(fixture));
+    if (!CHECK(translation_unit != NULL) || !CHECK(external_declaration_count(translation_unit) == 1))
+        return NULL;
+    const FunctionDefinitionNode* const main_function =
+        check_function_definition(fixture, external_declaration_at(translation_unit, 0), "main");
+    return main_function == NULL ? NULL : main_function->body;
+}
+/** @return the expression returned by @b body 's first block item, or @c NULL (after a failed CHECK) if it isn't a return. */
+static const ExpressionNode* first_returned_expression(const StatementNode* const body) {
+    if (body == NULL)
+        return NULL;
+    const StatementNode* const statement = block_item_statement_at(body, 0);
+    if (!CHECK(statement != NULL) || !CHECK(statement->kind == STATEMENT_KIND_RETURN))
+        return NULL;
+    return statement->as.return_statement.expression;
+}
+
+// ---------------- Expressions ---------------- //
+
+/** "return 42;": an integer constant. The ';' isn't part of the expression. */
+static void test_parser_expression_42(void) {
+    const ParseFixture fixture = parse_fixture_create_returning("42");
+
+    const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
+    if (CHECK(expression != NULL)) {
+        CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
+        CHECK(expression->as.expression_int_constant.value == 42);
+        CHECK(range_is(expression->range, RETURNED_EXPRESSION_OFFSET, 2));
+    }
+
+    parse_fixture_destroy(fixture);
+}
+/** "return 0;": the smallest constant. */
+static void test_parser_expression_0(void) {
+    const ParseFixture fixture = parse_fixture_create_returning("0");
+
+    const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
+    if (CHECK(expression != NULL)) {
+        CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
+        CHECK(expression->as.expression_int_constant.value == 0);
+    }
+
+    parse_fixture_destroy(fixture);
+}
+
+// ---------------- Statements (in main's body) ---------------- //
+
+/** "return 42;": the statement spans from 'return' to the ';'. */
+static void test_parser_statement_return_42_sc(void) {
+    const ParseFixture fixture = parse_fixture_create(MAIN_BODY_PREFIX "return 42; }");
+
+    const StatementNode* const body = parse_main_body(&fixture);
+    if (body != NULL) {
+        CHECK(block_item_count(body) == 1);
+        const StatementNode* const statement = block_item_statement_at(body, 0);
+        check_return_of_int_constant(statement, 42);
+        if (statement != NULL)
+            CHECK(range_is(statement->range, MAIN_BODY_OFFSET, 10));
+    }
+
+    parse_fixture_destroy(fixture);
+}
+/** "{}": an empty block. Its range spans both braces. */
+static void test_parser_statement_empty_block(void) {
+    const ParseFixture fixture = parse_fixture_create(MAIN_BODY_PREFIX "{} }");
+
+    const StatementNode* const body = parse_main_body(&fixture);
+    if (body != NULL) {
+        const StatementNode* const block = block_item_statement_at(body, 0);
+        if (CHECK(block != NULL) && CHECK(block->kind == STATEMENT_KIND_COMPOUND)) {
+            CHECK(block_item_count(block) == 0);
+            CHECK(range_is(block->range, MAIN_BODY_OFFSET, 2));
+        }
+    }
+
+    parse_fixture_destroy(fixture);
+}
+/** "{{}}": a block whose only item is an empty block. */
+static void test_parser_statement_nested_empty_block(void) {
+    const ParseFixture fixture = parse_fixture_create(MAIN_BODY_PREFIX "{{}} }");
+
+    const StatementNode* const body = parse_main_body(&fixture);
+    if (body != NULL) {
+        const StatementNode* const outer = block_item_statement_at(body, 0);
+        if (CHECK(outer != NULL) && CHECK(outer->kind == STATEMENT_KIND_COMPOUND)) {
+            CHECK(range_is(outer->range, MAIN_BODY_OFFSET, 4));
+            CHECK(block_item_count(outer) == 1);
+
+            const StatementNode* const inner = block_item_statement_at(outer, 0);
+            if (CHECK(inner != NULL) && CHECK(inner->kind == STATEMENT_KIND_COMPOUND)) {
+                CHECK(block_item_count(inner) == 0);
+                CHECK(range_is(inner->range, MAIN_BODY_OFFSET + 1, 2));
+            }
+        }
+    }
+
+    parse_fixture_destroy(fixture);
+}
+/** "{}{}": two blocks in a row are two block items, each with its own range. */
+static void test_parser_statement_two_blocks(void) {
+    const ParseFixture fixture = parse_fixture_create(MAIN_BODY_PREFIX "{}{} }");
+
+    const StatementNode* const body = parse_main_body(&fixture);
+    if (body != NULL) {
+        CHECK(block_item_count(body) == 2);
+
+        const StatementNode* const first = block_item_statement_at(body, 0);
+        if (CHECK(first != NULL) && CHECK(first->kind == STATEMENT_KIND_COMPOUND)) {
+            CHECK(block_item_count(first) == 0);
+            CHECK(range_is(first->range, MAIN_BODY_OFFSET, 2));
+        }
+        const StatementNode* const second = block_item_statement_at(body, 1);
+        if (CHECK(second != NULL) && CHECK(second->kind == STATEMENT_KIND_COMPOUND)) {
+            CHECK(block_item_count(second) == 0);
+            CHECK(range_is(second->range, MAIN_BODY_OFFSET + 2, 2));
+        }
+    }
+
+    parse_fixture_destroy(fixture);
+}
+/** "{return 42;}": a block with one statement. */
+static void test_parser_statement_block_with_return(void) {
+    const ParseFixture fixture = parse_fixture_create(MAIN_BODY_PREFIX "{return 42;} }");
+
+    const StatementNode* const body = parse_main_body(&fixture);
+    if (body != NULL) {
+        const StatementNode* const block = block_item_statement_at(body, 0);
+        if (CHECK(block != NULL) && CHECK(block->kind == STATEMENT_KIND_COMPOUND)) {
+            CHECK(block_item_count(block) == 1);
+            check_return_of_int_constant(block_item_statement_at(block, 0), 42);
+            CHECK(range_is(block->range, MAIN_BODY_OFFSET, 12));
+        }
+    }
+
+    parse_fixture_destroy(fixture);
+}
+/** "{{return 1;} return 2;}": block items keep their source order. */
+static void test_parser_statement_block_items_in_order(void) {
+    const ParseFixture fixture = parse_fixture_create(MAIN_BODY_PREFIX "{{return 1;} return 2;} }");
+
+    const StatementNode* const body = parse_main_body(&fixture);
+    if (body != NULL) {
+        const StatementNode* const block = block_item_statement_at(body, 0);
+        if (CHECK(block != NULL) && CHECK(block->kind == STATEMENT_KIND_COMPOUND)) {
+            CHECK(block_item_count(block) == 2);
+
+            const StatementNode* const inner = block_item_statement_at(block, 0);
+            if (CHECK(inner != NULL) && CHECK(inner->kind == STATEMENT_KIND_COMPOUND)) {
+                CHECK(block_item_count(inner) == 1);
+                check_return_of_int_constant(block_item_statement_at(inner, 0), 1);
+            }
+            check_return_of_int_constant(block_item_statement_at(block, 1), 2);
+        }
+    }
+
+    parse_fixture_destroy(fixture);
+}
+
+// ---------------- Function definitions and the translation unit ---------------- //
 
 /** "int main(void) { return 2; }": the slice 1 program. The definition spans all of it. */
 static void test_parser_function_definition_main(void) {
     const ParseFixture fixture = parse_fixture_create("int main(void) { return 2; }");
 
-    const TranslationUnitNode* const translation_unit = translation_unit_node_parse(fixture.parser);
+    const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
     if (CHECK(translation_unit != NULL)) {
-        CHECK(external_definition_count(translation_unit) == 1);
-        const ExternalDefinitionNode* const definition = external_definition_at(translation_unit, 0);
-        const StatementNode* const body = check_function_definition(&fixture, definition, "main");
-        if (body != NULL) {
-            CHECK(block_item_count(body) == 1);
-            check_return_of_int_constant(block_item_statement_at(body, 0), 2);
-            CHECK(range_is(body->range, 15, 13));
-            CHECK(range_is(definition->range, 0, 28));
+        CHECK(external_declaration_count(translation_unit) == 1);
+        const FunctionDefinitionNode* const function =
+            check_function_definition(&fixture, external_declaration_at(translation_unit, 0), "main");
+        if (function != NULL) {
+            CHECK(block_item_count(function->body) == 1);
+            check_return_of_int_constant(block_item_statement_at(function->body, 0), 2);
+            CHECK(range_is(function->body->range, 15, 13));
+            CHECK(range_is(function->range, 0, 28));
         }
     }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
+    CHECK(has_no_diagnostics(&fixture));
 
     parse_fixture_destroy(fixture);
 }
@@ -281,18 +329,17 @@ static void test_parser_function_definition_main(void) {
 static void test_parser_function_definition_any_name(void) {
     const ParseFixture fixture = parse_fixture_create("int foo(void){return 0;}");
 
-    const TranslationUnitNode* const translation_unit = translation_unit_node_parse(fixture.parser);
+    const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
     if (CHECK(translation_unit != NULL)) {
-        CHECK(external_definition_count(translation_unit) == 1);
-        const StatementNode* const body =
-            check_function_definition(&fixture, external_definition_at(translation_unit, 0), "foo");
-        if (body != NULL) {
-            CHECK(block_item_count(body) == 1);
-            check_return_of_int_constant(block_item_statement_at(body, 0), 0);
+        CHECK(external_declaration_count(translation_unit) == 1);
+        const FunctionDefinitionNode* const function =
+            check_function_definition(&fixture, external_declaration_at(translation_unit, 0), "foo");
+        if (function != NULL) {
+            CHECK(block_item_count(function->body) == 1);
+            check_return_of_int_constant(block_item_statement_at(function->body, 0), 0);
         }
     }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
+    CHECK(has_no_diagnostics(&fixture));
 
     parse_fixture_destroy(fixture);
 }
@@ -300,46 +347,38 @@ static void test_parser_function_definition_any_name(void) {
 static void test_parser_function_definition_empty_body(void) {
     const ParseFixture fixture = parse_fixture_create("int main(void){}");
 
-    const TranslationUnitNode* const translation_unit = translation_unit_node_parse(fixture.parser);
-    if (CHECK(translation_unit != NULL)) {
-        CHECK(external_definition_count(translation_unit) == 1);
-        const StatementNode* const body =
-            check_function_definition(&fixture, external_definition_at(translation_unit, 0), "main");
-        if (body != NULL)
-            CHECK(block_item_count(body) == 0);
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
+    const StatementNode* const body = parse_main_body(&fixture);
+    if (body != NULL)
+        CHECK(block_item_count(body) == 0);
 
     parse_fixture_destroy(fixture);
 }
 /**
  * "int f(void){return 1;} int g(void){return 2;}": definitions keep their source order, and the translation unit spans
- * from the first one's start to the last one's end.
+ * from the first one's start to EOF (here, right after the last one's end).
  */
 static void test_parser_translation_unit_two_functions(void) {
     const ParseFixture fixture = parse_fixture_create("int f(void){return 1;} int g(void){return 2;}");
 
-    const TranslationUnitNode* const translation_unit = translation_unit_node_parse(fixture.parser);
+    const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
     if (CHECK(translation_unit != NULL)) {
-        CHECK(external_definition_count(translation_unit) == 2);
+        CHECK(external_declaration_count(translation_unit) == 2);
         CHECK(range_is(translation_unit->range, 0, 45));
 
-        const ExternalDefinitionNode* const first = external_definition_at(translation_unit, 0);
-        const StatementNode* const first_body = check_function_definition(&fixture, first, "f");
-        if (first_body != NULL) {
-            check_return_of_int_constant(block_item_statement_at(first_body, 0), 1);
+        const FunctionDefinitionNode* const first =
+            check_function_definition(&fixture, external_declaration_at(translation_unit, 0), "f");
+        if (first != NULL) {
+            check_return_of_int_constant(block_item_statement_at(first->body, 0), 1);
             CHECK(range_is(first->range, 0, 22));
         }
-        const ExternalDefinitionNode* const second = external_definition_at(translation_unit, 1);
-        const StatementNode* const second_body = check_function_definition(&fixture, second, "g");
-        if (second_body != NULL) {
-            check_return_of_int_constant(block_item_statement_at(second_body, 0), 2);
+        const FunctionDefinitionNode* const second =
+            check_function_definition(&fixture, external_declaration_at(translation_unit, 1), "g");
+        if (second != NULL) {
+            check_return_of_int_constant(block_item_statement_at(second->body, 0), 2);
             CHECK(range_is(second->range, 23, 22));
         }
     }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
+    CHECK(has_no_diagnostics(&fixture));
 
     parse_fixture_destroy(fixture);
 }
@@ -347,18 +386,18 @@ static void test_parser_translation_unit_two_functions(void) {
 static void test_parser_translation_unit_same_name_twice(void) {
     const ParseFixture fixture = parse_fixture_create("int f(void){return 1;} int f(void){return 2;}");
 
-    const TranslationUnitNode* const translation_unit = translation_unit_node_parse(fixture.parser);
+    const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
     if (CHECK(translation_unit != NULL)) {
-        CHECK(external_definition_count(translation_unit) == 2);
-        check_function_definition(&fixture, external_definition_at(translation_unit, 0), "f");
-        check_function_definition(&fixture, external_definition_at(translation_unit, 1), "f");
+        CHECK(external_declaration_count(translation_unit) == 2);
+        check_function_definition(&fixture, external_declaration_at(translation_unit, 0), "f");
+        check_function_definition(&fixture, external_declaration_at(translation_unit, 1), "f");
     }
-    CHECK(!parser_has_error(fixture.parser));
+    CHECK(has_no_diagnostics(&fixture));
 
     parse_fixture_destroy(fixture);
 }
 
-// ---------------- The whole parser (parser_parse) ---------------- //
+// ---------------- Whole programs ---------------- //
 
 /** The slice 1 program as it would sit in a file: newlines, indentation and a trailing newline. */
 static void test_parser_parse_slice_1_program(void) {
@@ -369,17 +408,16 @@ static void test_parser_parse_slice_1_program(void) {
 
     const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
     if (CHECK(translation_unit != NULL)) {
-        CHECK(external_definition_count(translation_unit) == 1);
-        const StatementNode* const body =
-            check_function_definition(&fixture, external_definition_at(translation_unit, 0), "main");
-        if (body != NULL) {
-            CHECK(block_item_count(body) == 1);
-            check_return_of_int_constant(block_item_statement_at(body, 0), 2);
+        CHECK(external_declaration_count(translation_unit) == 1);
+        const FunctionDefinitionNode* const function =
+            check_function_definition(&fixture, external_declaration_at(translation_unit, 0), "main");
+        if (function != NULL) {
+            CHECK(block_item_count(function->body) == 1);
+            check_return_of_int_constant(block_item_statement_at(function->body, 0), 2);
         }
-        CHECK(range_is(translation_unit->range, 0, 32)); // up to and including the final }, not the trailing newline
+        CHECK(range_is(translation_unit->range, 0, 33)); // up to EOF, so the trailing newline is included
     }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
+    CHECK(has_no_diagnostics(&fixture));
 
     parse_fixture_destroy(fixture);
 }
@@ -400,23 +438,23 @@ static void test_parser_parse_whole_program(void) {
 
     const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
     if (CHECK(translation_unit != NULL)) {
-        CHECK(external_definition_count(translation_unit) == 2);
+        CHECK(external_declaration_count(translation_unit) == 2);
 
-        const StatementNode* const helper_body =
-            check_function_definition(&fixture, external_definition_at(translation_unit, 0), "helper");
-        if (helper_body != NULL) {
-            CHECK(block_item_count(helper_body) == 2);
-            const StatementNode* const empty_block = block_item_statement_at(helper_body, 0);
+        const FunctionDefinitionNode* const helper =
+            check_function_definition(&fixture, external_declaration_at(translation_unit, 0), "helper");
+        if (helper != NULL) {
+            CHECK(block_item_count(helper->body) == 2);
+            const StatementNode* const empty_block = block_item_statement_at(helper->body, 0);
             if (CHECK(empty_block != NULL) && CHECK(empty_block->kind == STATEMENT_KIND_COMPOUND))
                 CHECK(block_item_count(empty_block) == 0);
-            check_return_of_int_constant(block_item_statement_at(helper_body, 1), 7);
+            check_return_of_int_constant(block_item_statement_at(helper->body, 1), 7);
         }
 
-        const StatementNode* const main_body =
-            check_function_definition(&fixture, external_definition_at(translation_unit, 1), "main");
-        if (main_body != NULL) {
-            CHECK(block_item_count(main_body) == 2);
-            const StatementNode* const outer = block_item_statement_at(main_body, 0);
+        const FunctionDefinitionNode* const main_function =
+            check_function_definition(&fixture, external_declaration_at(translation_unit, 1), "main");
+        if (main_function != NULL) {
+            CHECK(block_item_count(main_function->body) == 2);
+            const StatementNode* const outer = block_item_statement_at(main_function->body, 0);
             if (CHECK(outer != NULL) && CHECK(outer->kind == STATEMENT_KIND_COMPOUND)) {
                 CHECK(block_item_count(outer) == 1);
                 const StatementNode* const inner = block_item_statement_at(outer, 0);
@@ -425,29 +463,27 @@ static void test_parser_parse_whole_program(void) {
                     check_return_of_int_constant(block_item_statement_at(inner, 0), 1);
                 }
             }
-            check_return_of_int_constant(block_item_statement_at(main_body, 1), 0);
+            check_return_of_int_constant(block_item_statement_at(main_function->body, 1), 0);
         }
     }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
+    CHECK(has_no_diagnostics(&fixture));
 
     parse_fixture_destroy(fixture);
 }
 
-// ---------------- Errors (parser_parse) ---------------- //
-// The parser stops at the first syntax error (ADR-020): parser_parse returns NULL, the error flag is set, and exactly
-// one diagnostic is reported. The expected code and offset of each one were worked out by hand from the input (the
-// offset of the token the parser found instead; EOF is at the end of the input), not copied from the parser's output.
+// ---------------- Errors ---------------- //
+// The parser stops at the first syntax error (ADR-020): parser_parse returns NULL and exactly one diagnostic is
+// reported. The expected code and offset of each one were worked out by hand from the input (the offset of the token
+// the parser found instead; EOF is at the end of the input), not copied from the parser's output.
 
 /**
- * Checks that parsing @b source as a whole program fails: @c NULL result, the error flag set, and exactly one
- * diagnostic, with code @b code at byte offset @b offset .
+ * Checks that parsing @b source as a whole program fails: @c NULL result, and exactly one diagnostic, with code
+ * @b code at byte offset @b offset .
  */
 static void check_parse_fails(const char* const source, const DiagnosticCode code, const int offset) {
     const ParseFixture fixture = parse_fixture_create(source);
 
     CHECK(parser_parse(fixture.parser) == NULL);
-    CHECK(parser_has_error(fixture.parser));
 
     const List* const diagnostics = fixture.context->diagnostic_report_table;
     if (CHECK(list_get_size(diagnostics) == 1)) {
@@ -479,9 +515,12 @@ static void test_parser_error_missing_right_brace(void) {
 static void test_parser_error_missing_function_name(void) {
     check_parse_fails("int (void) { return 2; }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 4);
 }
-/** "int main(void) return 2;": the body isn't a block. Reported at 'return', where the '{' should be. */
+/**
+ * "int main(void) return 2;": the body isn't a block, and 'return' can't continue an external definition either (a '{'
+ * or a ';' could). Reported at 'return'.
+ */
 static void test_parser_error_missing_left_brace(void) {
-    check_parse_fails("int main(void) return 2;", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 15);
+    check_parse_fails("int main(void) return 2;", DIAGNOSTIC_CODE_PARSER_INVALID_EXTERNAL_DEFINITION, 15);
 }
 /** "int main(void": EOF in the middle of the parameter list, where the ')' should be. */
 static void test_parser_error_eof_in_parameter_list(void) {
@@ -494,13 +533,13 @@ static void test_parser_error_eof_in_parameter_list(void) {
 static void test_parser_error_unnamed_parameter(void) {
     check_parse_fails("int main(int) { return 2; }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 9);
 }
-/** "int main(void) { return 2; } }": a stray '}' after the last definition, where an 'int' should be. */
+/** "int main(void) { return 2; } }": a stray '}' after the last definition, where a type specifier should be. */
 static void test_parser_error_stray_right_brace(void) {
-    check_parse_fails("int main(void) { return 2; } }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 29);
+    check_parse_fails("int main(void) { return 2; } }", DIAGNOSTIC_CODE_PARSER_MISSING_TYPE_SPECIFIER, 29);
 }
-/** "int main(void) { return 2; } 5": a token that can't start an external definition, where an 'int' should be. */
+/** "int main(void) { return 2; } 5": a token that can't start an external declaration, where a type specifier should be. */
 static void test_parser_error_trailing_token(void) {
-    check_parse_fails("int main(void) { return 2; } 5", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 29);
+    check_parse_fails("int main(void) { return 2; } 5", DIAGNOSTIC_CODE_PARSER_MISSING_TYPE_SPECIFIER, 29);
 }
 
 // ---------------- Slice 2: unary operators and parentheses ---------------- //
@@ -509,95 +548,78 @@ static void test_parser_error_trailing_token(void) {
 // They move to dump strings once the AST dump exists (parser Step 2). Off in main until slice 2 is implemented.
 
 /**
- * Checks that the expression at the start of @b source parses with no error, stops at the ';' after it, and gives a
- * node that isn't a constant (so a unary node) spanning the first @b length bytes: the operator and its operand.
+ * Checks that "int main(void) { return <expression_source>; }" parses with no diagnostics, and that the returned
+ * expression isn't a constant (so a unary node) and spans @b length bytes: the operator and its operand.
  */
-static void check_unary_expression(const char* const source, const int length) {
-    const ParseFixture fixture = parse_fixture_create(source);
+static void check_unary_expression(const char* const expression_source, const int length) {
+    const ParseFixture fixture = parse_fixture_create_returning(expression_source);
 
-    const ExpressionNode* const expression = expression_node_parse(fixture.parser);
+    const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
     if (CHECK(expression != NULL)) {
         CHECK(expression->kind != EXPRESSION_KIND_INT_CONSTANT);
-        CHECK(range_is(expression->range, 0, length));
+        CHECK(range_is(expression->range, RETURNED_EXPRESSION_OFFSET, length));
     }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_SEMICOLON));
 
     parse_fixture_destroy(fixture);
 }
 /**
- * Checks that the expression at the start of @b source parses with no error, stops at the ';' after it, and gives the
- * integer constant @b value : parentheses produce no node.
+ * Checks that "int main(void) { return <expression_source>; }" parses with no diagnostics, and that the returned
+ * expression is the integer constant @b value : parentheses produce no node.
  */
-static void check_parenthesized_constant(const char* const source, const int value) {
-    const ParseFixture fixture = parse_fixture_create(source);
+static void check_parenthesized_constant(const char* const expression_source, const int value) {
+    const ParseFixture fixture = parse_fixture_create_returning(expression_source);
 
-    const ExpressionNode* const expression = expression_node_parse(fixture.parser);
+    const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
     if (CHECK(expression != NULL)) {
         CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
         CHECK(expression->as.expression_int_constant.value == value);
     }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_SEMICOLON));
 
     parse_fixture_destroy(fixture);
 }
 
-/** "-2;", "+2;", "~2;", "!2;": each prefix operator of slice 2 on a constant. */
+/** "-2", "+2", "~2", "!2": each prefix operator of slice 2 on a constant. */
 static void test_parser_slice_2_each_unary_operator(void) {
-    check_unary_expression("-2;", 2);
-    check_unary_expression("+2;", 2);
-    check_unary_expression("~2;", 2);
-    check_unary_expression("!2;", 2);
+    check_unary_expression("-2", 2);
+    check_unary_expression("+2", 2);
+    check_unary_expression("~2", 2);
+    check_unary_expression("!2", 2);
 }
-/** "~-2;", "!!1;", "- -2;", "-+2;", "+-2;": unary operators nest. "- -2" and "-+2" are allowed (SUBSET.md A.2.1). */
+/** "~-2", "!!1", "- -2", "-+2", "+-2": unary operators nest. "- -2" and "-+2" are allowed (SUBSET.md A.2.1). */
 static void test_parser_slice_2_nested_unary(void) {
-    check_unary_expression("~-2;", 3);
-    check_unary_expression("!!1;", 3);
-    check_unary_expression("- -2;", 4);
-    check_unary_expression("-+2;", 3);
-    check_unary_expression("+-2;", 3);
-    check_unary_expression("-~!+2;", 5);
+    check_unary_expression("~-2", 3);
+    check_unary_expression("!!1", 3);
+    check_unary_expression("- -2", 4);
+    check_unary_expression("-+2", 3);
+    check_unary_expression("+-2", 3);
+    check_unary_expression("-~!+2", 5);
 }
 /**
- * "-(-(2));", "-(2);": a unary operator on a parenthesized operand. The range isn't checked: whether it reaches the
+ * "-(-(2))", "-(2)": a unary operator on a parenthesized operand. The range isn't checked: whether it reaches the
  * closing ')' depends on the parentheses' range, which is still open (parser-roadmap.md, Step 2 gotchas).
  */
 static void test_parser_slice_2_unary_on_parentheses(void) {
-    const char* const sources[] = {"-(-(2));", "-(2);", "~(!(+(1)));"};
+    const char* const sources[] = {"-(-(2))", "-(2)", "~(!(+(1)))"};
     for (int i = 0; i < (int)(sizeof sources / sizeof sources[0]); i++) {
-        const ParseFixture fixture = parse_fixture_create(sources[i]);
+        const ParseFixture fixture = parse_fixture_create_returning(sources[i]);
 
-        const ExpressionNode* const expression = expression_node_parse(fixture.parser);
+        const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
         if (CHECK(expression != NULL))
             CHECK(expression->kind != EXPRESSION_KIND_INT_CONSTANT);
-        CHECK(!parser_has_error(fixture.parser));
-        CHECK(next_token_is(&fixture, TOKEN_SEMICOLON));
 
         parse_fixture_destroy(fixture);
     }
 }
-/** "(2);", "(((2)));": parentheses produce no node, so both are just the constant. */
+/** "(2)", "(((2)))": parentheses produce no node, so both are just the constant. */
 static void test_parser_slice_2_parentheses(void) {
-    check_parenthesized_constant("(2);", 2);
-    check_parenthesized_constant("(((2)));", 2);
+    check_parenthesized_constant("(2)", 2);
+    check_parenthesized_constant("(((2)))", 2);
 }
-/** "int main(void) { return -(~2); }": slice 2's example program, through parser_parse. */
+/** "int main(void) { return -(~2); }": slice 2's example program. */
 static void test_parser_slice_2_program(void) {
     const ParseFixture fixture = parse_fixture_create("int main(void) { return -(~2); }");
 
-    const TranslationUnitNode* const translation_unit = parser_parse(fixture.parser);
-    if (CHECK(translation_unit != NULL)) {
-        const StatementNode* const body =
-            check_function_definition(&fixture, external_definition_at(translation_unit, 0), "main");
-        if (body != NULL) {
-            const StatementNode* const statement = block_item_statement_at(body, 0);
-            if (CHECK(statement != NULL) && CHECK(statement->kind == STATEMENT_KIND_RETURN))
-                CHECK(statement->as.return_statement.expression != NULL);
-        }
-    }
-    CHECK(!parser_has_error(fixture.parser));
-    CHECK(next_token_is(&fixture, TOKEN_EOF));
+    CHECK(first_returned_expression(parse_main_body(&fixture)) != NULL);
 
     parse_fixture_destroy(fixture);
 }
@@ -638,7 +660,7 @@ static void test_parser_slice_2_error_nested_minus_minus(void) {
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
 
-    RUN_TEST(test_parser_expression_42_sc);
+    RUN_TEST(test_parser_expression_42);
     RUN_TEST(test_parser_expression_0);
 
     RUN_TEST(test_parser_statement_return_42_sc);

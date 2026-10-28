@@ -51,7 +51,7 @@ static void sema_record_expression(Sema* const this, int const id, const Type* c
  *
  * interns a @c Symbol* into the @c ScopeStack , keyed by the @c Declarator 's @c identifier.as.id
  */
-static void sema_record_declarator(Sema* const this, const Declarator* const declarator) {
+static void sema_record_declarator(Sema* const this, const DeclaratorNode* const declarator) {
     assert(this != NULL);
     assert(declarator != NULL);
     const int identifier_id = declarator->identifier.as.id;
@@ -83,18 +83,20 @@ void sema_destroy(Sema* const this) {
     free(this);
 }
 
-static void sema_analyze_statement(                     Sema*       this, const StatementNode*                    statement_node); // forward declaration
-// analyzing logic:
+// analysis:
+
 static void sema_analyze_expression(                    Sema* const this, const ExpressionNode*             const expression_node) {
     assert(this != NULL);
     if (sema_has_error(this))
         return;
+    assert(expression_node != NULL);
+    assert(0 <= expression_node->id && expression_node->id < this->expressions_count);
 
     const Type* type = NULL;
     const Symbol* identifier_symbol = NULL;
     assert(this->expressions_semantics[expression_node->id].type == NULL);
-    switch (expression_node->kind) {
     // TODO: check that the expression kind is identifier. then assert the symbol is NULL. then fetch the symbol from ScopeStack. if NULL, issue diagnostic (variable used but not declared), else, assign.
+    switch (expression_node->kind) {
         case EXPRESSION_KIND_INT_CONSTANT:
             type = type_get_int();
             break;
@@ -104,85 +106,84 @@ static void sema_analyze_expression(                    Sema* const this, const 
     }
     sema_record_expression(this, expression_node->id, type, identifier_symbol);
 }
-static void sema_analyze_block_item(                    Sema* const this, const BlockItem*                  const block_item) {
-    assert(this != NULL);
-
-    if (sema_has_error(this))
-        return;
-    switch (block_item->kind) {
-        case BLOCK_ITEM_KIND_STATEMENT:
-            sema_analyze_statement(this, block_item->as.statement);
-            break;
-        case BLOCK_ITEM_KIND_DECLARATION: // TODO: add support in future slices
-        case BLOCK_ITEM_KIND__COUNT:
-        default:
-            assert(false && "invalid program state");
-    }
-}
-static void sema_analyze_compound_statement(            Sema* const this, const CompoundStatement*          const compound_statement) {
-    assert(this != NULL);
-
-    if (sema_has_error(this))
-        return;
-    for (const BlockItem* curr = compound_statement->head; curr != NULL; curr = curr->next) {
-        sema_analyze_block_item(this, curr);
-    }
-}
 static void sema_analyze_statement(                     Sema* const this, const StatementNode*              const statement_node) {
     assert(this != NULL);
-
     if (sema_has_error(this))
         return;
+    assert(statement_node != NULL);
+
     switch (statement_node->kind) {
         case STATEMENT_KIND_RETURN:
             sema_analyze_expression(this, statement_node->as.return_statement.expression);
             break;
-        case STATEMENT_KIND_COMPOUND:
-            sema_analyze_compound_statement(this, &(statement_node->as.compound_statement));
+        case STATEMENT_KIND_COMPOUND: {
+            for (const BlockItem* curr = statement_node->as.compound_statement.head; curr != NULL; curr = curr->next) {
+                // analyse the block item:
+                switch (curr->kind) {
+                    case BLOCK_ITEM_KIND_STATEMENT:
+                        sema_analyze_statement(this, curr->as.statement);
+                        break;
+                    case BLOCK_ITEM_KIND_DECLARATION: // TODO: add support in future slices
+                    case BLOCK_ITEM_KIND__COUNT:
+                    default:
+                        assert(false && "invalid program state");
+                }
+            }
+        }
             break;
         case STATEMENT_KIND__COUNT:
         default:
             assert(false && "invalid program state");
     }
 }
-static void sema_analyze_external_definition_function(  Sema* const this, const ExternalDefinitionFunction* const external_definition_function) {
+static void sema_analyze_function_definition_node(      Sema* const this, const FunctionDefinitionNode*     const function_definition_node) {
     assert(this != NULL);
-
     if (sema_has_error(this))
         return;
+    assert(function_definition_node != NULL);
+
     // TODO: in the future, also check that the function return type matches the actually returned expression.
 
-    const int identifier_id = external_definition_function->declarator.identifier.as.id;
+    const int identifier_id = function_definition_node->declarator->identifier.as.id;
     if (scope_stack_was_identifier_declared_in_current_scope(this->scope_stack, identifier_id)) {
-        sema_report_diagnostic(this, DIAGNOSTIC_CODE_SEMA_SYMBOL_ALREADY_DEFINED, external_definition_function->declarator.identifier.range);
+        sema_report_diagnostic(this, DIAGNOSTIC_CODE_SEMA_SYMBOL_ALREADY_DEFINED, function_definition_node->declarator->identifier.range);
         return;
     }
-    sema_record_declarator(this, &(external_definition_function->declarator));
+    sema_record_declarator(this, function_definition_node->declarator);
 
-    sema_analyze_statement(this, external_definition_function->body);
+    sema_analyze_statement(this, function_definition_node->body);
 }
-static void sema_analyze_external_definition(           Sema* const this, const ExternalDefinitionNode*     const external_definition_node) {
+static void sema_analyze_external_definition(           Sema* const this, const ExternalDeclarationItem*    const external_definition_node) {
     assert(this != NULL);
-
     if (sema_has_error(this))
         return;
+    assert(external_definition_node != NULL);
+
     switch (external_definition_node->kind) {
-        case EXTERNAL_DEFINITION_KIND_FUNCTION:
-            sema_analyze_external_definition_function(this, &(external_definition_node->as.external_function_definition));
+        case EXTERNAL_DECLARATION_ITEM_KIND_FUNCTION:
+            sema_analyze_function_definition_node(this, external_definition_node->as.external_function_definition);
             break;
-        case EXTERNAL_DEFINITION_KIND__COUNT:
+        case EXTERNAL_DECLARATION_ITEM_KIND_DECLARATION: // TODO: add support
+        case EXTERNAL_DECLARATION_ITEM_KIND__COUNT:
         default:
             assert(false && "invalid program state");
     }
 }
-SemaResult sema_analyze(Sema* const this) {
+static SemaResult sema_analyze_translation_unit_node(   Sema* const this, const TranslationUnitNode*        const translation_unit_node) {
     assert(this != NULL);
+    assert(translation_unit_node != NULL);
 
-    for (const ExternalDefinitionNode* curr = this->ast->head; curr != NULL; curr = curr->next) {
+    for (const ExternalDeclarationItem* curr = translation_unit_node->head; curr != NULL; curr = curr->next) {
         sema_analyze_external_definition(this, curr);
     }
     return (SemaResult){
         .expressions_semantics = this->expressions_semantics,
         .expressions_count = this->expressions_count
     };
+}
+
+SemaResult sema_analyze(Sema* const this) {
+    assert(this != NULL);
+
+    return sema_analyze_translation_unit_node(this, this->ast);
 }

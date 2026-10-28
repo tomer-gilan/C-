@@ -5,6 +5,7 @@
 #include "Type.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 const int CHAR_TYPE_SIZE = 1;       // the standard says so
 const int INT_TYPE_SIZE = 4;        // x64, as stated in implementation-defined.md
@@ -20,7 +21,7 @@ static bool type_function_are_equal(const TypeFunction first, const TypeFunction
         return false;
     const int N = first.parameters_count;
     for (int i = 0; i < N; ++i)
-        if (!type_are_equal(first.parameters_type[i], second.parameters_type[i]))
+        if (!type_are_equal(first.parameters_types[i], second.parameters_types[i]))
             return false;
     return true;
 }
@@ -30,6 +31,7 @@ static bool type_pointer_are_equal(const TypePointer first, const TypePointer se
 static bool type_array_are_equal(const TypeArray first, const TypeArray second) {
     return first.length == second.length && type_are_equal(first.type, second.type);
 }
+
 bool type_are_equal(const Type* first, const Type* second) {
     if (first->kind != second->kind)
         return false;
@@ -93,6 +95,7 @@ const Type* type_get_singleton(const TypeKind kind) {
         case TYPE_KIND_POINTER:
         default:
             assert(false && "non-singleton type kind");
+            return NULL;
     }
 }
 const Type* type_get_void(void) {
@@ -103,4 +106,23 @@ const Type* type_get_char(void) {
 }
 const Type* type_get_int(void) {
     return type_get_singleton(TYPE_KIND_INT);
+}
+
+const Type* parser_type_create_function(
+    Arena* const arena,
+    const Type* const return_type,
+    const Type* const* const parameters_types,
+    const int parameters_count) {
+    assert(arena != NULL);
+
+    Type* const to_return = arena_malloc(arena, sizeof (Type));
+    *to_return = (Type){
+        .kind = TYPE_KIND_FUNCTION,
+        .as.function = {
+            .return_type = return_type,
+            .parameters_types = parameters_types,
+            .parameters_count = parameters_count
+        }
+    };
+    return to_return;
 }

@@ -10,23 +10,26 @@
 #include "Type.h"
 
 typedef struct Parser Parser;
-typedef struct InitDeclarator InitDeclarator;
-typedef struct Declarator Declarator;
+typedef struct DeclaratorItem DeclaratorItem;
+typedef struct DeclaratorNode DeclaratorNode;
 
-struct Declarator {
-    Range range;        ///< i.e. for "int *x[3];" the declarator's range is "*x[3]", not "x". To retrieve only the range of "x", use identifier.range. @note function declarator range begins with the type-specifier and ends with ')', i.e. right before the functions body.
-    const Type* type;   ///< i.e. int x -> x:int | char *a = NULL, b = 'z' -> a:char*, b:char
-    Token identifier;   ///< @attention identifier.as.id this does NOT uniquely identify each @c Symbol, because {int x;} {int x;} are two different symbols. Use this only to retrieve the symbol's spelling through @c Context 's @c identifiers_table
+struct DeclaratorNode {
+    Token base_type;        ///< the token that specified the declared base type
+    Range range;            ///< i.e. for "int *x[3];" the declarator's range is "*x[3]", not "x". To retrieve only the range of "x", use identifier.range. @note function declarator range begins with the type-specifier and ends with ')', i.e. right before the functions body.
+    const Type* type;       ///< i.e. int x -> x:int | char *a = NULL, b = 'z' -> a:char*, b:char
+    Token identifier;       ///< @attention identifier.as.id this does NOT uniquely identify each @c Symbol, because {int x;} {int x;} are two different symbols. Use this only to retrieve the symbol's spelling through @c Context 's @c identifiers_table
 };
-struct InitDeclarator {
-    Declarator declarator;
-    const ExpressionNode* initializer;  ///< @note right now, the standard's BNF <initializer> can only be an expression, since initializer lists, etc. are out-of-scope for now.
-    InitDeclarator* next;
-}; ///< describes the struct: int *x = NULL, y = 3; where the first InitDeclarator would be a Declarator '*x' and initialize 'NULL', and the second a Declarator 'y' and initialize '3'
+struct DeclaratorItem {
+    const DeclaratorNode* declarator;
+    const ExpressionNode* initializer; ///< may be @c NULL
+    DeclaratorItem* next;
+};
 typedef struct {
     Range range;
-    const InitDeclarator* head;
+    const DeclaratorItem* head;
     // TODO: continue designing this, once working on relevant slice
 } DeclarationNode;
+
+const DeclaratorNode* declarator_node_parse(Parser* parser, const Type* base_type, const DeclaratorItem** parameters_ptr);
 
 #endif //C_COMPILER_DECLARATION_H

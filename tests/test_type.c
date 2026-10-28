@@ -22,7 +22,7 @@ static Type array_of(const Type* const element, const int length) {
 }
 static Type function_of(const Type* const return_type, const Type* const* const parameters, const int count) {
     return (Type){.kind = TYPE_KIND_FUNCTION,
-                  .as.function = {.return_type = return_type, .parameters_type = parameters, .parameters_count = count}};
+                  .as.function = {.return_type = return_type, .parameters_types = parameters, .parameters_count = count}};
 }
 
 // -------- type_get_size -------- //
