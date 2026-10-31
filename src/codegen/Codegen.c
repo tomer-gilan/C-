@@ -64,7 +64,7 @@ static Width codegen_generate_expression(               Codegen* const this, con
             emitter_emit_mov(
                 this->emitter,
                 rax_width,
-                operand_make_immediate(expression_node->as.expression_int_constant.value),
+                operand_make_immediate(expression_node->as.int_constant.value),
                 operand_make_register(register_make(REGISTER_KIND_RAX, rax_width)));
             break;
         case EXPRESSION_KIND__COUNT:

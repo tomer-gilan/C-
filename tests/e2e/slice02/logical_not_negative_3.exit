@@ -1,0 +1,3 @@
+# Written by Claude on 31-Oct-26. Expected exit status of logical_not_negative_3.c (see tests/run_e2e.sh).
+# !-3 is 0: a negative value is non-zero too, so ! must compare with 0, not test the sign.
+0

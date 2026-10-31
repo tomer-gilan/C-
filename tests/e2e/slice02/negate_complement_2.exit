@@ -1,0 +1,3 @@
+# Written by Claude on 21-Oct-26. Expected exit status of negate_complement_2.c (see tests/run_e2e.sh).
+# Slice 2's example: ~2 is -3, and -(-3) is 3.
+3

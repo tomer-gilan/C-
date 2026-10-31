@@ -1,0 +1,3 @@
+# Written by Claude on 21-Oct-26. Expected exit status of negate_space_negate_3.c (see tests/run_e2e.sh).
+# Two separate - tokens (allowed, unlike --3): -(-3) is 3.
+3

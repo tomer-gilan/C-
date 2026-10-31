@@ -30,6 +30,4 @@ typedef struct {
     // TODO: continue designing this, once working on relevant slice
 } DeclarationNode;
 
-const DeclaratorNode* declarator_node_parse(Parser* parser, const Type* base_type, const DeclaratorItem** parameters_ptr);
-
 #endif //C_COMPILER_DECLARATION_H

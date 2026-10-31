@@ -1,0 +1,3 @@
+# Written by Claude on 21-Oct-26. Expected exit status of logical_not_5.c (see tests/run_e2e.sh).
+# !5 is 0. Catches a missing movzbl after sete: the upper 24 bits of %eax would still hold 5.
+0

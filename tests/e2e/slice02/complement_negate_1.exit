@@ -1,0 +1,3 @@
+# Written by Claude on 31-Oct-26. Expected exit status of complement_negate_1.c (see tests/run_e2e.sh).
+# -1 is all ones, so ~-1 is 0. Applying the operators outer first gives -(~1), which is 2.
+0

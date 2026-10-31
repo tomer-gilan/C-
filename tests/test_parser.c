@@ -1,8 +1,8 @@
 //
 // Written by Claude on 16-Oct-26. Moved to parser_parse on 28-Oct-26. AST dump checks added on 31-Oct-26.
 //
-// Parser tests for slice 1: expressions, statements, function definitions, the translation unit, whole programs, and
-// inputs that must be rejected. parser_parse is the parser's only parse function outside Parser.c, so every test parses
+// Parser tests for slices 1 and 2: expressions, statements, function definitions, the translation unit, whole programs,
+// and inputs that must be rejected. Slice 2's are written ahead, and fail until the parser handles slice 2. parser_parse is the parser's only parse function outside Parser.c, so every test parses
 // a whole program: expressions and statements are tested inside main's body ("int main(void) { ... }"), and their
 // offsets count from the start of that program. Each valid-input test checks the nodes and that no diagnostic was
 // reported. Each error test checks that parser_parse returns NULL and reports exactly one diagnostic, with the expected
@@ -104,7 +104,7 @@ static void check_return_of_int_constant(const StatementNode* const statement, c
     if (!CHECK(expression != NULL))
         return;
     CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
-    CHECK(expression->as.expression_int_constant.value == value);
+    CHECK(expression->as.int_constant.value == value);
 }
 
 static int external_declaration_count(const TranslationUnitNode* const translation_unit) {
@@ -163,22 +163,30 @@ static const ExpressionNode* first_returned_expression(const StatementNode* cons
     return statement->as.return_statement.expression;
 }
 /**
- * Checks that the FLAT, untyped dump of @b translation_unit is exactly @b expected (ast-dump-format.md). On a mismatch,
- * prints both dumps.
+ * Checks that the untyped dump of @b translation_unit in @b mode is exactly @b expected (ast-dump-format.md). On a
+ * mismatch, prints both dumps.
  */
-static void check_dump(
+static void check_dump_in_mode(
     const ParseFixture* const fixture,
     const TranslationUnitNode* const translation_unit,
+    const AstSerializationMode mode,
     const char* const expected) {
     if (!CHECK(translation_unit != NULL))
         return;
-    AstSerializer* const serializer = ast_serializer_create(fixture->context, AST_SERIALIZATION_MODE_FLAT, NULL);
+    AstSerializer* const serializer = ast_serializer_create(fixture->context, mode, NULL);
     Text* const dump = ast_serializer_serialize(serializer, translation_unit);
     const TextView actual = text_as_view(dump);
     if (!CHECK(text_view_equals(actual, text_view_make((int)strlen(expected), expected))))
         printf("    expected: %s\n    actual:   %.*s\n", expected, actual.length, actual.data);
     text_destroy(dump);
     ast_serializer_destroy(serializer);
+}
+/** Checks that the FLAT, untyped dump of @b translation_unit is exactly @b expected . */
+static void check_dump(
+    const ParseFixture* const fixture,
+    const TranslationUnitNode* const translation_unit,
+    const char* const expected) {
+    check_dump_in_mode(fixture, translation_unit, AST_SERIALIZATION_MODE_FLAT, expected);
 }
 
 // ---------------- Expressions ---------------- //
@@ -190,7 +198,7 @@ static void test_parser_expression_42(void) {
     const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
     if (CHECK(expression != NULL)) {
         CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
-        CHECK(expression->as.expression_int_constant.value == 42);
+        CHECK(expression->as.int_constant.value == 42);
         CHECK(range_is(expression->range, RETURNED_EXPRESSION_OFFSET, 2));
     }
 
@@ -203,7 +211,7 @@ static void test_parser_expression_0(void) {
     const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
     if (CHECK(expression != NULL)) {
         CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
-        CHECK(expression->as.expression_int_constant.value == 0);
+        CHECK(expression->as.int_constant.value == 0);
     }
 
     parse_fixture_destroy(fixture);
@@ -453,6 +461,47 @@ static void test_parser_dump_slice_1_program(void) {
 
     parse_fixture_destroy(fixture);
 }
+/**
+ * Blocks in the dump: an empty one is "(block)", and every child is separated by exactly one space, so neither an empty
+ * block, a nested one nor two in a row leaves a stray or a missing space. Two functions check the same between
+ * definitions.
+ */
+static void test_parser_dump_blocks_and_two_functions(void) {
+    const ParseFixture fixture = parse_fixture_create(
+        "int f(void) {}\n"
+        "int main(void) { {} {{}} {return 1;} return 2; }\n");
+
+    check_dump(&fixture, parser_parse(fixture.parser),
+        "(translation-unit"
+        " (function-definition f:int(void) (parameters) (block))"
+        " (function-definition main:int(void) (parameters) (block (block) (block (block)) (block (return 1)) (return 2))))");
+    CHECK(has_no_diagnostics(&fixture));
+
+    parse_fixture_destroy(fixture);
+}
+/**
+ * The NESTED dump: each function definition and statement on its own line, 2 spaces deeper than its parent, closing
+ * parentheses at the end of the last child's line, and one newline at the end (ast-dump-format.md, Whitespace).
+ */
+static void test_parser_dump_nested(void) {
+    const ParseFixture fixture = parse_fixture_create(
+        "int f(void) {}\n"
+        "int main(void) { {} {return 1;} return 2; }\n");
+
+    check_dump_in_mode(&fixture, parser_parse(fixture.parser), AST_SERIALIZATION_MODE_NESTED,
+        "(translation-unit\n"
+        "  (function-definition f:int(void) (parameters)\n"
+        "    (block))\n"
+        "  (function-definition main:int(void) (parameters)\n"
+        "    (block\n"
+        "      (block)\n"
+        "      (block\n"
+        "        (return 1))\n"
+        "      (return 2))))\n");
+    CHECK(has_no_diagnostics(&fixture));
+
+    parse_fixture_destroy(fixture);
+}
 /** Everything slice 1 has, together: several functions, nested and empty blocks, and statements after a block. */
 static void test_parser_parse_whole_program(void) {
     const ParseFixture fixture = parse_fixture_create(
@@ -575,83 +624,116 @@ static void test_parser_error_trailing_token(void) {
 }
 
 // ---------------- Slice 2: unary operators and parentheses ---------------- //
-// Written ahead by Claude on 21-Oct-26, before slice 2 exists, so they use only what slice 1 has: the unary node's
-// kind and fields don't exist yet, so a unary expression is checked as "parsed, not a constant, with this range".
-// They move to dump strings once the AST dump exists (parser Step 2). Off in main until slice 2 is implemented.
+// Written ahead by Claude on 21-Oct-26, before slice 2 exists. Moved to dump strings on 31-Oct-26: the dump needs no
+// unary node fields, so these compile against slice 1's AST. On since 31-Oct-26: they fail until the parser handles
+// slice 2 (sema's and the e2e slice 2 tests stay off until then).
 
 /**
  * Checks that "int main(void) { return <expression_source>; }" parses with no diagnostics, and that the returned
- * expression isn't a constant (so a unary node) and spans @b length bytes: the operator and its operand.
+ * expression dumps as @b expected_expression_dump (ast-dump-format.md). The whole program is dumped, so a mismatch
+ * prints the context around the expression too.
  */
-static void check_unary_expression(const char* const expression_source, const int length) {
+static void check_returned_expression_dump(
+    const char* const expression_source,
+    const char* const expected_expression_dump) {
+    char expected[256];
+    const int length = snprintf(expected, sizeof expected,
+        "(translation-unit (function-definition main:int(void) (parameters) (block (return %s))))",
+        expected_expression_dump);
+    assert(0 < length && length < (int)sizeof expected);
+
+    const ParseFixture fixture = parse_fixture_create_returning(expression_source);
+    check_dump(&fixture, parser_parse(fixture.parser), expected);
+    CHECK(has_no_diagnostics(&fixture));
+    parse_fixture_destroy(fixture);
+}
+/**
+ * Checks that "int main(void) { return <expression_source>; }" parses with no diagnostics, and that the returned
+ * expression spans @b length bytes from its start: the operator through the end of its operand.
+ */
+static void check_returned_expression_range(const char* const expression_source, const int length) {
     const ParseFixture fixture = parse_fixture_create_returning(expression_source);
 
     const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
-    if (CHECK(expression != NULL)) {
-        CHECK(expression->kind != EXPRESSION_KIND_INT_CONSTANT);
+    if (CHECK(expression != NULL))
         CHECK(range_is(expression->range, RETURNED_EXPRESSION_OFFSET, length));
-    }
-
-    parse_fixture_destroy(fixture);
-}
-/**
- * Checks that "int main(void) { return <expression_source>; }" parses with no diagnostics, and that the returned
- * expression is the integer constant @b value : parentheses produce no node.
- */
-static void check_parenthesized_constant(const char* const expression_source, const int value) {
-    const ParseFixture fixture = parse_fixture_create_returning(expression_source);
-
-    const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
-    if (CHECK(expression != NULL)) {
-        CHECK(expression->kind == EXPRESSION_KIND_INT_CONSTANT);
-        CHECK(expression->as.expression_int_constant.value == value);
-    }
 
     parse_fixture_destroy(fixture);
 }
 
-/** "-2", "+2", "~2", "!2": each prefix operator of slice 2 on a constant. */
+/** "-2", "+2", "~2", "!2": each prefix operator of slice 2 on a constant is a node with one operand. */
 static void test_parser_slice_2_each_unary_operator(void) {
-    check_unary_expression("-2", 2);
-    check_unary_expression("+2", 2);
-    check_unary_expression("~2", 2);
-    check_unary_expression("!2", 2);
-}
-/** "~-2", "!!1", "- -2", "-+2", "+-2": unary operators nest. "- -2" and "-+2" are allowed (SUBSET.md A.2.1). */
-static void test_parser_slice_2_nested_unary(void) {
-    check_unary_expression("~-2", 3);
-    check_unary_expression("!!1", 3);
-    check_unary_expression("- -2", 4);
-    check_unary_expression("-+2", 3);
-    check_unary_expression("+-2", 3);
-    check_unary_expression("-~!+2", 5);
+    check_returned_expression_dump("-2", "(- 2)");
+    check_returned_expression_dump("+2", "(+ 2)");
+    check_returned_expression_dump("~2", "(~ 2)");
+    check_returned_expression_dump("!2", "(! 2)");
 }
 /**
- * "-(-(2))", "-(2)": a unary operator on a parenthesized operand. The range isn't checked: whether it reaches the
- * closing ')' depends on the parentheses' range, which is still open (parser-roadmap.md, Step 2 gotchas).
+ * "~-2", "!!1", "- -2", "-+2", "+-2", "-~!+2": unary operators nest, the rightmost innermost. "- -2" and "-+2" are
+ * allowed (SUBSET.md A.2.1): the two signs don't touch, or differ.
  */
-static void test_parser_slice_2_unary_on_parentheses(void) {
-    const char* const sources[] = {"-(-(2))", "-(2)", "~(!(+(1)))"};
-    for (int i = 0; i < (int)(sizeof sources / sizeof sources[0]); i++) {
-        const ParseFixture fixture = parse_fixture_create_returning(sources[i]);
-
-        const ExpressionNode* const expression = first_returned_expression(parse_main_body(&fixture));
-        if (CHECK(expression != NULL))
-            CHECK(expression->kind != EXPRESSION_KIND_INT_CONSTANT);
-
-        parse_fixture_destroy(fixture);
-    }
+static void test_parser_slice_2_nested_unary(void) {
+    check_returned_expression_dump("~-2", "(~ (- 2))");
+    check_returned_expression_dump("!!1", "(! (! 1))");
+    check_returned_expression_dump("- -2", "(- (- 2))");
+    check_returned_expression_dump("-+2", "(- (+ 2))");
+    check_returned_expression_dump("+-2", "(+ (- 2))");
+    check_returned_expression_dump("-~!+2", "(- (~ (! (+ 2))))");
 }
-/** "(2)", "(((2)))": parentheses produce no node, so both are just the constant. */
+/** "(2)", "(((2)))", "( 2 )": parentheses produce no node, so each is just the constant. */
 static void test_parser_slice_2_parentheses(void) {
-    check_parenthesized_constant("(2)", 2);
-    check_parenthesized_constant("(((2)))", 2);
+    check_returned_expression_dump("(2)", "2");
+    check_returned_expression_dump("(((2)))", "2");
+    check_returned_expression_dump("( 2 )", "2");
+}
+/**
+ * "-(-(2))", "-(2)", "(-2)", "~(!(+(1)))", "((-(~2)))": parentheses around an operand, or around a whole unary
+ * expression, leave the same tree as without them.
+ */
+static void test_parser_slice_2_unary_and_parentheses(void) {
+    check_returned_expression_dump("-(-(2))", "(- (- 2))");
+    check_returned_expression_dump("-(2)", "(- 2)");
+    check_returned_expression_dump("(-2)", "(- 2)");
+    check_returned_expression_dump("~(!(+(1)))", "(~ (! (+ 1)))");
+    check_returned_expression_dump("((-(~2)))", "(- (~ 2))");
+}
+/**
+ * "-2", "~-2", "- -2", "-~!+2": a unary expression's range spans its operator and its operand, the space in "- -2"
+ * included. Operands in parentheses aren't checked: whether the range reaches the closing ')' is still open
+ * (parser-roadmap.md, Step 2 gotchas).
+ */
+static void test_parser_slice_2_unary_ranges(void) {
+    check_returned_expression_range("-2", 2);
+    check_returned_expression_range("~-2", 3);
+    check_returned_expression_range("- -2", 4);
+    check_returned_expression_range("-~!+2", 5);
 }
 /** "int main(void) { return -(~2); }": slice 2's example program. */
 static void test_parser_slice_2_program(void) {
     const ParseFixture fixture = parse_fixture_create("int main(void) { return -(~2); }");
 
-    CHECK(first_returned_expression(parse_main_body(&fixture)) != NULL);
+    check_dump(&fixture, parser_parse(fixture.parser),
+        "(translation-unit (function-definition main:int(void) (parameters) (block (return (- (~ 2))))))");
+    CHECK(has_no_diagnostics(&fixture));
+
+    parse_fixture_destroy(fixture);
+}
+/** Everything slice 2 has, together, as it would sit in a file: two functions, unary operators, parentheses. */
+static void test_parser_slice_2_whole_program(void) {
+    const ParseFixture fixture = parse_fixture_create(
+        "int helper(void) {\n"
+        "    return !(0);\n"
+        "}\n"
+        "\n"
+        "int main(void) {\n"
+        "    return - -(~(+1));\n"
+        "}\n");
+
+    check_dump(&fixture, parser_parse(fixture.parser),
+        "(translation-unit"
+        " (function-definition helper:int(void) (parameters) (block (return (! 0))))"
+        " (function-definition main:int(void) (parameters) (block (return (- (- (~ (+ 1))))))))");
+    CHECK(has_no_diagnostics(&fixture));
 
     parse_fixture_destroy(fixture);
 }
@@ -688,6 +770,21 @@ static void test_parser_slice_2_error_nested_minus_minus(void) {
     check_parse_fails("int main(void) { return - --2; }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 26);
     check_parse_fails("int main(void) { return -(--2); }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 26);
 }
+/** "int main(void) { return (-); }": an operator with no operand, in parentheses. Reported at the ')', offset 26. */
+static void test_parser_slice_2_error_missing_operand_in_parentheses(void) {
+    check_parse_fails("int main(void) { return (-); }", DIAGNOSTIC_CODE_PARSER_INVALID_EXPRESSION, 26);
+}
+/** "int main(void) { return -(2; }": the ')' after an operator's operand is missing. Reported at the ';', offset 27. */
+static void test_parser_slice_2_error_unclosed_parenthesis_after_operator(void) {
+    check_parse_fails("int main(void) { return -(2; }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 27);
+}
+/**
+ * "int main(void) { return 2 ~; }": '~' is prefix only, and never binary, so it can't follow an operand. A ';' is
+ * expected at the '~', offset 26.
+ */
+static void test_parser_slice_2_error_operator_after_operand(void) {
+    check_parse_fails("int main(void) { return 2 ~; }", DIAGNOSTIC_CODE_PARSER_EXPECTED_TOKEN, 26);
+}
 
 int main(const int argc, char** const argv) {
     harness_init(argc, argv);
@@ -711,6 +808,8 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_parser_parse_slice_1_program);
     RUN_TEST(test_parser_parse_whole_program);
     RUN_TEST(test_parser_dump_slice_1_program);
+    RUN_TEST(test_parser_dump_blocks_and_two_functions);
+    RUN_TEST(test_parser_dump_nested);
 
     RUN_TEST(test_parser_error_empty_file);
     RUN_TEST(test_parser_error_whitespace_only);
@@ -723,14 +822,13 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_parser_error_stray_right_brace);
     RUN_TEST(test_parser_error_trailing_token);
 
-    // Slice 2 (written ahead by Claude): off until slice 2 is implemented. Delete this return to run them.
-    return harness_finish();
-
     RUN_TEST(test_parser_slice_2_each_unary_operator);
     RUN_TEST(test_parser_slice_2_nested_unary);
-    RUN_TEST(test_parser_slice_2_unary_on_parentheses);
     RUN_TEST(test_parser_slice_2_parentheses);
+    RUN_TEST(test_parser_slice_2_unary_and_parentheses);
+    RUN_TEST(test_parser_slice_2_unary_ranges);
     RUN_TEST(test_parser_slice_2_program);
+    RUN_TEST(test_parser_slice_2_whole_program);
 
     RUN_TEST(test_parser_slice_2_error_empty_parentheses);
     RUN_TEST(test_parser_slice_2_error_unclosed_parenthesis);
@@ -738,6 +836,9 @@ int main(const int argc, char** const argv) {
     RUN_TEST(test_parser_slice_2_error_missing_operand);
     RUN_TEST(test_parser_slice_2_error_minus_minus_and_plus_plus);
     RUN_TEST(test_parser_slice_2_error_nested_minus_minus);
+    RUN_TEST(test_parser_slice_2_error_missing_operand_in_parentheses);
+    RUN_TEST(test_parser_slice_2_error_unclosed_parenthesis_after_operator);
+    RUN_TEST(test_parser_slice_2_error_operator_after_operand);
 
     return harness_finish();
 }

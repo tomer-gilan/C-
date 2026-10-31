@@ -22,6 +22,7 @@ struct Parser {
 };
 
 // static:
+
 static void parser_set_error(Parser* this) {
     this->error = true;
 }
@@ -86,14 +87,44 @@ static Arena* parser_get_arena(Parser* const this) {
     return this->context->arena;
 }
 
-// parsing
+// convertors:
+
+static UnaryExpressionKind token_to_unary_expression_kind(const TokenKind kind) {
+    if (kind == TOKEN_TILDE)
+        return UNARY_EXPRESSION_KIND_BINARY_NEGATE;
+    if (kind == TOKEN_EXCLAMATION)
+        return UNARY_EXPRESSION_KIND_LOGICAL_NOT;
+    if (kind == TOKEN_PLUS)
+        return UNARY_EXPRESSION_KIND_NUMERIC_PLUS;
+    if (kind == TOKEN_MINUS)
+        return UNARY_EXPRESSION_KIND_NUMERIC_MINUS;
+
+    return UNARY_EXPRESSION_KIND_NONE;
+}
+
+// parsing:
+
 static const ExpressionNode*            parser_expression_node_parse(           Parser* const this) {
     assert(this != NULL);
     if (parser_has_error(this))
         return NULL;
 
     const TokenKind kind = parser_peek(this)->kind;
-    if (kind == TOKEN_CONST_INT) { // constant int expression
+    // parenthesized expression:
+    if (kind == TOKEN_PARENTHESES_LEFT) {
+        parser_expect(this, TOKEN_PARENTHESES_LEFT);
+        if (parser_has_error(this))
+            return NULL;
+        const ExpressionNode* const to_return = parser_expression_node_parse(this);
+        if (parser_has_error(this))
+            return NULL;
+        parser_expect(this, TOKEN_PARENTHESES_RIGHT);
+        if (parser_has_error(this))
+            return NULL;
+        return to_return;
+    }
+    // constant int expression:
+    if (kind == TOKEN_CONST_INT) {
         const Token* const token_constant_int = parser_expect(this, TOKEN_CONST_INT);
         if (parser_has_error(this))
             return NULL;
@@ -103,12 +134,34 @@ static const ExpressionNode*            parser_expression_node_parse(           
             .range = token_constant_int->range,
             .id = parser_generate_next_expression_id(this),
             .kind = EXPRESSION_KIND_INT_CONSTANT,
-            .as.expression_int_constant = {
+            .as.int_constant = {
                 .value = token_constant_int->as.value
             }
         };
         return to_return;
     }
+    // unary expression:
+    const UnaryExpressionKind unary_expression_kind = token_to_unary_expression_kind(parser_peek(this)->kind);
+    if (unary_expression_kind != UNARY_EXPRESSION_KIND_NONE) {
+        const Token* const token_unary_punctuator = parser_pop(this);
+
+        const ExpressionNode* const operand = parser_expression_node_parse(this);
+        if (parser_has_error(this))
+            return NULL;
+
+        ExpressionNode* const to_return = arena_malloc(parser_get_arena(this), sizeof (ExpressionNode));
+        *to_return = (ExpressionNode){
+            .range = range_union(token_unary_punctuator->range, operand->range),
+            .id = parser_generate_next_expression_id(this),
+            .kind = EXPRESSION_KIND_UNARY,
+            .as.unary = {
+                .kind = unary_expression_kind,
+                .operand = operand
+            }
+        };
+        return to_return;
+    }
+    //
 
     parser_report_diagnostic(
         this,
@@ -122,6 +175,7 @@ static const StatementNode*             parser_statement_node_parse(            
         return NULL;
 
     const TokenKind kind = parser_peek(this)->kind;
+    // return statement:
     if (kind == TOKEN_KW_RETURN) {
         const Token* const token_return = parser_expect(this, TOKEN_KW_RETURN);
         if (parser_has_error(this))
@@ -133,7 +187,6 @@ static const StatementNode*             parser_statement_node_parse(            
         if (parser_has_error(this))
             return NULL;
 
-        // return statement
         StatementNode* const to_return = arena_malloc(parser_get_arena(this), sizeof (StatementNode));
         *to_return = (StatementNode){
             .range = range_union(token_return->range, return_expression->range, token_semicolon->range),
@@ -144,7 +197,8 @@ static const StatementNode*             parser_statement_node_parse(            
         };
         return to_return;
     }
-    if (kind == TOKEN_BRACE_LEFT) { // compound statement
+    // compound statement:
+    if (kind == TOKEN_BRACE_LEFT) {
         const Token* const token_brace_left = parser_expect(this, TOKEN_BRACE_LEFT);
         if (parser_has_error(this))
             return NULL;
@@ -347,7 +401,7 @@ static const TranslationUnitNode*       parser_translation_unit_node_parse(     
     return to_return;
 }
 
-// API
+// API:
 
 Parser* parser_create(const List* const tokens, Context* const context)  {
     assert(tokens != NULL);

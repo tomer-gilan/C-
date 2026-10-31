@@ -109,10 +109,9 @@ add_library(c_compiler_core STATIC
         src/codegen/Emitter.h
         src/codegen/Operand.c
         src/codegen/Operand.h
-        src/parser/AstSerializer.c
-        src/parser/AstSerializer.h
         src/data_structures/Printer.h
-        src/data_structures/Printer.c)
+        src/data_structures/Printer.c
+)
 # -iquote (not -I, which target_include_directories would give): the project's headers are found by #include "x.h"
 # only, so a header whose name matches a system header (the case-insensitive /mnt/c: String.h vs <string.h>) can
 # never hide the system one from #include <x.h>. Propagates to every target that links the library.
@@ -139,6 +138,13 @@ add_library(test_harness STATIC
         tests/Harness.h)
 target_link_libraries(test_harness PRIVATE c_compiler_warnings c_compiler_instrumentation)
 
+# The AST dump (docs/specifications/ast-dump-format.md), for tests that compare an AST against a string. A test tool,
+# not part of the compiler, so it lives here and not in c_compiler_core.
+add_library(test_ast_serializer STATIC
+        tests/AstSerializer.c
+        tests/AstSerializer.h)
+target_link_libraries(test_ast_serializer PRIVATE c_compiler_core c_compiler_warnings)
+
 add_executable(test_list tests/test_list.c)
 target_link_libraries(test_list PRIVATE c_compiler_core test_harness c_compiler_warnings)
 add_test(NAME list COMMAND test_list)
@@ -160,7 +166,7 @@ target_link_libraries(test_arena PRIVATE c_compiler_core test_harness c_compiler
 add_test(NAME arena COMMAND test_arena)
 
 add_executable(test_parser tests/test_parser.c)
-target_link_libraries(test_parser PRIVATE c_compiler_core test_harness c_compiler_warnings)
+target_link_libraries(test_parser PRIVATE c_compiler_core test_ast_serializer test_harness c_compiler_warnings)
 add_test(NAME parser COMMAND test_parser)
 # A parser loop that never consumes a token hangs instead of failing; CTest's default timeout is 1500 seconds.
 set_tests_properties(parser PROPERTIES TIMEOUT 10)
@@ -174,7 +180,7 @@ target_link_libraries(test_scope_stack PRIVATE c_compiler_core test_harness c_co
 add_test(NAME scope_stack COMMAND test_scope_stack)
 
 add_executable(test_sema tests/test_sema.c)
-target_link_libraries(test_sema PRIVATE c_compiler_core test_harness c_compiler_warnings)
+target_link_libraries(test_sema PRIVATE c_compiler_core test_ast_serializer test_harness c_compiler_warnings)
 add_test(NAME sema COMMAND test_sema)
 
 add_executable(test_operand tests/test_operand.c)

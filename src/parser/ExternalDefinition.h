@@ -36,6 +36,4 @@ typedef struct {
     const ExternalDeclarationItem* head;
 } TranslationUnitNode;
 
-const TranslationUnitNode* translation_unit_node_parse(Parser* parser);
-
 #endif //C_COMPILER_EXTERNAL_DEFINITION_H

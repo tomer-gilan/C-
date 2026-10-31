@@ -3,13 +3,15 @@
 //
 // Sema tests for slice 1. Each test lexes, parses and analyzes a source string. A valid program must give no
 // diagnostics and a type for every expression. An invalid one must give exactly one diagnostic (sema stops at the first
-// error, ADR-025), with the expected code and offset. Until the typed dump exists (parser Step 2), tests read sema's
-// table directly, through each expression node's id (ADR-023).
+// error, ADR-025), with the expected code and offset. Tests read sema's table directly, through each expression node's
+// id (ADR-023), or compare the typed dump (check_typed_dump, since 31-Oct-26).
 // Expected values come from SUBSET.md and the C standard, not from sema's output.
 //
 
+#include <stdio.h>
 #include <string.h>
 
+#include "AstSerializer.h"
 #include "Context.h"
 #include "Harness.h"
 #include "Lexer.h"
@@ -112,6 +114,20 @@ static bool check_sema_passes(const SemaFixture* const fixture) {
     return passed;
 }
 /**
+ * Checks that the FLAT, typed dump of @b fixture 's AST, with sema's table, is exactly @b expected (ast-dump-format.md,
+ * Typed mode). On a mismatch, prints both dumps.
+ */
+static void check_typed_dump(const SemaFixture* const fixture, const char* const expected) {
+    AstSerializer* const serializer =
+        ast_serializer_create(fixture->context, AST_SERIALIZATION_MODE_FLAT, fixture->result.expressions_semantics);
+    Text* const dump = ast_serializer_serialize(serializer, fixture->ast);
+    const TextView actual = text_as_view(dump);
+    if (!CHECK(text_view_equals(actual, text_view_make((int)strlen(expected), expected))))
+        printf("    expected: %s\n    actual:   %.*s\n", expected, actual.length, actual.data);
+    text_destroy(dump);
+    ast_serializer_destroy(serializer);
+}
+/**
  * Checks that @b source parses, but sema rejects it: exactly one diagnostic, with code @b code at byte offset
  * @b offset .
  */
@@ -144,6 +160,16 @@ static void test_sema_slice_1_program(void) {
             CHECK(semantics_of(&fixture, two)->identifier_symbol == NULL);  // not an identifier
         }
     }
+
+    sema_fixture_destroy(fixture);
+}
+/** The slice 1 program's typed dump: the constant gets ":int"; the declarator's type prints the same as untyped. */
+static void test_sema_typed_dump_slice_1_program(void) {
+    const SemaFixture fixture = sema_fixture_create("int main(void) { return 2; }");
+
+    if (check_sema_passes(&fixture))
+        check_typed_dump(&fixture,
+            "(translation-unit (function-definition main:int(void) (parameters) (block (return 2:int))))");
 
     sema_fixture_destroy(fixture);
 }
@@ -248,6 +274,7 @@ int main(const int argc, char** const argv) {
     harness_init(argc, argv);
 
     RUN_TEST(test_sema_slice_1_program);
+    RUN_TEST(test_sema_typed_dump_slice_1_program);
     RUN_TEST(test_sema_two_functions);
     RUN_TEST(test_sema_whole_program);
 

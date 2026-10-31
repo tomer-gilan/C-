@@ -52,7 +52,4 @@ struct BlockItem{
     BlockItem* next;
 };
 
-StatementNode* compound_statement_parse(Parser* parser);
-StatementNode* statement_node_parse(Parser* parser);
-
 #endif //C_COMPILER_STATEMENT_H

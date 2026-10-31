@@ -1,0 +1,3 @@
+# Written by Claude on 31-Oct-26. Expected exit status of parentheses_7.c (see tests/run_e2e.sh).
+# Parentheses alone produce no node and no code.
+7

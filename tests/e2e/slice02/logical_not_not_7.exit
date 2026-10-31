@@ -1,0 +1,3 @@
+# Written by Claude on 21-Oct-26. Expected exit status of logical_not_not_7.c (see tests/run_e2e.sh).
+# !! turns any non-zero value into 1.
+1
