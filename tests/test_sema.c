@@ -1,7 +1,7 @@
 //
 // Written by Claude on 19-Oct-26.
 //
-// Sema tests for slice 1. Each test lexes, parses and analyzes a source string. A valid program must give no
+// Sema tests for slices 1 and 2. Each test lexes, parses and analyzes a source string. A valid program must give no
 // diagnostics and a type for every expression. An invalid one must give exactly one diagnostic (sema stops at the first
 // error, ADR-025), with the expected code and offset. Tests read sema's table directly, through each expression node's
 // id (ADR-023), or compare the typed dump (check_typed_dump, since 31-Oct-26).
@@ -230,7 +230,8 @@ static void test_sema_error_function_defined_three_times(void) {
 }
 
 // ---------------- Slice 2: unary operators and parentheses ---------------- //
-// Written ahead by Claude on 21-Oct-26, before slice 2 exists. Off in main until slice 2 is implemented.
+// Written ahead by Claude on 21-Oct-26, before slice 2 exists. On since 31-Oct-26: they fail until sema handles
+// slice 2.
 // No error tests: every operand is an int until pointers (slice 11).
 
 /**
@@ -280,9 +281,6 @@ int main(const int argc, char** const argv) {
 
     RUN_TEST(test_sema_error_function_defined_twice);
     RUN_TEST(test_sema_error_function_defined_three_times);
-
-    // Slice 2 (written ahead by Claude): off until slice 2 is implemented. Delete this return to run them.
-    return harness_finish();
 
     RUN_TEST(test_sema_slice_2_each_unary_operator);
     RUN_TEST(test_sema_slice_2_nested_unary);
