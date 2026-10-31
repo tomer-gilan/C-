@@ -14,7 +14,7 @@ typedef struct BlockItem BlockItem;
 
 // various kinds of statements:
 typedef struct {
-    BlockItem* head;
+    const BlockItem* head;
 } CompoundStatement;
 typedef struct {
     const ExpressionNode* expression;

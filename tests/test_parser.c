@@ -1,5 +1,5 @@
 //
-// Written by Claude on 16-Oct-26. Moved to parser_parse on 28-Oct-26.
+// Written by Claude on 16-Oct-26. Moved to parser_parse on 28-Oct-26. AST dump checks added on 31-Oct-26.
 //
 // Parser tests for slice 1: expressions, statements, function definitions, the translation unit, whole programs, and
 // inputs that must be rejected. parser_parse is the parser's only parse function outside Parser.c, so every test parses
@@ -7,13 +7,14 @@
 // offsets count from the start of that program. Each valid-input test checks the nodes and that no diagnostic was
 // reported. Each error test checks that parser_parse returns NULL and reports exactly one diagnostic, with the expected
 // code and offset.
-// Expected values come from SUBSET.md, not from the parser's output.
+// Expected values come from SUBSET.md, not from the parser's output. Expected dumps come from ast-dump-format.md.
 //
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "AstSerializer.h"
 #include "Harness.h"
 #include "Lexer.h"
 #include "Parser.h"
@@ -160,6 +161,24 @@ static const ExpressionNode* first_returned_expression(const StatementNode* cons
     if (!CHECK(statement != NULL) || !CHECK(statement->kind == STATEMENT_KIND_RETURN))
         return NULL;
     return statement->as.return_statement.expression;
+}
+/**
+ * Checks that the FLAT, untyped dump of @b translation_unit is exactly @b expected (ast-dump-format.md). On a mismatch,
+ * prints both dumps.
+ */
+static void check_dump(
+    const ParseFixture* const fixture,
+    const TranslationUnitNode* const translation_unit,
+    const char* const expected) {
+    if (!CHECK(translation_unit != NULL))
+        return;
+    AstSerializer* const serializer = ast_serializer_create(fixture->context, AST_SERIALIZATION_MODE_FLAT, NULL);
+    Text* const dump = ast_serializer_serialize(serializer, translation_unit);
+    const TextView actual = text_as_view(dump);
+    if (!CHECK(text_view_equals(actual, text_view_make((int)strlen(expected), expected))))
+        printf("    expected: %s\n    actual:   %.*s\n", expected, actual.length, actual.data);
+    text_destroy(dump);
+    ast_serializer_destroy(serializer);
 }
 
 // ---------------- Expressions ---------------- //
@@ -421,6 +440,19 @@ static void test_parser_parse_slice_1_program(void) {
 
     parse_fixture_destroy(fixture);
 }
+/** The slice 1 program's dump: pins slice 1's output before slice 2 adds nodes. */
+static void test_parser_dump_slice_1_program(void) {
+    const ParseFixture fixture = parse_fixture_create(
+        "int main(void) {\n"
+        "    return 2;\n"
+        "}\n");
+
+    check_dump(&fixture, parser_parse(fixture.parser),
+        "(translation-unit (function-definition main:int(void) (parameters) (block (return 2))))");
+    CHECK(has_no_diagnostics(&fixture));
+
+    parse_fixture_destroy(fixture);
+}
 /** Everything slice 1 has, together: several functions, nested and empty blocks, and statements after a block. */
 static void test_parser_parse_whole_program(void) {
     const ParseFixture fixture = parse_fixture_create(
@@ -678,6 +710,7 @@ int main(const int argc, char** const argv) {
 
     RUN_TEST(test_parser_parse_slice_1_program);
     RUN_TEST(test_parser_parse_whole_program);
+    RUN_TEST(test_parser_dump_slice_1_program);
 
     RUN_TEST(test_parser_error_empty_file);
     RUN_TEST(test_parser_error_whitespace_only);
