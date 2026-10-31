@@ -102,7 +102,7 @@ static void sema_analyze_expression(                    Sema* const this, const 
             break;
         case EXPRESSION_KIND_UNARY:
             sema_analyze_expression(this, expression_node->as.unary.operand);
-            type = this->expressions_semantics[expression_node->as.unary.operand->id].type;
+            type = this->expressions_semantics[expression_node->as.unary.operand->id].type; // the implicit assumption at play: the operand's type is unary-operator-invariant.
             break;
         case EXPRESSION_KIND__COUNT:
         default:

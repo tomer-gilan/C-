@@ -344,6 +344,7 @@ Text* emitter_detach_text(Emitter* const this) {
     return printer_detach_text(this->printer);
 }
 
+
 void emitter_emit_external_linkage(Emitter* const this, const Label label) {
     assert(this != NULL);
 
@@ -421,5 +422,72 @@ void emitter_emit_ret(Emitter* const this) {
 
     printer_print_new_line(this->printer);
     printer_print_text_view(this->printer, text_view_value_of_literal("ret"));
+}
+void emitter_emit_neg(Emitter* const this, const Width width, const Operand only) {
+    assert(this != NULL);
+
+    assert( (only.kind == OPERAND_KIND_MEMORY) ||
+            (only.kind == OPERAND_KIND_REGISTER && only.as.register_.width == width));
+
+    printer_print_new_line(this->printer);
+
+    // e.g.: "negq "
+    printer_print_text_view(this->printer, text_view_value_of_literal("neg"));
+    emitter_emit_instruction_suffix(this, width);
+    printer_print_char(this->printer, ' ');
+
+    // e.g.: "-8(%rbp), %rax"
+    emitter_emit_operand(this, only);
+}
+void emitter_emit_not(Emitter* const this, const Width width, const Operand only) {
+    assert(this != NULL);
+
+    assert( (only.kind == OPERAND_KIND_MEMORY) ||
+            (only.kind == OPERAND_KIND_REGISTER && only.as.register_.width == width));
+
+    printer_print_new_line(this->printer);
+
+    // e.g.: "notq "
+    printer_print_text_view(this->printer, text_view_value_of_literal("not"));
+    emitter_emit_instruction_suffix(this, width);
+    printer_print_char(this->printer, ' ');
+
+    // e.g.: "-8(%rbp), %rax"
+    emitter_emit_operand(this, only);
+}
+void emitter_emit_cmp(Emitter* const this, const Width width, const Operand source, const Operand destination) {
+    assert(this != NULL);
+
+    assert(destination.kind != OPERAND_KIND_IMMEDIATE);
+    if (source.kind == OPERAND_KIND_REGISTER)
+        assert(source.as.register_.width == width);
+    if (destination.kind == OPERAND_KIND_REGISTER)
+        assert(destination.as.register_.width == width);
+
+    printer_print_new_line(this->printer);
+
+    // e.g.: "cmpq "
+    printer_print_text_view(this->printer, text_view_value_of_literal("cmp"));
+    emitter_emit_instruction_suffix(this, width);
+    printer_print_char(this->printer, ' ');
+
+    // e.g.: "-8(%rbp), %rax"
+    emitter_emit_operand(this, source);
+    emitter_emit_separation(this);
+    emitter_emit_operand(this, destination);
+}
+void emitter_emit_sete(Emitter* const this, const Operand only) {
+    assert(this != NULL);
+
+    assert((only.kind == OPERAND_KIND_REGISTER && only.as.register_.width == WIDTH_BYTE) ||
+        only.kind == OPERAND_KIND_MEMORY);
+
+    printer_print_new_line(this->printer);
+
+    printer_print_text_view(this->printer, text_view_value_of_literal("sete"));
+    printer_print_char(this->printer, ' ');
+
+    // e.g.: "-8(%rbp), %al"
+    emitter_emit_operand(this, only);
 }
 

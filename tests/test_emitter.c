@@ -362,6 +362,85 @@ static void test_emitter_mov_immediate_to_memory(void) {
     CHECK(emitter_output_is(emitter, "\nmovb $7, -1(%rbp)\nmovl $7, -4(%rbp)\nmovq $-1, -8(%rbp)\n"));
 }
 
+// -------- Unary arithmetic: neg, not -------- //
+
+/** neg is two's-complement negation (C's -), not is bitwise complement (C's ~); the width picks the suffix. */
+static void test_emitter_neg_and_not_registers(void) {
+    Emitter* const emitter = emitter_create();
+    emitter_emit_neg(emitter, WIDTH_LONG, register_operand(REGISTER_KIND_RAX, WIDTH_LONG));
+    emitter_emit_neg(emitter, WIDTH_QUAD, register_operand(REGISTER_KIND_RAX, WIDTH_QUAD));
+    emitter_emit_neg(emitter, WIDTH_BYTE, register_operand(REGISTER_KIND_RCX, WIDTH_BYTE));
+    emitter_emit_not(emitter, WIDTH_LONG, register_operand(REGISTER_KIND_RAX, WIDTH_LONG));
+    emitter_emit_not(emitter, WIDTH_QUAD, register_operand(REGISTER_KIND_RAX, WIDTH_QUAD));
+    emitter_emit_not(emitter, WIDTH_BYTE, register_operand(REGISTER_KIND_RCX, WIDTH_BYTE));
+
+    CHECK(emitter_output_is(emitter, "\nnegl %eax\nnegq %rax\nnegb %cl\nnotl %eax\nnotq %rax\nnotb %cl\n"));
+}
+/** In place on memory: no register to take the width from, so the given width alone picks the suffix. */
+static void test_emitter_neg_and_not_memory(void) {
+    Emitter* const emitter = emitter_create();
+    emitter_emit_neg(emitter, WIDTH_LONG, base_operand(REGISTER_KIND_RBP, -4));
+    emitter_emit_not(emitter, WIDTH_QUAD, base_operand(REGISTER_KIND_RBP, -16));
+
+    CHECK(emitter_output_is(emitter, "\nnegl -4(%rbp)\nnotq -16(%rbp)\n"));
+}
+
+// -------- Comparison: cmp, sete -------- //
+
+/**
+ * AT&T order: "cmp source, destination" sets the flags from destination - source, and only the source may be an
+ * immediate. So comparing %eax with 0 is "cmpl $0, %eax"; "cmpl %eax, $0" doesn't assemble.
+ */
+static void test_emitter_cmp_immediate_with_register(void) {
+    Emitter* const emitter = emitter_create();
+    emitter_emit_cmp(emitter, WIDTH_LONG, operand_make_immediate(0), register_operand(REGISTER_KIND_RAX, WIDTH_LONG));
+    emitter_emit_cmp(emitter, WIDTH_QUAD, operand_make_immediate(0), register_operand(REGISTER_KIND_RAX, WIDTH_QUAD));
+    emitter_emit_cmp(emitter, WIDTH_LONG, operand_make_immediate(-1), register_operand(REGISTER_KIND_RCX, WIDTH_LONG));
+
+    CHECK(emitter_output_is(emitter, "\ncmpl $0, %eax\ncmpq $0, %rax\ncmpl $-1, %ecx\n"));
+}
+/** Register with register, and with memory on either side (at most one memory operand, as with mov). */
+static void test_emitter_cmp_register_and_memory(void) {
+    Emitter* const emitter = emitter_create();
+    emitter_emit_cmp(emitter, WIDTH_LONG, register_operand(REGISTER_KIND_RCX, WIDTH_LONG),
+                     register_operand(REGISTER_KIND_RAX, WIDTH_LONG));
+    emitter_emit_cmp(emitter, WIDTH_LONG, base_operand(REGISTER_KIND_RBP, -4),
+                     register_operand(REGISTER_KIND_RAX, WIDTH_LONG));
+    emitter_emit_cmp(emitter, WIDTH_QUAD, register_operand(REGISTER_KIND_RAX, WIDTH_QUAD),
+                     base_operand(REGISTER_KIND_RBP, -8));
+
+    CHECK(emitter_output_is(emitter, "\ncmpl %ecx, %eax\ncmpl -4(%rbp), %eax\ncmpq %rax, -8(%rbp)\n"));
+}
+/** Immediate with memory: the given width alone picks the suffix. */
+static void test_emitter_cmp_immediate_with_memory(void) {
+    Emitter* const emitter = emitter_create();
+    emitter_emit_cmp(emitter, WIDTH_LONG, operand_make_immediate(0), base_operand(REGISTER_KIND_RBP, -4));
+    emitter_emit_cmp(emitter, WIDTH_BYTE, operand_make_immediate(7), base_operand(REGISTER_KIND_RBP, -1));
+
+    CHECK(emitter_output_is(emitter, "\ncmpl $0, -4(%rbp)\ncmpb $7, -1(%rbp)\n"));
+}
+/** sete writes one byte, so it takes no suffix: a byte register, or a byte in memory. */
+static void test_emitter_sete(void) {
+    Emitter* const emitter = emitter_create();
+    emitter_emit_sete(emitter, register_operand(REGISTER_KIND_RAX, WIDTH_BYTE));
+    emitter_emit_sete(emitter, register_operand(REGISTER_KIND_RSI, WIDTH_BYTE));
+    emitter_emit_sete(emitter, base_operand(REGISTER_KIND_RBP, -1));
+
+    CHECK(emitter_output_is(emitter, "\nsete %al\nsete %sil\nsete -1(%rbp)\n"));
+}
+/**
+ * The slice 2 shape of !x with x in %eax: compare with 0, zero %eax with a mov (an xor would clobber the flags cmp
+ * just set), then set %al from ZF. The upper bits stay 0, so %eax holds 1 or 0.
+ */
+static void test_emitter_logical_not_sequence(void) {
+    Emitter* const emitter = emitter_create();
+    emitter_emit_cmp(emitter, WIDTH_LONG, operand_make_immediate(0), register_operand(REGISTER_KIND_RAX, WIDTH_LONG));
+    emitter_emit_mov(emitter, WIDTH_LONG, operand_make_immediate(0), register_operand(REGISTER_KIND_RAX, WIDTH_LONG));
+    emitter_emit_sete(emitter, register_operand(REGISTER_KIND_RAX, WIDTH_BYTE));
+
+    CHECK(emitter_output_is(emitter, "\ncmpl $0, %eax\nmovl $0, %eax\nsete %al\n"));
+}
+
 // -------- Ownership -------- //
 
 /** Destroying an emitter that was never detached frees its output too (LeakSanitizer checks this). */
@@ -412,6 +491,15 @@ int main(const int argc, char** const argv) {
 
     RUN_TEST(test_emitter_mov_register_to_memory);
     RUN_TEST(test_emitter_mov_immediate_to_memory);
+
+    RUN_TEST(test_emitter_neg_and_not_registers);
+    RUN_TEST(test_emitter_neg_and_not_memory);
+
+    RUN_TEST(test_emitter_cmp_immediate_with_register);
+    RUN_TEST(test_emitter_cmp_register_and_memory);
+    RUN_TEST(test_emitter_cmp_immediate_with_memory);
+    RUN_TEST(test_emitter_sete);
+    RUN_TEST(test_emitter_logical_not_sequence);
 
     RUN_TEST(test_emitter_destroy_without_detach);
     RUN_TEST(test_emitter_detached_text_outlives_emitter);

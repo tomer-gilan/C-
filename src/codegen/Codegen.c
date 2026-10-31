@@ -48,7 +48,6 @@ static Width codegen_width_by_type(const Type* type) {
             assert(false && "invalid program state");
     }
 }
-
 static void codegen_generate_statement(Codegen* this, const StatementNode* statement_node);
 
 /**
@@ -58,21 +57,56 @@ static Width codegen_generate_expression(               Codegen* const this, con
     assert(this != NULL);
     assert(expression_node != NULL);
 
-    const Width rax_width = codegen_width_by_type(this->sema_result.expressions_semantics[expression_node->id].type);
     switch (expression_node->kind) {
-        case EXPRESSION_KIND_INT_CONSTANT:
+        case EXPRESSION_KIND_INT_CONSTANT: {
+            const Width width = WIDTH_LONG;
             emitter_emit_mov(
                 this->emitter,
-                rax_width,
+                width,
                 operand_make_immediate(expression_node->as.int_constant.value),
-                operand_make_register(register_make(REGISTER_KIND_RAX, rax_width)));
-            break;
+                operand_make_register(register_make(REGISTER_KIND_RAX, width)));
+            return width;
+        }
+        case EXPRESSION_KIND_UNARY: {
+            const Width width = codegen_generate_expression(this, expression_node->as.unary.operand);
+            const Operand rax_operand = operand_make_register(register_make(REGISTER_KIND_RAX, width));
+            switch (expression_node->as.unary.kind) {
+                case UNARY_EXPRESSION_KIND_BINARY_NEGATE:
+                    emitter_emit_not(this->emitter, width, rax_operand);
+                    break;
+                case UNARY_EXPRESSION_KIND_LOGICAL_NOT:
+                    // change flags to remember if %rax was 0:
+                    emitter_emit_cmp(
+                        this->emitter,
+                        width,
+                        operand_make_immediate(0),
+                        rax_operand);
+                    // zeros %rax (because 32 bit operations zero out all 64 bits):
+                    emitter_emit_mov(
+                        this->emitter,
+                        WIDTH_LONG,
+                        operand_make_immediate(0),
+                        rax_operand);
+                    // stores equality check in %al (which de-facto is also %rax):
+                    emitter_emit_sete(this->emitter, operand_make_register(register_make(rax_operand.as.register_.kind, WIDTH_BYTE)));
+                    break;
+                case UNARY_EXPRESSION_KIND_NUMERIC_PLUS:
+                    break; // no-op by design
+                case UNARY_EXPRESSION_KIND_NUMERIC_MINUS:
+                    emitter_emit_neg(this->emitter, width, rax_operand);
+                    break;
+                case UNARY_EXPRESSION_KIND_NONE:
+                case UNARY_EXPRESSION_KIND__COUNT:
+                    assert(false && "invalid program state");
+                    break;
+            }
+            return width;
+        }
         case EXPRESSION_KIND__COUNT:
         default:
             assert(false && "invalid program state");
-            break;
+            return WIDTH_BYTE; // trash return value
     }
-    return rax_width;
 }
 static void codegen_generate_compound_statement(        Codegen* const this, const CompoundStatement*       const compound_statement) {
     assert(this != NULL);
